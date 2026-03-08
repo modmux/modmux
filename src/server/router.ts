@@ -53,8 +53,6 @@ async function handleMessages(req: Request): Promise<Response> {
 
   const validation = validateRequest(body);
   if (!validation.valid) {
-    console.error("Request Validation Error:", "400", validation);
-
     return errorResponse(
       400,
       validation.error!.error.type,

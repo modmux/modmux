@@ -1,5 +1,5 @@
 import {
-  AuthToken,
+  type AuthToken,
   createTokenStore,
   DeviceFlowTimeoutError,
   NetworkError,

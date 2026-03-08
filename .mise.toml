@@ -1,0 +1,6 @@
+[tools]
+claudio = "0.1.0"
+
+[settings]
+# claudio is installed via GitHub Releases binary
+# See: https://github.com/myty/claudio/releases

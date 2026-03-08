@@ -1,0 +1,192 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]*.[0-9]*.[0-9]*"
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+      - name: Run quality checks
+        run: deno task quality
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: quality
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - platform: macos-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            artifact: claudio-macos-arm64
+          - platform: macos-x64
+            runner: macos-13
+            target: x86_64-apple-darwin
+            artifact: claudio-macos-x64
+          - platform: linux-x64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: claudio-linux-x64
+          - platform: linux-arm64
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact: claudio-linux-arm64
+          - platform: windows-x64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: claudio-windows-x64.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+      - uses: actions/cache@v4
+        with:
+          path: ~/.deno
+          key: deno-${{ runner.os }}-${{ hashFiles('deno.lock') }}
+      - name: Sync version
+        run: deno run -A scripts/sync-version.ts
+      - name: Compile binary
+        run: >
+          deno compile
+          --allow-net --allow-env --allow-run --allow-read --allow-write
+          --target ${{ matrix.target }}
+          --output ${{ matrix.artifact }}
+          src/cli/main.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+          retention-days: 1
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: claudio-*
+          merge-multiple: true
+      - name: Generate release manifest
+        run: |
+          VERSION=$(cat deno.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+          TAG="${{ github.ref_name }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Build checksums array
+          CHECKSUMS="["
+          FIRST=true
+          for f in claudio-*; do
+            SHA256=$(sha256sum "$f" | awk '{print $1}')
+            PLATFORM="${f#claudio-}"
+            FILENAME="$f"
+            DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${FILENAME}"
+            if [ "$FIRST" = true ]; then
+              FIRST=false
+            else
+              CHECKSUMS="${CHECKSUMS},"
+            fi
+            CHECKSUMS="${CHECKSUMS}{\"platform\":\"${PLATFORM}\",\"filename\":\"${FILENAME}\",\"downloadUrl\":\"${DOWNLOAD_URL}\",\"sha256\":\"${SHA256}\"}"
+          done
+          CHECKSUMS="${CHECKSUMS}]"
+
+          cat > release-manifest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "tag": "${TAG}",
+            "publishedAt": "${TIMESTAMP}",
+            "binaries": ${CHECKSUMS}
+          }
+          EOF
+
+          echo "Generated release-manifest.json:"
+          cat release-manifest.json
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            claudio-*
+            release-manifest.json
+          generate_release_notes: true
+
+  publish-jsr:
+    name: Publish to JSR
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+      # One-Time Setup: In your JSR package settings, enable "Publish from CI"
+      # and add this repository as a trusted publisher.
+      # See: https://jsr.io/@myty/claudio/settings
+      - name: Publish to JSR
+        run: deno publish
+
+  publish-npm:
+    name: Publish to npm
+    needs: release
+    runs-on: ubuntu-latest
+    # NOTE: Add NPM_TOKEN secret in GitHub repository settings:
+    # Settings → Secrets and variables → Actions → New repository secret
+    # Name: NPM_TOKEN, Value: your npm access token with publish permissions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: https://registry.npmjs.org
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: claudio-*
+          merge-multiple: true
+      - name: Copy binaries into platform packages and publish
+        run: |
+          # Publish platform packages first (they must exist before main package)
+          declare -A PLATFORM_MAP=(
+            ["claudio-macos-arm64"]="darwin-arm64"
+            ["claudio-macos-x64"]="darwin-x64"
+            ["claudio-linux-x64"]="linux-x64"
+            ["claudio-linux-arm64"]="linux-arm64"
+            ["claudio-windows-x64.exe"]="win32-x64"
+          )
+
+          for artifact in "${!PLATFORM_MAP[@]}"; do
+            platform="${PLATFORM_MAP[$artifact]}"
+            pkg_dir="npm/@claudio/${platform}"
+            bin_dir="${pkg_dir}/bin"
+            mkdir -p "${bin_dir}"
+
+            if [[ "$artifact" == *.exe ]]; then
+              cp "${artifact}" "${bin_dir}/claudio.exe"
+            else
+              cp "${artifact}" "${bin_dir}/claudio"
+              chmod +x "${bin_dir}/claudio"
+            fi
+
+            echo "Publishing @claudio/${platform}..."
+            npm publish "${pkg_dir}" --access public
+          done
+
+          # Publish main shim package last
+          echo "Publishing claudio..."
+          npm publish npm/claudio --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

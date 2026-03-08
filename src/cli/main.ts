@@ -1,5 +1,6 @@
 import { startServer } from "../server/router.ts";
 import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
+import { VERSION } from "../version.ts";
 import {
   findClaudeBinary,
   launchClaudeCode,
@@ -26,7 +27,7 @@ For example: claudio --dark-mode passes --dark-mode to claude.
 }
 
 function showVersion() {
-  console.log("Claudio v0.1.0");
+  console.log(`Claudio v${VERSION}`);
 }
 
 async function ensureAuthenticated(): Promise<boolean> {
