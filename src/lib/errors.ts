@@ -30,7 +30,9 @@ export class DeviceFlowTimeoutError extends AuthError {
 }
 
 export class NetworkError extends AuthError {
-  constructor(message = "Network error. Check your connection and proxy settings.") {
+  constructor(
+    message = "Network error. Check your connection and proxy settings.",
+  ) {
     super(message, "NETWORK_ERROR");
     this.name = "NetworkError";
   }

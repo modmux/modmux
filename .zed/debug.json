@@ -3,11 +3,11 @@
     "adapter": "JavaScript",
     "label": "Deno",
     "request": "launch",
-    "type": "pwa-node",
+    "type": "node-terminal",
     "cwd": "$ZED_WORKTREE_ROOT",
     "program": "$ZED_FILE",
     "runtimeExecutable": "deno",
-    "runtimeArgs": ["run", "--allow-all", "--inspect-wait"],
-    "attachSimplePort": 9229,
-  },
+    "runtimeArgs": ["run", "--inspect-wait", "-A", "src/cli/main.ts"],
+    "attachSimplePort": 9229
+  }
 ]

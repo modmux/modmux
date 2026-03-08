@@ -1,4 +1,5 @@
 import { startServer } from "../server/router.ts";
+import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
 
 function showHelp() {
   console.log(`
@@ -17,38 +18,28 @@ function showVersion() {
   console.log("Claudio v0.1.0");
 }
 
-function checkCopilotInstalled(): boolean {
+async function ensureAuthenticated(): Promise<boolean> {
+  const stored = await getStoredToken();
+  if (isTokenValid(stored)) {
+    return true;
+  }
+
+  // No valid stored token — run the OAuth device flow
   try {
-    const process = new Deno.Command("copilot", {
-      args: ["--version"],
-    }).outputSync();
-    return process.success;
-  } catch {
+    await authenticate();
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Authentication failed: ${message}`);
     return false;
   }
 }
 
-function verifyCredentials(): boolean {
-  try {
-    const process = new Deno.Command("gh", {
-      args: ["auth", "status"],
-    }).outputSync();
-
-    const output = new TextDecoder().decode(process.stdout) +
-      new TextDecoder().decode(process.stderr);
-    return output.includes("✓ Logged in");
-  } catch {
-    return false;
-  }
-}
-
-function main() {
+async function main() {
   const args = Deno.args;
   const flags = {
     help: args.includes("--help") || args.includes("-h"),
     version: args.includes("--version") || args.includes("-v"),
-    server: args.includes("--server") ||
-      !args.includes("--help") && !args.includes("--version"),
   };
 
   if (flags.help) {
@@ -61,26 +52,14 @@ function main() {
     Deno.exit(0);
   }
 
-  if (!checkCopilotInstalled()) {
-    console.error(
-      "Copilot CLI not found. Please install: https://github.com/cli/cli",
-    );
+  const authenticated = await ensureAuthenticated();
+  if (!authenticated) {
     Deno.exit(1);
   }
 
-  const hasCredentials = verifyCredentials();
-  if (!hasCredentials) {
-    console.error("Not authenticated. Run: gh auth login");
-    Deno.exit(1);
-  }
-
-  if (flags.server) {
-    startServer();
-  } else {
-    console.log("Ready.");
-  }
+  startServer();
 }
 
 if (import.meta.main) {
-  main();
+  await main();
 }

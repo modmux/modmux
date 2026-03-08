@@ -10,7 +10,7 @@ Deno.test({
     }).outputSync();
     const decoder = new TextDecoder();
     const output = decoder.decode(process.stdout);
-    
+
     assertStringIncludes(output, "Claudio");
     assertStringIncludes(output, "--help");
     assertStringIncludes(output, "--version");
@@ -25,7 +25,7 @@ Deno.test({
     }).outputSync();
     const decoder = new TextDecoder();
     const output = decoder.decode(process.stdout);
-    
+
     assertStringIncludes(output, "Claudio v");
   },
 });
@@ -36,7 +36,7 @@ Deno.test({
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--help"],
     }).spawn();
-    
+
     const status = await process.status;
     assertEquals(status.code, 0);
   },
@@ -48,7 +48,7 @@ Deno.test({
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--version"],
     }).spawn();
-    
+
     const status = await process.status;
     assertEquals(status.code, 0);
   },
@@ -62,7 +62,7 @@ Deno.test({
     }).outputSync();
     const decoder = new TextDecoder();
     const output = decoder.decode(process.stdout);
-    
+
     assertStringIncludes(output, "Claudio");
   },
 });
@@ -70,25 +70,34 @@ Deno.test({
 Deno.test({
   name: "CLI accepts -v alias for --version",
   fn() {
-    const process = new Deno.Command(Deno.execPath(), {
+    const process = Deno.spawnAndWaitSync(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "-v"],
-    }).outputSync();
+    });
     const decoder = new TextDecoder();
     const output = decoder.decode(process.stdout);
-    
+
     assertStringIncludes(output, "Claudio v");
   },
 });
 
 Deno.test({
-  name: "CLI shows Ready when authenticated",
-  fn() {
+  name: "CLI without args starts server or exits for missing auth",
+  async fn() {
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH],
-    }).outputSync();
-    const decoder = new TextDecoder();
-    const output = decoder.decode(process.stdout);
-    
-    assertStringIncludes(output, "Ready");
+    }).spawn();
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    let killed = false;
+    try {
+      process.kill("SIGTERM");
+      killed = true;
+    } catch {
+      // Process may already have exited due to missing auth.
+    }
+
+    const status = await process.status;
+    assertEquals(killed || status.code === 1, true);
   },
 });

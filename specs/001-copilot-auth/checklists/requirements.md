@@ -1,8 +1,7 @@
 # Specification Quality Checklist: Copilot Authentication
 
-**Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-02-28
-**Feature**: [Link to spec.md](./spec.md)
+**Purpose**: Validate specification completeness and quality before proceeding
+to planning **Created**: 2026-02-28 **Feature**: [Link to spec.md](./spec.md)
 
 ## Content Quality
 
@@ -32,7 +31,9 @@
 ## Notes
 
 - All checklist items pass
-- The specification covers first-time auth, returning users, failure handling, and secure storage
+- The specification covers first-time auth, returning users, failure handling,
+  and secure storage
 - 4 user stories with clear acceptance criteria
 - 8 functional requirements and 5 success criteria - all measurable
-- Edge cases identified for timeout, rate limiting, revocation, and proxy handling
+- Edge cases identified for timeout, rate limiting, revocation, and proxy
+  handling

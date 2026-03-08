@@ -24,22 +24,25 @@
 
 ## Command-Line Options
 
-| Flag | Description |
-|------|-------------|
-| `--help` | Show help message |
-| `--version` | Show version |
-| `--reauth` | Force re-authentication |
+| Flag        | Description             |
+| ----------- | ----------------------- |
+| `--help`    | Show help message       |
+| `--version` | Show version            |
+| `--reauth`  | Force re-authentication |
 
 ## Troubleshooting
 
 ### "Authentication failed"
+
 - Verify you have a Copilot subscription
 - Run with `--reauth` to start fresh authentication
 
 ### "Token expired"
+
 - Automatic re-authentication will be triggered
 - Or run with `--reauth` to manually refresh
 
 ### "Network error"
+
 - Check internet connection
 - Check proxy settings if behind corporate firewall

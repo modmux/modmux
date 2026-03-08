@@ -4,9 +4,11 @@
 
 **Chosen**: Deno std/http (built-in)
 
-**Rationale**: Deno has built-in HTTP server with good performance. No external dependencies needed. Matches Deno-first approach.
+**Rationale**: Deno has built-in HTTP server with good performance. No external
+dependencies needed. Matches Deno-first approach.
 
 **Alternatives considered**:
+
 - oak (middleware framework) - more features than needed, adds dependency
 - fastify (via Deno) - not idiomatic for Deno
 
@@ -16,9 +18,11 @@
 
 **Chosen**: Manual transformation layer
 
-**Rationale**: Need precise control over field mapping between Anthropic and Copilot formats. Both APIs evolve, manual gives flexibility.
+**Rationale**: Need precise control over field mapping between Anthropic and
+Copilot formats. Both APIs evolve, manual gives flexibility.
 
 **Mapping required**:
+
 - Anthropic `messages[]` → Copilot `prompt` or session context
 - Anthropic `model` → Copilot model selection
 - Anthropic streaming events → Copilot delta events
@@ -30,9 +34,11 @@
 
 **Chosen**: Lazy start (start on first request)
 
-**Rationale**: Constitution principle I (Minimalism) - don't start unnecessary processes. Claude Code will connect when ready.
+**Rationale**: Constitution principle I (Minimalism) - don't start unnecessary
+processes. Claude Code will connect when ready.
 
 **Alternative rejected**:
+
 - Eager start on CLI launch - wastes resources if Claude Code not used
 
 ---
@@ -41,9 +47,11 @@
 
 **Chosen**: SSE (Server-Sent Events) via Deno HTTP
 
-**Rationale**: Anthropic API uses SSE for streaming. Copilot SDK provides `assistant.message_delta` events that map to SSE.
+**Rationale**: Anthropic API uses SSE for streaming. Copilot SDK provides
+`assistant.message_delta` events that map to SSE.
 
 **Implementation**:
+
 - Map Copilot `assistant.message_delta` → Anthropic `content_block_delta`
 - Map Copilot `assistant.message` → Anthropic `message_start`/`message_stop`
 
@@ -53,7 +61,8 @@
 
 **Chosen**: Default port 8080, configurable via `CLAUDIO_PORT` env var
 
-**Rationale**: 
+**Rationale**:
+
 - 8080 is common default, unlikely to conflict
 - Environment variable allows override without CLI flags
 - Constitution principle III (Predictability) - explicit config
@@ -65,6 +74,7 @@
 **Chosen**: Anthropic error format
 
 **Rationale**: Claude Code expects consistent error format. Must return:
+
 ```json
 {
   "type": "error",
@@ -81,6 +91,7 @@
 ## Key Technical Details
 
 ### Anthropic /v1/messages Request Format
+
 ```json
 {
   "model": "claude-3-5-sonnet-20241022",
@@ -94,6 +105,7 @@
 ```
 
 ### Anthropic /v1/messages Response Format
+
 ```json
 {
   "id": "msg_...",
@@ -113,6 +125,7 @@
 ```
 
 ### Copilot SDK Usage
+
 ```typescript
 const client = new CopilotClient();
 const session = await client.createSession({ model: "gpt-4.1" });
@@ -120,6 +133,7 @@ const response = await session.sendAndWait({ prompt: "Question?" });
 ```
 
 ### SSE Events to Implement
+
 - `message_start` - First event with message metadata
 - `content_block_start` - When content block begins
 - `content_block_delta` - Text deltas

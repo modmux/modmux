@@ -1,4 +1,7 @@
-import { CopilotClient } from "@github/copilot-sdk";
+import {
+  chat as copilotChat,
+  chatStream as copilotChatStream,
+} from "../copilot/mod.ts";
 import type {
   CountTokensResponse,
   Message,
@@ -8,138 +11,27 @@ import type {
 } from "./types.ts";
 import { generateMessageId } from "./types.ts";
 
-export interface CopilotSession {
-  sendMessage(prompt: string): Promise<string>;
-  sendMessageStream(
-    prompt: string,
-    onChunk: (chunk: string) => void,
-  ): Promise<void>;
-}
-
-let client: CopilotClient | null = null;
-
-export async function getClient(): Promise<CopilotClient> {
-  if (!client) {
-    client = new CopilotClient();
-    await client.start();
-  }
-  return client;
-}
-
-export async function stopClient(): Promise<void> {
-  if (client) {
-    await client.stop();
-    client = null;
-  }
-}
-
-export async function createSession(): Promise<CopilotSession> {
-  const copilot = await getClient();
-  const session = await copilot.createSession({
-    model: "gpt-4.1",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onPermissionRequest: (_request: any, _invocation: any) => ({ approved: true } as any),
-  });
-
-  return {
-    async sendMessage(prompt: string): Promise<string> {
-      const response = await session.sendAndWait({ prompt });
-      return response?.data.content ?? "";
-    },
-
-    async sendMessageStream(
-      prompt: string,
-      onChunk: (chunk: string) => void,
-    ): Promise<void> {
-      const streamingSession = await copilot.createSession({
-        model: "gpt-4.1",
-        streaming: true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onPermissionRequest: (_request: any, _invocation: any) => ({ approved: true } as any),
-      });
-
-      streamingSession.on(
-        "assistant.message_delta",
-        (event: { data: { deltaContent: string } }) => {
-          onChunk(event.data.deltaContent);
-        },
-      );
-
-      await streamingSession.sendAndWait({ prompt });
-    },
-  };
-}
+/**
+ * No-op stub retained for backwards compatibility with callers in tests/contract/proxy_test.ts.
+ * The HTTP-based Copilot client has no persistent connection to close.
+ */
+export async function stopClient(): Promise<void> {}
 
 export async function chat(request: ProxyRequest): Promise<ProxyResponse> {
-  const prompt = transformToPrompt(request);
-  const session = await createSession();
-  const content = await session.sendMessage(prompt);
-
-  return {
-    id: generateMessageId(),
-    type: "message",
-    role: "assistant",
-    content: [{ type: "text", text: content }],
-    model: request.model,
-    stop_reason: "end_turn",
-    stop_sequence: null,
-    usage: {
-      input_tokens: estimateTokens(prompt),
-      output_tokens: estimateTokens(content),
-    },
-  };
+  return await copilotChat(request);
 }
 
 export async function chatStream(
   request: ProxyRequest,
   onChunk: (event: StreamEvent) => void,
 ): Promise<void> {
-  const prompt = transformToPrompt(request);
-  const session = await createSession();
-
-  const messageId = generateMessageId();
-  const inputTokens = estimateTokens(prompt);
-
-  onChunk({
-    type: "message_start",
-    message: {
-      id: messageId,
-      type: "message",
-      role: "assistant",
-      model: request.model,
-      usage: { input_tokens: inputTokens, output_tokens: 0 },
-    },
-  });
-
-  onChunk({
-    type: "content_block_start",
-    index: 0,
-    content_block: { type: "text" },
-  });
-
-  await session.sendMessageStream(prompt, (chunk) => {
-    onChunk({
-      type: "content_block_delta",
-      index: 0,
-      delta: { type: "text_delta", text: chunk },
-    });
-  });
-
-  onChunk({ type: "content_block_stop", index: 0 });
-
-  onChunk({
-    type: "message_delta",
-    usage: { input_tokens: inputTokens, output_tokens: 0 },
-    delta: { type: "stop_reason", stop_reason: "end_turn" },
-  });
-
-  onChunk({ type: "message_stop" });
+  await copilotChatStream(request, onChunk);
 }
 
 export function countTokens(
   request: { model: string; messages: Message[] },
 ): CountTokensResponse {
-  const prompt = transformToPrompt(request);
+  const prompt = messagesToText(request);
   const tokens = estimateTokens(prompt);
 
   return {
@@ -157,7 +49,8 @@ export function countTokens(
   };
 }
 
-function transformToPrompt(
+/** Converts messages to a plain text representation for token estimation. */
+function messagesToText(
   request: { system?: string; messages: Message[] },
 ): string {
   const parts: string[] = [];

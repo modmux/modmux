@@ -1,16 +1,18 @@
 ---
 
-description: "Task list for implementing Copilot Authentication feature"
----
+## description: "Task list for implementing Copilot Authentication feature"
 
 # Tasks: Copilot Authentication
 
-**Input**: Design documents from `/specs/001-copilot-auth/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+**Input**: Design documents from `/specs/001-copilot-auth/` **Prerequisites**:
+plan.md (required), spec.md (required for user stories), research.md,
+data-model.md, contracts/
 
-**Tests**: Not explicitly requested - following minimal approach per constitution
+**Tests**: Not explicitly requested - following minimal approach per
+constitution
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by user story to enable independent
+implementation and testing of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -30,7 +32,8 @@ description: "Task list for implementing Copilot Authentication feature"
 **Purpose**: Project initialization and basic structure
 
 - [x] T001 Create project structure per implementation plan in src/
-- [x] T002 [P] Create deno.json configuration with permissions and @github/copilot-sdk import
+- [x] T002 [P] Create deno.json configuration with permissions and
+      @github/copilot-sdk import
 - [x] T003 [P] Configure Deno permissions for network and file access
 - [x] T004 [P] Add @github/copilot-sdk dependency to deno.json
 
@@ -38,7 +41,8 @@ description: "Task list for implementing Copilot Authentication feature"
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+**Purpose**: Core infrastructure that MUST be complete before ANY user story can
+be implemented
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
@@ -47,26 +51,32 @@ description: "Task list for implementing Copilot Authentication feature"
 - [x] T007 [P] Create CLI entry point stub in src/cli/main.ts
 - [x] T008 [P] Create auth module exports in src/auth/mod.ts
 
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+**Checkpoint**: Foundation ready - user story implementation can now begin in
+parallel
 
 ---
 
 ## Phase 3: User Story 1 - First-Time Authentication (Priority: P1) 🎯 MVP
 
-**Goal**: Users can authenticate with GitHub Copilot using device flow via Copilot SDK
+**Goal**: Users can authenticate with GitHub Copilot using device flow via
+Copilot SDK
 
-**Independent Test**: Run Claudio in fresh environment - system prompts for auth, completes device flow, stores token
+**Independent Test**: Run Claudio in fresh environment - system prompts for
+auth, completes device flow, stores token
 
 ### Implementation for User Story 1
 
 - [x] T009 [P] [US1] Create Copilot SDK auth integration in src/auth/copilot.ts
-- [x] T010 [US1] Implement device flow initiation and polling in src/auth/copilot.ts
-- [x] T011 [US1] Implement token storage to platform secure storage in src/lib/token.ts
+- [x] T010 [US1] Implement device flow initiation and polling in
+      src/auth/copilot.ts
+- [x] T011 [US1] Implement token storage to platform secure storage in
+      src/lib/token.ts
 - [x] T012 [US1] Connect auth flow to CLI entry point in src/cli/main.ts
 - [x] T013 [US1] Display verification URL and device code per UX spec
 - [x] T014 [US1] Handle auth success and store token
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: At this point, User Story 1 should be fully functional and
+testable independently
 
 ---
 
@@ -74,7 +84,8 @@ description: "Task list for implementing Copilot Authentication feature"
 
 **Goal**: Returning users authenticate seamlessly without re-authentication
 
-**Independent Test**: Run Claudio twice - second run uses cached credentials without prompting
+**Independent Test**: Run Claudio twice - second run uses cached credentials
+without prompting
 
 ### Implementation for User Story 2
 
@@ -82,7 +93,8 @@ description: "Task list for implementing Copilot Authentication feature"
 - [x] T016 [US2] Implement token cache loading on startup in src/auth/copilot.ts
 - [x] T017 [US2] Skip auth flow when valid token exists in src/cli/main.ts
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work
+independently
 
 ---
 
@@ -90,7 +102,8 @@ description: "Task list for implementing Copilot Authentication feature"
 
 **Goal**: Users receive clear error messages for auth failures
 
-**Independent Test**: Test with invalid credentials, expired tokens, network failures
+**Independent Test**: Test with invalid credentials, expired tokens, network
+failures
 
 ### Implementation for User Story 3
 
@@ -105,12 +118,15 @@ description: "Task list for implementing Copilot Authentication feature"
 
 **Goal**: Tokens stored securely using platform mechanisms, never logged
 
-**Independent Test**: Verify tokens not in logs, stored in Keychain/Credential Manager
+**Independent Test**: Verify tokens not in logs, stored in Keychain/Credential
+Manager
 
 ### Implementation for User Story 4
 
-- [x] T022 [P] [US4] Implement platform secure storage integration in src/lib/token.ts
-- [x] T023 [US4] Implement fallback to encrypted file storage in src/lib/token.ts
+- [x] T022 [P] [US4] Implement platform secure storage integration in
+      src/lib/token.ts
+- [x] T023 [US4] Implement fallback to encrypted file storage in
+      src/lib/token.ts
 - [x] T024 [US4] Add --reauth flag to CLI in src/cli/main.ts
 - [x] T025 [US4] Verify no token logging in all auth paths
 
@@ -134,15 +150,18 @@ description: "Task list for implementing Copilot Authentication feature"
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user
+  stories
 - **User Stories (Phase 3+)**: All depend on Foundational phase completion
   - User stories can proceed in parallel after Phase 2
 - **Polish (Final Phase)**: Depends on all user stories being complete
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P1)**: Can start after Foundational (Phase 2) - Depends on US1 token storage
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No
+  dependencies on other stories
+- **User Story 2 (P1)**: Can start after Foundational (Phase 2) - Depends on US1
+  token storage
 - **User Story 3 (P2)**: Can start after Foundational (Phase 2) - Independent
 - **User Story 4 (P2)**: Can start after Foundational (Phase 2) - Independent
 
@@ -168,4 +187,5 @@ description: "Task list for implementing Copilot Authentication feature"
 - Each user story should be independently completable and testable
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- Avoid: vague tasks, same file conflicts, cross-story dependencies that break
+  independence

@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document defines the HTTP API contracts for the Claudio proxy server. The API is designed to be compatible with the Anthropic Messages API, allowing Claude Code to connect as if to the Anthropic API.
+This document defines the HTTP API contracts for the Claudio proxy server. The
+API is designed to be compatible with the Anthropic Messages API, allowing
+Claude Code to connect as if to the Anthropic API.
 
 ## Base URL
 
@@ -23,10 +25,12 @@ Create a new message (non-streaming or streaming).
 #### Request
 
 **Headers**:
+
 - `Content-Type: application/json`
 - `anthropic-version: 2023-06-01` (optional, for compatibility)
 
 **Body**:
+
 ```json
 {
   "model": "claude-3-5-sonnet-20241022",
@@ -65,11 +69,13 @@ Create a new message (non-streaming or streaming).
 **Status**: 200 OK
 
 **Headers**:
+
 - `Content-Type: text/event-stream`
 - `Cache-Control: no-cache`
 - `Connection: keep-alive`
 
 **Body** (SSE format):
+
 ```
 event: message_start
 data: {"type":"message_start","id":"msg_claudio_abc123","role":"assistant","model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":12}}
@@ -145,12 +151,12 @@ Count tokens in a message request.
 
 ## Error Types
 
-| HTTP Status | Error Type | Description |
-|-------------|------------|-------------|
-| 400 | invalid_request_error | Malformed request |
-| 400 | invalid_parameter | Invalid parameter value |
-| 503 | service_error | Copilot SDK unavailable |
-| 504 | timeout_error | Request timed out |
+| HTTP Status | Error Type            | Description             |
+| ----------- | --------------------- | ----------------------- |
+| 400         | invalid_request_error | Malformed request       |
+| 400         | invalid_parameter     | Invalid parameter value |
+| 503         | service_error         | Copilot SDK unavailable |
+| 504         | timeout_error         | Request timed out       |
 
 ---
 

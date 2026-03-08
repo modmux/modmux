@@ -59,9 +59,9 @@ CLAUDIO_PORT=9000 deno run -A src/cli/main.ts
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| CLAUDIO_PORT | 8080 | Proxy server port |
+| Variable     | Default   | Description        |
+| ------------ | --------- | ------------------ |
+| CLAUDIO_PORT | 8080      | Proxy server port  |
 | CLAUDIO_HOST | 127.0.0.1 | Proxy bind address |
 
 ---
@@ -111,6 +111,7 @@ curl -X POST http://localhost:8080/v1/messages/count_tokens \
 ### "Copilot CLI not found"
 
 Install Copilot CLI:
+
 ```bash
 brew install ghcopilot
 ```
@@ -118,6 +119,7 @@ brew install ghcopilot
 ### "Not authenticated"
 
 Run:
+
 ```bash
 gh auth login
 gh copilot auth login
@@ -126,6 +128,7 @@ gh copilot auth login
 ### "Port already in use"
 
 Change port:
+
 ```bash
 CLAUDIO_PORT=8081 deno run -A src/cli/main.ts
 ```

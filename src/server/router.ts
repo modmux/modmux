@@ -10,7 +10,7 @@ import { addShutdownHandler, getConfig } from "./server.ts";
 
 const server = Deno.serve;
 
-async function handleRequest(req: Request): Promise<Response> {
+export async function handleRequest(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
   if (req.method === "POST" && url.pathname === "/v1/messages") {
@@ -41,7 +41,8 @@ async function handleMessages(req: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await req.json();
-  } catch {
+  } catch (error: unknown) {
+    console.error("Request Handled:", error, req);
     return errorResponse(
       400,
       "invalid_request_error",
@@ -52,6 +53,8 @@ async function handleMessages(req: Request): Promise<Response> {
 
   const validation = validateRequest(body);
   if (!validation.valid) {
+    console.error("Request Validation Error:", "400", validation);
+
     return errorResponse(
       400,
       validation.error!.error.type,
@@ -109,6 +112,7 @@ async function handleMessages(req: Request): Promise<Response> {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Request Chat Error:", "400", err);
     return errorResponse(
       503,
       "service_error",
