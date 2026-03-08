@@ -1,16 +1,27 @@
 import { startServer } from "../server/router.ts";
 import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
+import {
+  findClaudeBinary,
+  launchClaudeCode,
+  printInstallInstructions,
+} from "./launch.ts";
+
+// Flags consumed by Claudio itself; everything else is forwarded verbatim to claude.
+const CLAUDIO_FLAGS = new Set(["--help", "-h", "--version", "-v", "--server"]);
 
 function showHelp() {
   console.log(`
 Claudio - GitHub Copilot Bridge
 
-Usage: claudio [OPTIONS]
+Usage: claudio [OPTIONS] [CLAUDE_ARGS...]
 
 Options:
   --help       Show this help message
   --version    Show version
   --server     Start the proxy server (default)
+
+Any options not listed above are forwarded verbatim to claude.
+For example: claudio --dark-mode passes --dark-mode to claude.
 `.trim());
 }
 
@@ -57,7 +68,25 @@ async function main() {
     Deno.exit(1);
   }
 
-  startServer();
+  const { port, stop } = startServer();
+
+  const forwardedArgs = args.filter((a) => !CLAUDIO_FLAGS.has(a));
+  const binary = await findClaudeBinary();
+
+  if (!binary) {
+    printInstallInstructions();
+    await stop();
+    Deno.exit(1);
+  }
+
+  let exitCode = 1;
+  try {
+    exitCode = await launchClaudeCode(binary, port, forwardedArgs);
+  } finally {
+    await stop();
+  }
+
+  Deno.exit(exitCode);
 }
 
 if (import.meta.main) {

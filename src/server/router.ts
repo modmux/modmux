@@ -197,15 +197,21 @@ function errorResponse(
   });
 }
 
-export async function startServer(): Promise<void> {
+export function startServer(): { port: number; stop: () => Promise<void> } {
   const config = getConfig();
   addShutdownHandler();
 
-  console.log(`Starting Claudio proxy on ${config.hostname}:${config.port}`);
-
-  await server({
+  const httpServer = server({
     hostname: config.hostname,
     port: config.port,
     handler: handleRequest,
+    onListen: () => {},
   });
+
+  const { port } = httpServer.addr as Deno.NetAddr;
+
+  return {
+    port,
+    stop: () => httpServer.shutdown(),
+  };
 }
