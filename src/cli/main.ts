@@ -6,6 +6,7 @@ import {
   launchClaudeCode,
   printInstallInstructions,
 } from "./launch.ts";
+import { getLatestSessionId } from "./session.ts";
 
 // Flags consumed by Claudio itself; everything else is forwarded verbatim to claude.
 const CLAUDIO_FLAGS = new Set(["--help", "-h", "--version", "-v", "--server"]);
@@ -80,11 +81,24 @@ async function main() {
     Deno.exit(1);
   }
 
+  if (Deno.stdout.isTerminal()) {
+    console.clear();
+  }
+
   let exitCode = 1;
   try {
     exitCode = await launchClaudeCode(binary, port, forwardedArgs);
   } finally {
     await stop();
+  }
+
+  if (exitCode === 0) {
+    const sessionId = await getLatestSessionId();
+    if (sessionId) {
+      console.log(`\nRun \`claudio --resume ${sessionId}\` to resume.`);
+    } else {
+      console.log("\nRun `claudio` to resume.");
+    }
   }
 
   Deno.exit(exitCode);

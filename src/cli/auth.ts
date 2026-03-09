@@ -50,7 +50,7 @@ export async function authenticate(): Promise<AuthToken> {
 
     const token: AuthToken = {
       accessToken: result.accessToken,
-      expiresAt: Date.now() + 8 * 60 * 60 * 1000, // 8 hours; re-auth after
+      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
       createdAt: Date.now(),
     };
 

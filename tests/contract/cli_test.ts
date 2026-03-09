@@ -81,6 +81,23 @@ Deno.test({
 });
 
 Deno.test({
+  name: "CLI --help output contains no ANSI clear-screen sequence when piped",
+  fn() {
+    const process = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", CLI_PATH, "--help"],
+      stdout: "piped",
+      stderr: "piped",
+    }).outputSync();
+    const decoder = new TextDecoder();
+    const output = decoder.decode(process.stdout);
+    // ESC[2J and ESC[H are the sequences emitted by console.clear()
+    const hasAnsiClear = output.includes("\x1b[2J") ||
+      output.includes("\x1b[H");
+    assertEquals(hasAnsiClear, false);
+  },
+});
+
+Deno.test({
   name: "CLI without args starts server or exits for missing auth",
   async fn() {
     const process = new Deno.Command(Deno.execPath(), {

@@ -4,6 +4,11 @@ Auto-generated from all feature plans. Last updated: 2026-03-07
 
 ## Active Technologies
 
+- Deno (latest stable) + TypeScrip + Deno std/http, @github/copilot-sdk (no new
+  deps) (007-ux-improvements)
+- Platform secure token storage (Keychain/Credential Manager/Secret Service)
+  (007-ux-improvements)
+
 - Deno 2.x + TypeScrip + None (zero runtime deps; Deno std lib only)
   (006-release-distribution)
 - `deno.json` (version source of truth), `src/version.ts`
@@ -28,6 +33,9 @@ tests/
 Deno (latest stable) + TypeScrip: Follow standard conventions
 
 ## Recent Changes
+
+- 007-ux-improvements: Added Deno (latest stable) + TypeScrip + Deno std/http,
+  @github/copilot-sdk (no new deps)
 
 - 006-release-distribution: Added Deno 2.x + TypeScrip + None (zero runtime
   deps; Deno std lib only)
