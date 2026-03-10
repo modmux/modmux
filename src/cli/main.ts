@@ -2,6 +2,8 @@ import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
 import { VERSION } from "../version.ts";
 import { startDaemon, stopDaemon } from "../service/daemon.ts";
 import { formatStatus, getServiceState } from "../service/status.ts";
+import { detectAll } from "../agents/detector.ts";
+import { loadConfig } from "../config/store.ts";
 
 function showHelp() {
   console.log(`
@@ -81,6 +83,52 @@ async function cmdStatus(): Promise<void> {
   Deno.exit(state.running ? 0 : 1);
 }
 
+async function cmdDoctor(): Promise<void> {
+  const divider = "──────────────────────────────────────────────";
+  console.log("Coco Doctor");
+  console.log(divider);
+
+  const config = await loadConfig();
+  const configuredAgents = new Set(
+    (config.agents ?? []).map((a) => a.agentName),
+  );
+
+  const results = await detectAll();
+  for (const { agent, state } of results) {
+    const stateLabel = state.padEnd(12);
+    const configStatus = configuredAgents.has(agent.name)
+      ? "configured ✓"
+      : "not configured";
+    console.log(`${agent.name.padEnd(16)}${stateLabel} ${configStatus}`);
+  }
+
+  console.log(divider);
+
+  // Show last 5 error-level lines from the log file
+  const logPath = `${Deno.env.get("HOME") ?? "~"}/.coco/coco.log`;
+  let lastErrors = "(none)";
+  try {
+    const raw = await Deno.readTextFile(logPath);
+    const errorLines = raw
+      .split("\n")
+      .filter(Boolean)
+      .filter((line) => {
+        try {
+          return JSON.parse(line).level === "error";
+        } catch {
+          return false;
+        }
+      })
+      .slice(-5);
+    if (errorLines.length > 0) lastErrors = errorLines.join("\n");
+  } catch {
+    // log file doesn't exist yet — that's fine
+  }
+
+  console.log(`Log: ${logPath}`);
+  console.log(`Last 5 errors: ${lastErrors}`);
+}
+
 async function main() {
   const args = Deno.args;
 
@@ -120,7 +168,12 @@ async function main() {
       break;
     case "configure":
     case "unconfigure":
+      console.error(`Error: '${subcommand}' not yet implemented.`);
+      Deno.exit(1);
+      break;
     case "doctor":
+      await cmdDoctor();
+      break;
     case "models":
       console.error(`Error: '${subcommand}' not yet implemented.`);
       Deno.exit(1);
