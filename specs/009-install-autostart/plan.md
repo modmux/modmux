@@ -58,7 +58,7 @@ src/service/autostart.ts      — installService(), uninstallService(), isServic
 # Modified files
 src/cli/main.ts               — add cmdInstallService(), cmdUninstallService(), help entries
 deno.json                     — add "install" task
-.mise.toml                     — new file: [tasks.install] wrapping deno install
+.mise.toml                     — modified: add [tasks.install] section (existing hidden file at repo root)
 README.md                     — update quickstart section
 
 # Test files

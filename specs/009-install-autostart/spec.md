@@ -49,7 +49,7 @@ A developer reads the README and can follow a 2-step quickstart: install the too
 
 **Why this priority**: Even a perfect CLI is unusable if first-time setup isn't documented. Quickstart clarity determines whether developers succeed on first attempt.
 
-**Independent Test**: Follow only the README quickstart section on a clean machine with Deno installed. Coco is running and `coco status` shows the service as active.
+**Independent Test**: Follow only the README quickstart section on a clean machine with Deno installed. Run `coco --version` — version string is printed. Run `coco --help` — `install-service` and `uninstall-service` appear in the commands list. No service registration is required to deliver this value.
 
 **Acceptance Scenarios**:
 

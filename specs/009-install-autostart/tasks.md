@@ -44,7 +44,7 @@ No new project setup is required — this is an existing Deno/TypeScript project
 
 **Independent Test**: Clone repo → run `deno task install` → open new terminal → `coco --version` prints version string
 
-- [ ] T003 [P] [US1] Add `"install"` task to `deno.json` `tasks` section: `"deno install --global --allow-all -n coco --force src/cli/main.ts"`
+- [ ] T003 [P] [US1] Add `"install"` task to `deno.json` `tasks` section: `"deno install --global --allow-all -n coco --force src/cli/main.ts"` — if Deno is not installed the raw deno error is propagated as-is (no custom pre-check required)
 - [ ] T004 [P] [US1] Add `[tasks.install]` section to `.mise.toml` (existing hidden file at repo root — append below existing `[settings]` block): `description = "Install coco globally via deno"` + `run = "deno install --global --allow-all -n coco --force src/cli/main.ts"`
 
 **Checkpoint**: `deno task install` and `mise run install` both produce a working global `coco` binary
@@ -66,8 +66,8 @@ No new project setup is required — this is an existing Deno/TypeScript project
 - [ ] T007 [US2] Implement Windows and unsupported-platform path in `src/service/autostart.ts`: detect via `Deno.build.os === "windows"` or missing `systemctl`; throw `UnsupportedPlatformError` with calm message `"Autostart service support for this platform is coming soon. Run 'coco start' manually after each login."`
 - [ ] T008 [US2] Implement `uninstallService()` in `src/service/autostart.ts`: macOS — `launchctl bootout gui/$(id -u)` then remove plist file; Linux — `systemctl --user disable --now coco.service` then remove unit file; idempotent (not-installed → `{ removed: false }`); supports `dryRun`
 - [ ] T009 [US2] Implement `isServiceInstalled()` in `src/service/autostart.ts`: macOS — check plist file existence; Linux — check unit file existence; other — return false
-- [ ] T010 [US2] Add `cmdInstallService()` function and `"install-service"` route in `src/cli/main.ts`: calls `installService()`; catches `UnsupportedPlatformError` (print calm message, exit 0); catches other errors (print error, exit 1); prints success output per contracts/cli-commands.md
-- [ ] T011 [US2] Add `cmdUninstallService()` function and `"uninstall-service"` route in `src/cli/main.ts`: calls `uninstallService()`; idempotent (not-installed → print "Coco service is not installed.", exit 0); catches errors (print, exit 1)
+- [ ] T010 [P] [US2] Add `cmdInstallService()` function and `"install-service"` route in `src/cli/main.ts`: calls `installService()`; catches `UnsupportedPlatformError` (print calm message, exit 0); catches other errors (print error, exit 1); prints success output per contracts/cli-commands.md
+- [ ] T011 [P] [US2] Add `cmdUninstallService()` function and `"uninstall-service"` route in `src/cli/main.ts`: calls `uninstallService()`; idempotent (not-installed → print "Coco service is not installed.", exit 0); catches errors (print, exit 1)
 - [ ] T012 [US2] Update `showHelp()` in `src/cli/main.ts` to include `install-service` and `uninstall-service` in the commands list with brief descriptions
 
 ### Tests for User Story 2
@@ -106,8 +106,8 @@ No new project setup is required — this is an existing Deno/TypeScript project
 
 ```
 T001 (verify structure)
+  ├─ T003, T004 [parallel] (US1 — deno.json + .mise.toml) ← no T002 dependency
   └─ T002 (autostart module interface)
-       ├─ T003, T004 [parallel] (US1 — deno.json + .mise.toml)
        ├─ T005 → T006 → T007 → T008 → T009 (US2 — autostart.ts implementation)
        │    └─ T010, T011 [parallel] (US2 — CLI commands)
        │         └─ T012 (US2 — help text)
@@ -120,7 +120,7 @@ T016 → T017 → T018 → T019 (polish — run after all above)
 
 ## Parallel Execution
 
-**Maximum parallelism within US1** (after T002):
+**Maximum parallelism within US1** (after T001, no T002 dependency):
 ```
 T003 (deno.json) ─┐
                    ├─ done
@@ -135,8 +135,9 @@ T011 (cmdUninstallService)─┤
                            └─ T013, T014 [parallel tests]
 ```
 
-**Cross-story parallelism** (after T002):
-- US1 (T003, T004) and US2 autostart.ts implementation (T005–T009) can proceed simultaneously
+**Cross-story parallelism**:
+- US1 (T003, T004) can start immediately after T001 — no dependency on T002
+- US1 (T003, T004) and US2 autostart.ts implementation (T005–T009) can proceed simultaneously after T001
 - US3 (T015) is fully independent of US2 CLI work
 
 ---
@@ -149,7 +150,7 @@ T011 (cmdUninstallService)─┤
 
 **Suggested order for a single developer**:
 1. T001 → T002 (5 min)
-2. T003 + T004 in parallel (5 min) ← US1 MVP done
+2. T003 + T004 in parallel (5 min) ← US1 MVP done (can start concurrently with step 3)
 3. T005 → T006 → T007 → T008 → T009 (macOS first, then Linux, then Windows stub)
 4. T010 → T011 → T012 (CLI wiring)
 5. T013 + T014 in parallel (tests)
