@@ -99,9 +99,10 @@ export function buildTUIState(
  * `isCursor` — true when this is the focused row.
  */
 export function renderRow(row: AgentRow, isCursor: boolean): string {
-  const checkmark = row.selected ? "x" : " ";
-  const prefix = row.configStatus === "misconfigured" ? "-" : checkmark;
+  const checkmark = row.selected ? "✓" : " ";
+  const prefix = row.configStatus === "misconfigured" ? "!" : checkmark;
   const bracket = `[${prefix}]`;
+  const cursor = isCursor ? "❯" : " ";
 
   const nameCol = row.displayName.padEnd(16);
   const stateCol = row.state.padEnd(14);
@@ -109,16 +110,20 @@ export function renderRow(row: AgentRow, isCursor: boolean): string {
   let suffix = "";
   if (row.configStatus === "misconfigured") suffix = " (misconfigured)";
 
-  const line = `${bracket} ${nameCol} ${stateCol}${suffix}`;
+  const line = `${cursor} ${bracket} ${nameCol} ${stateCol}${suffix}`;
 
   if (row.state === "not-installed") {
     return colors.dim(line);
   }
   if (row.configStatus === "misconfigured") {
-    return colors.yellow(line);
+    const styled = colors.yellow(line);
+    return isCursor ? colors.bold(styled) : styled;
   }
   if (isCursor) {
-    return colors.bold(line);
+    return colors.bgBlue.white.bold(line);
+  }
+  if (row.selected) {
+    return colors.green(line);
   }
   return line;
 }
