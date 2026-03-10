@@ -33,28 +33,30 @@ Deno.test("Server - starts on configured port and accepts connections", async ()
   }
 });
 
-Deno.test("Server - CLAUDIO_PORT env var configures port", async () => {
-  const { getConfig } = await import("../../src/server/server.ts");
+Deno.test("Server - /health endpoint returns 200 with status ok", async () => {
+  const server = Deno.serve({
+    port: 0,
+    hostname: "127.0.0.1",
+    handler: handleRequest,
+    onListen: () => {},
+  });
 
-  Deno.env.set("CLAUDIO_PORT", "19191");
-  const config = getConfig();
-  assertEquals(config.port, 19191);
-
-  Deno.env.delete("CLAUDIO_PORT");
-  const defaultConfig = getConfig();
-  assertEquals(defaultConfig.port, 8080);
+  const { port } = server.addr as Deno.NetAddr;
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/health`);
+    assertEquals(res.status, 200);
+    const body = await res.json() as Record<string, unknown>;
+    assertEquals(body.status, "ok");
+  } finally {
+    await server.shutdown();
+  }
 });
 
-Deno.test("Server - CLAUDIO_HOST env var configures hostname", async () => {
+Deno.test("Server - hostname is always 127.0.0.1 (never 0.0.0.0)", async () => {
+  // Verify that the server module always binds to loopback
   const { getConfig } = await import("../../src/server/server.ts");
-
-  Deno.env.set("CLAUDIO_HOST", "0.0.0.0");
-  const config = getConfig();
-  assertEquals(config.hostname, "0.0.0.0");
-
-  Deno.env.delete("CLAUDIO_HOST");
-  const defaultConfig = getConfig();
-  assertEquals(defaultConfig.hostname, "127.0.0.1");
+  const config = await getConfig();
+  assertEquals(config.hostname, "127.0.0.1");
 });
 
 Deno.test("Server - handles concurrent requests correctly", async () => {

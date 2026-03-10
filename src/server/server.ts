@@ -1,18 +1,28 @@
 import { stopClient } from "./copilot.ts";
+import { loadConfig } from "../config/store.ts";
+import { log, setLogLevel } from "../lib/log.ts";
+import { saveConfig } from "../config/store.ts";
 
 export interface ServerConfig {
   port: number;
   hostname: string;
 }
 
-export function getConfig(): ServerConfig {
+export async function getConfig(): Promise<ServerConfig> {
+  const config = await loadConfig();
+  setLogLevel(config.logLevel);
+
+  // Persist lastStarted timestamp
+  await saveConfig({ ...config, lastStarted: new Date().toISOString() });
+
   return {
-    port: parseInt(Deno.env.get("CLAUDIO_PORT") || "8080", 10),
-    hostname: Deno.env.get("CLAUDIO_HOST") || "127.0.0.1",
+    port: config.port,
+    hostname: "127.0.0.1",
   };
 }
 
 export async function shutdown(): Promise<void> {
+  log("info", "Server shutting down");
   await stopClient();
 }
 

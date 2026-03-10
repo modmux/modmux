@@ -3,30 +3,30 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 const CLI_PATH = "./src/cli/main.ts";
 
 Deno.test({
-  name: "CLI --help displays help message",
+  name: "CLI --help displays Coco help",
   fn() {
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--help"],
     }).outputSync();
-    const decoder = new TextDecoder();
-    const output = decoder.decode(process.stdout);
+    const output = new TextDecoder().decode(process.stdout);
 
-    assertStringIncludes(output, "Claudio");
+    assertStringIncludes(output, "Coco");
     assertStringIncludes(output, "--help");
     assertStringIncludes(output, "--version");
+    assertStringIncludes(output, "start");
+    assertStringIncludes(output, "stop");
   },
 });
 
 Deno.test({
-  name: "CLI --version displays version",
+  name: "CLI --version displays Coco version",
   fn() {
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--version"],
     }).outputSync();
-    const decoder = new TextDecoder();
-    const output = decoder.decode(process.stdout);
+    const output = new TextDecoder().decode(process.stdout);
 
-    assertStringIncludes(output, "Claudio v");
+    assertStringIncludes(output, "Coco v");
   },
 });
 
@@ -36,7 +36,6 @@ Deno.test({
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--help"],
     }).spawn();
-
     const status = await process.status;
     assertEquals(status.code, 0);
   },
@@ -48,7 +47,6 @@ Deno.test({
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--version"],
     }).spawn();
-
     const status = await process.status;
     assertEquals(status.code, 0);
   },
@@ -60,23 +58,19 @@ Deno.test({
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "-h"],
     }).outputSync();
-    const decoder = new TextDecoder();
-    const output = decoder.decode(process.stdout);
-
-    assertStringIncludes(output, "Claudio");
+    const output = new TextDecoder().decode(process.stdout);
+    assertStringIncludes(output, "Coco");
   },
 });
 
 Deno.test({
   name: "CLI accepts -v alias for --version",
   fn() {
-    const process = Deno.spawnAndWaitSync(Deno.execPath(), {
+    const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "-v"],
-    });
-    const decoder = new TextDecoder();
-    const output = decoder.decode(process.stdout);
-
-    assertStringIncludes(output, "Claudio v");
+    }).outputSync();
+    const output = new TextDecoder().decode(process.stdout);
+    assertStringIncludes(output, "Coco v");
   },
 });
 
@@ -88,33 +82,28 @@ Deno.test({
       stdout: "piped",
       stderr: "piped",
     }).outputSync();
-    const decoder = new TextDecoder();
-    const output = decoder.decode(process.stdout);
-    // ESC[2J and ESC[H are the sequences emitted by console.clear()
-    const hasAnsiClear = output.includes("\x1b[2J") ||
-      output.includes("\x1b[H");
+    const output = new TextDecoder().decode(process.stdout);
+    const hasAnsiClear = output.includes("\x1b[2J") || output.includes("\x1b[H");
     assertEquals(hasAnsiClear, false);
   },
 });
 
 Deno.test({
-  name: "CLI without args starts server or exits for missing auth",
+  name: "CLI without args on non-TTY prints status and exits 0",
   async fn() {
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH],
+      stdout: "piped",
+      stderr: "piped",
+      stdin: "null",
     }).spawn();
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    let killed = false;
-    try {
-      process.kill("SIGTERM");
-      killed = true;
-    } catch {
-      // Process may already have exited due to missing auth.
-    }
-
     const status = await process.status;
-    assertEquals(killed || status.code === 1, true);
+    // Drain stdout/stderr to avoid resource leaks
+    await process.stdout.cancel();
+    await process.stderr.cancel();
+    // Non-TTY path: prints status and exits 0
+    assertEquals(status.code, 0);
   },
 });
+

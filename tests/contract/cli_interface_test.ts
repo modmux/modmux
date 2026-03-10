@@ -6,11 +6,12 @@ interface RunResult {
   exitCode: number;
 }
 
-async function runClaudio(args: string[]): Promise<RunResult> {
+async function runCoco(args: string[]): Promise<RunResult> {
   const command = new Deno.Command("deno", {
     args: ["run", "-A", "src/cli/main.ts", ...args],
     stdout: "piped",
     stderr: "piped",
+    stdin: "null",
   });
 
   const output = await command.output();
@@ -23,27 +24,29 @@ async function runClaudio(args: string[]): Promise<RunResult> {
 }
 
 Deno.test("CLI contract: --version prints version string and exits 0", async () => {
-  const result = await runClaudio(["--version"]);
-  assertMatch(result.stdout, /^Claudio v\d+\.\d+\.\d+$/);
+  const result = await runCoco(["--version"]);
+  assertMatch(result.stdout, /^Coco v\d+\.\d+\.\d+/);
   assertEquals(result.exitCode, 0);
 });
 
 Deno.test("CLI contract: -v alias prints version string and exits 0", async () => {
-  const result = await runClaudio(["-v"]);
-  assertMatch(result.stdout, /^Claudio v\d+\.\d+\.\d+$/);
+  const result = await runCoco(["-v"]);
+  assertMatch(result.stdout, /^Coco v\d+\.\d+\.\d+/);
   assertEquals(result.exitCode, 0);
 });
 
 Deno.test("CLI contract: --help prints usage and exits 0", async () => {
-  const result = await runClaudio(["--help"]);
-  assertStringIncludes(result.stdout, "Usage: claudio");
+  const result = await runCoco(["--help"]);
+  assertStringIncludes(result.stdout, "Coco");
+  assertStringIncludes(result.stdout, "start");
   assertStringIncludes(result.stdout, "--version");
   assertEquals(result.exitCode, 0);
 });
 
 Deno.test("CLI contract: -h alias prints usage and exits 0", async () => {
-  const result = await runClaudio(["-h"]);
-  assertStringIncludes(result.stdout, "Usage: claudio");
+  const result = await runCoco(["-h"]);
+  assertStringIncludes(result.stdout, "Coco");
   assertStringIncludes(result.stdout, "--version");
   assertEquals(result.exitCode, 0);
 });
+

@@ -201,9 +201,99 @@ export function validateRequest(req: unknown): {
 
 export function generateMessageId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let id = "msg_claudio_";
+  let id = "msg_coco_";
   for (let i = 0; i < 12; i++) {
     id += chars[Math.floor(Math.random() * chars.length)];
   }
   return id;
+}
+
+// ---------------------------------------------------------------------------
+// OpenAI-compatible types
+// ---------------------------------------------------------------------------
+
+export interface OpenAIChatMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  name?: string;
+  tool_call_id?: string;
+  tool_calls?: OpenAIToolCall[];
+}
+
+export interface OpenAIToolCall {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export interface OpenAIFunction {
+  name: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+}
+
+export interface OpenAITool {
+  type: "function";
+  function: OpenAIFunction;
+}
+
+export interface OpenAIChatRequest {
+  model: string;
+  messages: OpenAIChatMessage[];
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  stream?: boolean;
+  tools?: OpenAITool[];
+  tool_choice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
+}
+
+export interface OpenAIUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+export interface OpenAIChoice {
+  index: number;
+  message: OpenAIChatMessage;
+  finish_reason: "stop" | "length" | "tool_calls" | "content_filter" | null;
+}
+
+export interface OpenAIChatResponse {
+  id: string;
+  object: "chat.completion";
+  created: number;
+  model: string;
+  choices: OpenAIChoice[];
+  usage: OpenAIUsage;
+}
+
+export interface OpenAIStreamChoice {
+  index: number;
+  delta: Partial<OpenAIChatMessage>;
+  finish_reason: "stop" | "length" | "tool_calls" | "content_filter" | null;
+}
+
+export interface OpenAIStreamChunk {
+  id: string;
+  object: "chat.completion.chunk";
+  created: number;
+  model: string;
+  choices: OpenAIStreamChoice[];
+}
+
+export interface OpenAIModel {
+  id: string;
+  object: "model";
+  created: number;
+  owned_by: string;
+}
+
+export interface OpenAIModelList {
+  object: "list";
+  data: OpenAIModel[];
 }

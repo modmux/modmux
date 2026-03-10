@@ -7,11 +7,19 @@ import {
 import { chat, chatStream, countTokens } from "./copilot.ts";
 import { toStreamEvent } from "./transform.ts";
 import { addShutdownHandler, getConfig } from "./server.ts";
+import { log } from "../lib/log.ts";
 
 const server = Deno.serve;
 
 export async function handleRequest(req: Request): Promise<Response> {
   const url = new URL(req.url);
+
+  if (url.pathname === "/health") {
+    return new Response(JSON.stringify({ status: "ok" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   if (req.method === "POST" && url.pathname === "/v1/messages") {
     return await handleMessages(req);
@@ -195,15 +203,17 @@ function errorResponse(
   });
 }
 
-export function startServer(): { port: number; stop: () => Promise<void> } {
-  const config = getConfig();
+export async function startServer(): Promise<{ port: number; stop: () => Promise<void> }> {
+  const config = await getConfig();
   addShutdownHandler();
 
   const httpServer = server({
     hostname: config.hostname,
     port: config.port,
     handler: handleRequest,
-    onListen: () => {},
+    onListen: ({ port, hostname }) => {
+      log("info", "Server started", { port, hostname });
+    },
   });
 
   const { port } = httpServer.addr as Deno.NetAddr;
