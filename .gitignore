@@ -1,7 +1,3 @@
-# Deno
-.deno/
-deno.lock
-
 # Dependencies
 node_modules/
 

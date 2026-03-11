@@ -14,8 +14,14 @@ import {
   configureAgent,
   isAgentConfigured,
   unconfigureAgent,
+  verifyAgentConfig,
 } from "../agents/config.ts";
-import { buildTUIState, clearScreen, renderFull } from "../tui/render.ts";
+import {
+  buildTUIState,
+  clearScreen,
+  renderFull,
+  showCursor,
+} from "../tui/render.ts";
 import { keypress, mapKey } from "../tui/input.ts";
 import { fetchModelList } from "../copilot/models.ts";
 
@@ -105,11 +111,18 @@ async function cmdConfigure(agentName: string | undefined): Promise<void> {
     Deno.exit(1);
   }
 
-  const config = await loadConfig();
+  let config = await loadConfig();
 
-  if (isAgentConfigured(agentName, config)) {
-    console.log(`${agentName} is already configured.`);
-    Deno.exit(0);
+  const existingEntry = config.agents.find((a) => a.agentName === agentName);
+  if (existingEntry) {
+    const verified = await verifyAgentConfig(existingEntry);
+    if (verified) {
+      console.log(`${agentName} is already configured.`);
+      Deno.exit(0);
+    }
+    // Config file is missing or broken — unconfigure and re-apply below
+    await unconfigureAgent(agentName, config);
+    config = await loadConfig();
   }
 
   let entry;
@@ -120,7 +133,7 @@ async function cmdConfigure(agentName: string | undefined): Promise<void> {
     if (message.includes("Unknown agent")) {
       console.error(`Error: Unknown agent "${agentName}".`);
       console.error(
-        "Valid agents: claude-code, cline, kilo, opencode, goose, aider, gpt-engineer",
+        "Valid agents: claude-code, cline, codex",
       );
     } else {
       console.error(`Error: ${message}`);
@@ -168,16 +181,31 @@ async function cmdDoctor(): Promise<void> {
   console.log(divider);
 
   const config = await loadConfig();
+
+  const verifications = await Promise.all(
+    config.agents.map(async (a) => ({
+      name: a.agentName,
+      verified: await verifyAgentConfig(a),
+    })),
+  );
   const configuredAgents = new Set(
-    (config.agents ?? []).map((a) => a.agentName),
+    verifications.filter((v) => v.verified).map((v) => v.name),
+  );
+  const misconfiguredAgents = new Set(
+    verifications.filter((v) => !v.verified).map((v) => v.name),
   );
 
   const results = await detectAll();
   for (const { agent, state } of results) {
     const stateLabel = state.padEnd(12);
-    const configStatus = configuredAgents.has(agent.name)
-      ? "configured ✓"
-      : "not configured";
+    let configStatus: string;
+    if (configuredAgents.has(agent.name)) {
+      configStatus = "configured ✓";
+    } else if (misconfiguredAgents.has(agent.name)) {
+      configStatus = "misconfigured !";
+    } else {
+      configStatus = "not configured";
+    }
     console.log(`${agent.name.padEnd(16)}${stateLabel} ${configStatus}`);
   }
 
@@ -281,9 +309,17 @@ async function runTUI(): Promise<void> {
     detectAll(),
   ]);
 
-  const configuredNames = new Set(config.agents.map((a) => a.agentName));
+  const verifications = await Promise.all(
+    config.agents.map(async (a) => ({
+      name: a.agentName,
+      verified: await verifyAgentConfig(a),
+    })),
+  );
+  const configuredNames = new Set(
+    verifications.filter((v) => v.verified).map((v) => v.name),
+  );
   const misconfiguredNames = new Set(
-    config.agents.filter((a) => a.validatedAt === null).map((a) => a.agentName),
+    verifications.filter((v) => !v.verified).map((v) => v.name),
   );
 
   let state = buildTUIState(
@@ -298,7 +334,8 @@ async function runTUI(): Promise<void> {
   for await (const event of keypress()) {
     const key = mapKey(event);
 
-    if (key === "CtrlC" || key === "Quit") {
+    if (key === "CtrlC" || key === "Escape") {
+      showCursor();
       break;
     }
 
@@ -336,14 +373,22 @@ async function runTUI(): Promise<void> {
       let applyError = false;
       const freshConfig = await loadConfig();
       for (const row of state.agents) {
-        const wasConfigured = freshConfig.agents.some(
+        const existingEntry = freshConfig.agents.find(
           (a) => a.agentName === row.name,
         );
+        const isMisconfigured = existingEntry
+          ? !(await verifyAgentConfig(existingEntry))
+          : false;
+        const wasConfigured = existingEntry !== undefined && !isMisconfigured;
         const wantsConfigured = row.selected;
 
-        if (wantsConfigured && !wasConfigured) {
+        if (wantsConfigured && (!wasConfigured || isMisconfigured)) {
           try {
-            const updated = await loadConfig();
+            let updated = await loadConfig();
+            if (isMisconfigured) {
+              await unconfigureAgent(row.name, updated);
+              updated = await loadConfig();
+            }
             await configureAgent(row.name, updated.port, updated);
             console.log(`${row.name} configured.`);
           } catch (err) {
@@ -351,7 +396,7 @@ async function runTUI(): Promise<void> {
             console.error(`Error configuring ${row.name}: ${msg}`);
             applyError = true;
           }
-        } else if (!wantsConfigured && wasConfigured) {
+        } else if (!wantsConfigured && existingEntry !== undefined) {
           try {
             const updated = await loadConfig();
             await unconfigureAgent(row.name, updated);
@@ -364,6 +409,7 @@ async function runTUI(): Promise<void> {
         }
       }
 
+      showCursor();
       Deno.exit(applyError ? 1 : 0);
       return;
     }

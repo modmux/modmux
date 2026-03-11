@@ -7,4 +7,4 @@
 
 [tasks.install]
 description = "Install coco globally via deno"
-run = "deno install --global --allow-all -n coco --force src/cli/main.ts"
+run = "deno install --global --allow-all -n coco --config deno.json --force src/cli/main.ts"

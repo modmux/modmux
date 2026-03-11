@@ -32,6 +32,15 @@ import type { ServiceState } from "../service/status.ts";
 
 const DIVIDER = "──────────────────────────────────────────────";
 
+// Pre-generated with figlet "Slant" font
+const LOGO = [
+  "   ______               ",
+  "  / ____/___  _________ ",
+  " / /   / __ \\/ ___/ __ \\",
+  "/ /___/ /_/ / /__/ /_/ /",
+  "\\____/\\____/\\___/\\____/ ",
+].join("\n");
+
 // ---------------------------------------------------------------------------
 // State types
 // ---------------------------------------------------------------------------
@@ -120,7 +129,7 @@ export function renderRow(row: AgentRow, isCursor: boolean): string {
     return isCursor ? colors.bold(styled) : styled;
   }
   if (isCursor) {
-    return colors.bgBlue.white.bold(line);
+    return colors.brightCyan.bold(line);
   }
   if (row.selected) {
     return colors.green(line);
@@ -148,7 +157,7 @@ export function renderFull(state: TUIState): void {
   tty.cursorHide.eraseScreen.cursorTo(0, 0)();
 
   const lines: string[] = [
-    colors.bold("Coco — Local AI Gateway"),
+    colors.bold.cyan(LOGO),
     DIVIDER,
     statusLine,
     authLine,
@@ -158,11 +167,10 @@ export function renderFull(state: TUIState): void {
     ...state.agents.map((row, i) => renderRow(row, i === state.cursorIndex)),
     "",
     DIVIDER,
-    "Space: toggle   Enter: apply   q: quit",
+    "Space: toggle   Enter: apply   Esc: quit",
   ];
 
   console.log(lines.join("\n"));
-  tty.cursorShow();
 }
 
 // ---------------------------------------------------------------------------
@@ -171,4 +179,8 @@ export function renderFull(state: TUIState): void {
 
 export function clearScreen(): void {
   tty.eraseScreen.cursorTo(0, 0)();
+}
+
+export function showCursor(): void {
+  tty.cursorShow();
 }

@@ -239,9 +239,9 @@ Deno.test("detectAll correctly identifies one installed agent among others", asy
     });
 
     const claudeResult = results.find((r) => r.agent.name === "claude-code");
-    const aiderResult = results.find((r) => r.agent.name === "aider");
+    const codexResult = results.find((r) => r.agent.name === "codex");
 
     assertEquals(claudeResult?.state, "installed");
-    assertEquals(aiderResult?.state, "not-installed");
+    assertEquals(codexResult?.state, "not-installed");
   });
 });

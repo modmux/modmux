@@ -12,6 +12,7 @@ export type Key =
   | "Space"
   | "Enter"
   | "Quit"
+  | "Escape"
   | "Up"
   | "Down"
   | "CtrlC"
@@ -30,6 +31,8 @@ export function mapKey(
     case "q":
     case "Q":
       return "Quit";
+    case "escape":
+      return "Escape";
     case "up":
       return "Up";
     case "down":
