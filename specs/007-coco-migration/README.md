@@ -1,6 +1,6 @@
 ---
 title: "Coco - Universal Local AI Gateway (Migration from Claudio)"
-status: draft
+status: complete
 created: "2026-03-10"
 ---
 

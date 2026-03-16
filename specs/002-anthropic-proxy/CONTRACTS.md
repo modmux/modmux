@@ -2,7 +2,6 @@
 
 ### api
 
-
 ### Overview
 
 This document defines the HTTP API contracts for the Claudio proxy server. The

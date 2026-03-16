@@ -1,6 +1,6 @@
 ---
 title: "UX Improvements"
-status: draft
+status: complete
 created: "2026-03-08"
 ---
 

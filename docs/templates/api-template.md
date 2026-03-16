@@ -1,6 +1,7 @@
 # API Documentation Template
 
-Use this template when documenting APIs, interfaces, or programmatic functionality.
+Use this template when documenting APIs, interfaces, or programmatic
+functionality.
 
 ## API Overview
 
@@ -40,8 +41,8 @@ const result = example.method("value");
 
 ## Error Handling
 
-| Error Type | Cause | Resolution |
-|------------|-------|------------|
+| Error Type  | Cause             | Resolution       |
+| ----------- | ----------------- | ---------------- |
 | `ErrorName` | When this happens | How to handle it |
 
 ## Integration Notes

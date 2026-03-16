@@ -1,6 +1,5 @@
 ## Data Model
 
-
 **Branch**: `007-coco-migration` | **Phase**: 1
 
 ---
@@ -61,7 +60,8 @@ AgentRow
 
 #### CocoConfig
 
-Persisted to `~/.coco/config.json`. Loaded at startup; written on configure/unconfigure.
+Persisted to `~/.coco/config.json`. Loaded at startup; written on
+configure/unconfigure.
 
 ```typescript
 interface CocoConfig {
@@ -82,17 +82,19 @@ interface CocoConfig {
 ```
 
 **Defaults**:
+
 ```typescript
 const DEFAULT_CONFIG: CocoConfig = {
   port: 11434,
   logLevel: "info",
-  modelMap: {},           // merged with DEFAULT_MODEL_MAP at runtime
+  modelMap: {}, // merged with DEFAULT_MODEL_MAP at runtime
   agents: [],
   lastStarted: null,
 };
 ```
 
 **Validation rules**:
+
 - `port`: 1024–65535
 - `logLevel`: one of the four enum values
 - `modelMap`: all keys and values must be non-empty strings
@@ -123,15 +125,15 @@ type AgentState = "installed" | "detected" | "not-installed";
 
 **Registry entries** (canonical list, `src/agents/registry.ts`):
 
-| `name` | `displayName` | `binaryNames` | `extensionIds` |
-|---|---|---|---|
-| `claude-code` | Claude Code | `["claude"]` | `["anthropic.claude-code"]` |
-| `cline` | Cline | `["cline"]` | `["saoudrizwan.claude-dev"]` |
-| `kilo` | Kilo Code | `["kilo"]` | `["kilo.kilo-code"]` |
-| `opencode` | OpenCode | `["opencode"]` | `["opencode.opencode"]` |
-| `goose` | Goose | `["goose"]` | `["0xgoose.goose"]` |
-| `aider` | Aider | `["aider"]` | `[]` |
-| `gpt-engineer` | GPT-Engineer | `["gpt-engineer"]` | `[]` |
+| `name`         | `displayName` | `binaryNames`      | `extensionIds`               |
+| -------------- | ------------- | ------------------ | ---------------------------- |
+| `claude-code`  | Claude Code   | `["claude"]`       | `["anthropic.claude-code"]`  |
+| `cline`        | Cline         | `["cline"]`        | `["saoudrizwan.claude-dev"]` |
+| `kilo`         | Kilo Code     | `["kilo"]`         | `["kilo.kilo-code"]`         |
+| `opencode`     | OpenCode      | `["opencode"]`     | `["opencode.opencode"]`      |
+| `goose`        | Goose         | `["goose"]`        | `["0xgoose.goose"]`          |
+| `aider`        | Aider         | `["aider"]`        | `[]`                         |
+| `gpt-engineer` | GPT-Engineer  | `["gpt-engineer"]` | `[]`                         |
 
 ---
 
@@ -150,6 +152,7 @@ interface DetectionResult {
 ```
 
 **State resolution rule** (highest wins):
+
 1. If any binary found on PATH → `"installed"`
 2. Else if any extension or config file found → `"detected"`
 3. Else → `"not-installed"`
@@ -158,7 +161,8 @@ interface DetectionResult {
 
 #### ConfigEntry
 
-One entry in `CocoConfig.agents`. Represents a successfully applied configuration.
+One entry in `CocoConfig.agents`. Represents a successfully applied
+configuration.
 
 ```typescript
 interface ConfigEntry {
@@ -181,7 +185,8 @@ interface ConfigEntry {
 
 #### ServiceState
 
-Runtime-only. Computed by `src/service/status.ts` from the PID file and `/health` endpoint.
+Runtime-only. Computed by `src/service/status.ts` from the PID file and
+`/health` endpoint.
 
 ```typescript
 interface ServiceState {
@@ -193,6 +198,7 @@ interface ServiceState {
 ```
 
 **Resolution**:
+
 1. Read `~/.coco/coco.pid` → `pid`
 2. Check process liveness (`kill -0` / PowerShell)
 3. If alive: GET `http://127.0.0.1:{port}/health` → `running = true`
@@ -283,6 +289,12 @@ stopped
 ```
 
 **Log entry format** (`coco.log`):
+
 ```jsonc
-{ "ts": "2026-03-10T03:00:00.000Z", "level": "info", "msg": "Server started", "port": 11434 }
+{
+  "ts": "2026-03-10T03:00:00.000Z",
+  "level": "info",
+  "msg": "Server started",
+  "port": 11434
+}
 ```

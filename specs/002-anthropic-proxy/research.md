@@ -1,6 +1,5 @@
 ## Research
 
-
 ### Decision: HTTP Server Library
 
 **Chosen**: Deno std/http (built-in)

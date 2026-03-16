@@ -1,13 +1,15 @@
 ## Quickstart
 
-
-**Purpose**: Quick implementation guide for documentation improvements
-**Target Audience**: Developers implementing the documentation changes
-**Estimated Time**: 2-4 hours for complete implementation
+**Purpose**: Quick implementation guide for documentation improvements **Target
+Audience**: Developers implementing the documentation changes **Estimated
+Time**: 2-4 hours for complete implementation
 
 ### Overview
 
-This quickstart guide provides step-by-step instructions for implementing the documentation improvements defined in the specification. Follow these steps to enhance README.md, AGENTS.md, and constitution documentation with automated validation and maintenance.
+This quickstart guide provides step-by-step instructions for implementing the
+documentation improvements defined in the specification. Follow these steps to
+enhance README.md, AGENTS.md, and constitution documentation with automated
+validation and maintenance.
 
 ### Phase 1: Setup Validation Infrastructure (30 minutes)
 
@@ -178,25 +180,30 @@ async function validateFile(filePath: string): Promise<FileResult> {
   const markdownIssues = await validateMarkdown(content, filePath);
   issues.push(...markdownIssues);
 
-  const errorCount = issues.filter(i => i.severity === "error").length;
-  const warningCount = issues.filter(i => i.severity === "warning").length;
+  const errorCount = issues.filter((i) => i.severity === "error").length;
+  const warningCount = issues.filter((i) => i.severity === "warning").length;
 
   return {
     path: filePath,
-    status: errorCount > 0 ? "error" : (warningCount > 0 ? "warning" : "passed"),
+    status: errorCount > 0
+      ? "error"
+      : (warningCount > 0 ? "warning" : "passed"),
     issues,
     metrics: {
       wordCount,
       readingTime,
-      lastModified: stat.mtime?.toISOString() || new Date().toISOString()
-    }
+      lastModified: stat.mtime?.toISOString() || new Date().toISOString(),
+    },
   };
 }
 
-async function validateTerminology(content: string, filePath: string): Promise<Issue[]> {
+async function validateTerminology(
+  content: string,
+  filePath: string,
+): Promise<Issue[]> {
   try {
     const terminologyDB = JSON.parse(
-      await Deno.readTextFile("scripts/docs/terminology.json")
+      await Deno.readTextFile("scripts/docs/terminology.json"),
     );
 
     const issues: Issue[] = [];
@@ -217,9 +224,9 @@ async function validateTerminology(content: string, filePath: string): Promise<I
             rule: "terminology-consistency",
             severity: "error",
             line: lineNumber,
-            column: match.index - content.lastIndexOf('\n', match.index),
+            column: match.index - content.lastIndexOf("\n", match.index),
             message: `Found '${incorrect}' should be '${term.canonical}'`,
-            suggestion: term.canonical
+            suggestion: term.canonical,
           });
         }
       }
@@ -232,7 +239,10 @@ async function validateTerminology(content: string, filePath: string): Promise<I
   }
 }
 
-async function validateMarkdown(content: string, filePath: string): Promise<Issue[]> {
+async function validateMarkdown(
+  content: string,
+  filePath: string,
+): Promise<Issue[]> {
   const issues: Issue[] = [];
 
   // Check for broken links (basic implementation)
@@ -243,21 +253,24 @@ async function validateMarkdown(content: string, filePath: string): Promise<Issu
     const [, , url] = match;
 
     // Skip external URLs for now, focus on internal links
-    if (url.startsWith('http') || url.startsWith('mailto:')) {
+    if (url.startsWith("http") || url.startsWith("mailto:")) {
       continue;
     }
 
     // Check if internal file exists
     try {
-      if (url.startsWith('./') || url.startsWith('../') || !url.startsWith('/')) {
-        const resolvedPath = new URL(url, `file://${Deno.cwd()}/${filePath}`).pathname;
+      if (
+        url.startsWith("./") || url.startsWith("../") || !url.startsWith("/")
+      ) {
+        const resolvedPath =
+          new URL(url, `file://${Deno.cwd()}/${filePath}`).pathname;
         await Deno.stat(resolvedPath);
       }
     } catch {
       issues.push({
         rule: "link-validation",
         severity: "warning",
-        message: `Broken internal link: ${url}`
+        message: `Broken internal link: ${url}`,
       });
     }
   }
@@ -271,8 +284,8 @@ async function main() {
     string: ["format", "config", "severity"],
     default: {
       format: "human",
-      severity: "all"
-    }
+      severity: "all",
+    },
   });
 
   if (flags.help) {
@@ -308,14 +321,21 @@ Options:
   }
 
   const totalIssues = results.reduce((sum, r) => sum + r.issues.length, 0);
-  const errorCount = results.reduce((sum, r) =>
-    sum + r.issues.filter(i => i.severity === "error").length, 0);
-  const warningCount = results.reduce((sum, r) =>
-    sum + r.issues.filter(i => i.severity === "warning").length, 0);
+  const errorCount = results.reduce(
+    (sum, r) => sum + r.issues.filter((i) => i.severity === "error").length,
+    0,
+  );
+  const warningCount = results.reduce(
+    (sum, r) => sum + r.issues.filter((i) => i.severity === "warning").length,
+    0,
+  );
 
   // Calculate consistency score
   const maxPossibleIssues = results.length * 10; // Assume 10 possible issues per file
-  const consistencyScore = Math.max(0, 100 - (totalIssues / maxPossibleIssues) * 100);
+  const consistencyScore = Math.max(
+    0,
+    100 - (totalIssues / maxPossibleIssues) * 100,
+  );
 
   const validationResult: ValidationResult = {
     version: "1.0.0",
@@ -325,9 +345,9 @@ Options:
       totalIssues,
       errorCount,
       warningCount,
-      consistencyScore: Math.round(consistencyScore * 10) / 10
+      consistencyScore: Math.round(consistencyScore * 10) / 10,
     },
-    files: results
+    files: results,
   };
 
   if (flags.format === "json") {
@@ -335,19 +355,26 @@ Options:
   } else {
     // Human-readable output
     for (const file of results) {
-      const status = file.status === "passed" ? "✅" :
-                    file.status === "warning" ? "⚠️" : "❌";
+      const status = file.status === "passed"
+        ? "✅"
+        : file.status === "warning"
+        ? "⚠️"
+        : "❌";
       console.log(`${status} ${file.path} - ${file.status}`);
 
       for (const issue of file.issues) {
-        if (flags.severity !== "all" && issue.severity !== flags.severity) continue;
+        if (flags.severity !== "all" && issue.severity !== flags.severity) {
+          continue;
+        }
 
         const location = issue.line ? ` Line ${issue.line}:` : "";
         console.log(`  ${location} ${issue.message}`);
       }
     }
 
-    console.log(`\nSummary: ${errorCount} errors, ${warningCount} warnings across ${results.length} files (${validationResult.summary.consistencyScore}% consistency)`);
+    console.log(
+      `\nSummary: ${errorCount} errors, ${warningCount} warnings across ${results.length} files (${validationResult.summary.consistencyScore}% consistency)`,
+    );
   }
 
   // Exit with error if there are blocking issues
@@ -381,7 +408,7 @@ const SECTION_EMOJIS: Record<string, string> = {
   "help": "❓",
   "example": "📖",
   "api": "📚",
-  "reference": "📚"
+  "reference": "📚",
 };
 
 function getEmojiForSection(title: string): string {
@@ -395,7 +422,7 @@ function getEmojiForSection(title: string): string {
 }
 
 function generateProgressiveDisclosure(content: string): string {
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const result: string[] = [];
   let currentSection: string[] = [];
   let currentLevel = 0;
@@ -414,10 +441,10 @@ function generateProgressiveDisclosure(content: string): string {
         const emoji = getEmojiForSection(currentTitle);
         result.push(`<details>`);
         result.push(`<summary>${emoji} ${currentTitle}</summary>`);
-        result.push('');
+        result.push("");
         result.push(...currentSection);
-        result.push('</details>');
-        result.push('');
+        result.push("</details>");
+        result.push("");
       } else if (currentSection.length > 0) {
         result.push(...currentSection);
       }
@@ -436,14 +463,14 @@ function generateProgressiveDisclosure(content: string): string {
     const emoji = getEmojiForSection(currentTitle);
     result.push(`<details>`);
     result.push(`<summary>${emoji} ${currentTitle}</summary>`);
-    result.push('');
+    result.push("");
     result.push(...currentSection.slice(1)); // Skip the header
-    result.push('</details>');
+    result.push("</details>");
   } else if (currentSection.length > 0) {
     result.push(...currentSection);
   }
 
-  return result.join('\n');
+  return result.join("\n");
 }
 
 async function processFile(filePath: string) {
@@ -460,7 +487,9 @@ async function main() {
   const files = Deno.args;
 
   if (files.length === 0) {
-    console.log("Usage: deno run --allow-read --allow-write generate-disclosure.ts [files...]");
+    console.log(
+      "Usage: deno run --allow-read --allow-write generate-disclosure.ts [files...]",
+    );
     Deno.exit(1);
   }
 
@@ -674,8 +703,10 @@ git push origin 009-improve-docs
 ### Success Criteria Checklist
 
 - [ ] **SC-001**: New users complete installation in <10 minutes using README
-- [ ] **SC-002**: 95% of questions answered in documentation (test with FAQ analysis)
-- [ ] **SC-003**: Contributors understand standards in <15 minutes using AGENTS.md
+- [ ] **SC-002**: 95% of questions answered in documentation (test with FAQ
+      analysis)
+- [ ] **SC-003**: Contributors understand standards in <15 minutes using
+      AGENTS.md
 - [ ] **SC-004**: Maintainers make decisions in <5 minutes using constitution
 - [ ] **SC-005**: Documentation consistency score ≥95%
 - [ ] **SC-006**: Automated validation prevents inconsistency
@@ -684,14 +715,17 @@ git push origin 009-improve-docs
 ### Maintenance
 
 #### Daily
+
 - Monitor GitHub Actions for validation failures
 - Review and merge automated formatting updates
 
 #### Weekly
+
 - Review metrics and consistency scores
 - Update terminology database as needed
 
 #### Monthly
+
 - Analyze user feedback for documentation gaps
 - Update success criteria measurements
 - Review and update validation rules
@@ -707,9 +741,10 @@ git push origin 009-improve-docs
 
 #### Getting Help
 
-- Check contracts in `contracts/` directory for interface requirements
+- Check `CONTRACTS.md` for interface requirements
 - Review research.md for implementation rationale
-- Consult data-model.md for entity relationships
+- Consult DATA_MODEL.md for entity relationships
 - Reference GitHub Actions logs for detailed error information
 
-This quickstart provides a complete implementation path for the documentation improvement initiative.
+This quickstart provides a complete implementation path for the documentation
+improvement initiative.

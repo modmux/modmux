@@ -1,8 +1,9 @@
 ## Tasks
 
+> Status: Implemented in main. This task list is kept as a historical record.
 
 **Branch**: `004-launch-claude-code`\
-**Input**: `specs/004-launch-claude-code/spec.md`,
+**Input**: `specs/004-launch-claude-code/README.md`,
 `specs/004-launch-claude-code/plan.md`
 
 ### Format: `[ID] [P?] [Story] Description`

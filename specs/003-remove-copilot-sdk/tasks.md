@@ -1,5 +1,7 @@
 ## Tasks
 
+> Status: Implemented in main. This task list is kept as a historical record.
+
 ---
 
 ### description: "Task list template for feature implementation"
@@ -7,8 +9,8 @@
 ## Tasks: Remove Copilot SDK — Direct HTTP Integration
 
 **Input**: Design documents from `/specs/003-remove-copilot-sdk/`
-**Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅,
-contracts/ ✅
+**Prerequisites**: plan.md ✅, README.md ✅, research.md ✅, DATA_MODEL.md ✅,
+CONTRACTS.md ✅
 
 **Tests**: Required per Constitution Principle VIII — Contract Testing. Contract
 tests in `tests/contract/` verify the new `src/copilot/` module's HTTP

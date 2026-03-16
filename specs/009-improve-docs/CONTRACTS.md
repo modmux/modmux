@@ -2,14 +2,14 @@
 
 ### user-experience
 
-
 **Purpose**: Define the user interface contract for documentation files
-**Version**: 1.0.0
-**Date**: 2026-03-08
+**Version**: 1.0.0 **Date**: 2026-03-08
 
 ### Overview
 
-This contract defines the standardized user experience and content structure for README.md, AGENTS.md, and constitution documentation to ensure consistency and usability.
+This contract defines the standardized user experience and content structure for
+README.md, AGENTS.md, and constitution documentation to ensure consistency and
+usability.
 
 ### 1. README.md User Interface Contract
 
@@ -19,7 +19,8 @@ This contract defines the standardized user experience and content structure for
    ```markdown
    # Project Name
 
-   **Brief tagline** — Detailed explanation of what the project does and why it's valuable.
+   **Brief tagline** — Detailed explanation of what the project does and why it's
+   valuable.
    ```
 
 2. **Features Section**
@@ -35,6 +36,7 @@ This contract defines the standardized user experience and content structure for
    ## Installation
 
    ### Method 1 (Recommended)
+
    - Clear step-by-step instructions
    - Platform-specific variations in collapsible sections
 
@@ -112,31 +114,30 @@ This contract defines the standardized user experience and content structure for
    ```
 
 3. **Project Structure**
-   ```markdown
+   ````markdown
    ## Project Structure
 
-   \```text
-   src/
-   ├── directory/ # Purpose
-   └── file.ext   # Purpose
-   \```
-   ```
+   \```text src/ ├── directory/ # Purpose └── file.ext # Purpose \```
+   ````
 
 4. **Development Commands**
-   ```markdown
+   ````markdown
    ## Commands
 
    \```bash
+
    # Development
+
    deno task dev
 
    # Testing
+
    deno task test
 
    # Quality checks
-   deno task quality
-   \```
-   ```
+
+   deno task quality \```
+   ````
 
 5. **Code Style Guidelines**
    ```markdown
@@ -161,7 +162,8 @@ This contract defines the standardized user experience and content structure for
 - **Technology Stack**: Must be updated when dependencies change
 - **Project Structure**: Must reflect actual directory layout
 - **Recent Changes**: Auto-updated from feature implementation
-- **Manual Additions**: Preserved between `<!-- MANUAL ADDITIONS START/END -->` markers
+- **Manual Additions**: Preserved between `<!-- MANUAL ADDITIONS START/END -->`
+  markers
 
 #### Developer Experience Goals
 
@@ -194,9 +196,11 @@ This contract defines the standardized user experience and content structure for
    ## Scope
 
    ### Responsibilities
+
    - What the project IS responsible for
 
    ### Non-Responsibilities
+
    - What the project is NOT responsible for
    ```
 
@@ -205,10 +209,12 @@ This contract defines the standardized user experience and content structure for
    ## Technical Standards & Security
 
    ### Behavioral Guarantees
+
    - Must do X
    - Must not do Y
 
    ### Security Expectations
+
    - Security requirements
    ```
 
@@ -217,6 +223,7 @@ This contract defines the standardized user experience and content structure for
    ## Success Criteria
 
    Project is successful when:
+
    - Measurable outcome 1
    - Measurable outcome 2
    ```
@@ -243,13 +250,13 @@ This contract defines the standardized user experience and content structure for
 
 All documentation must use consistent terminology:
 
-| Term | Correct Usage | Incorrect Alternatives |
-|------|---------------|----------------------|
-| GitHub | GitHub | github, Github |
-| TypeScript | TypeScript | typescript, Typescript |
-| Deno | Deno | deno |
-| API | API (expand on first use) | api, Api |
-| CLI | CLI (expand on first use) | cli, Cli |
+| Term       | Correct Usage             | Incorrect Alternatives |
+| ---------- | ------------------------- | ---------------------- |
+| GitHub     | GitHub                    | github, Github         |
+| TypeScript | TypeScript                | typescript, Typescript |
+| Deno       | Deno                      | deno                   |
+| API        | API (expand on first use) | api, Api               |
+| CLI        | CLI (expand on first use) | cli, Cli               |
 
 #### Tone and Voice Standards
 
@@ -277,6 +284,7 @@ All documentation must use consistent terminology:
 5. **Explore** (15+ minutes): Discover advanced features
 
 **Success Metrics**:
+
 - 95% understand purpose within 30 seconds
 - 90% complete installation within 5 minutes
 - 85% achieve first success within 10 minutes
@@ -289,6 +297,7 @@ All documentation must use consistent terminology:
 4. **Review** (5 minutes): Understand code review standards
 
 **Success Metrics**:
+
 - 95% understand architecture within 5 minutes
 - 90% have working dev environment within 10 minutes
 - 80% submit valid PR within 15 minutes
@@ -301,6 +310,7 @@ All documentation must use consistent terminology:
 4. **Document** (2 minutes): Record decision for future reference
 
 **Success Metrics**:
+
 - 95% find relevant principle within 1 minute
 - 90% make consistent decisions within 5 minutes
 - 85% document rationale clearly
@@ -333,6 +343,7 @@ All documentation must use consistent terminology:
 #### Update Triggers
 
 Documentation must be updated when:
+
 - **Dependencies Change**: Update AGENTS.md technology stack
 - **Features Added**: Update README.md features and usage
 - **Process Changes**: Update constitution governance
@@ -341,6 +352,7 @@ Documentation must be updated when:
 #### Validation Requirements
 
 Before publication, all documentation must:
+
 - Pass markdown linting
 - Meet terminology consistency standards
 - Have all links validated
@@ -354,18 +366,19 @@ Before publication, all documentation must:
 - **Review Process**: Documentation changes reviewed like code
 - **Rollback Capability**: Can revert to previous working state
 
-This contract ensures consistent, high-quality user experience across all project documentation.
+This contract ensures consistent, high-quality user experience across all
+project documentation.
 
 ### validation-interface
 
-
-**Purpose**: Define the interface contract for documentation validation tools and scripts
-**Version**: 1.0.0
-**Date**: 2026-03-08
+**Purpose**: Define the interface contract for documentation validation tools
+and scripts **Version**: 1.0.0 **Date**: 2026-03-08
 
 ### Overview
 
-This contract defines the standardized interfaces for documentation validation, terminology checking, and consistency measurement tools used in the Claudio project.
+This contract defines the standardized interfaces for documentation validation,
+terminology checking, and consistency measurement tools used in the Claudio
+project.
 
 ### 1. Validation Script Interface
 
@@ -388,6 +401,7 @@ deno run --allow-read scripts/docs/validate.ts --severity error [files...]
 ```
 
 #### Exit Codes
+
 - `0`: All validations passed
 - `1`: Validation errors found (blocking)
 - `2`: Validation warnings found (non-blocking)
@@ -396,6 +410,7 @@ deno run --allow-read scripts/docs/validate.ts --severity error [files...]
 #### Output Format
 
 ##### JSON Output Format
+
 ```json
 {
   "version": "1.0.0",
@@ -432,6 +447,7 @@ deno run --allow-read scripts/docs/validate.ts --severity error [files...]
 ```
 
 ##### Human-Readable Output Format
+
 ```text
 ✅ AGENTS.md - passed
 ⚠️  README.md - 1 warning
@@ -481,6 +497,7 @@ Summary: 1 error, 1 warning across 3 files (95.2% consistency)
 ```
 
 #### Example Terminology Database
+
 ```json
 {
   "version": "1.0.0",
@@ -522,6 +539,7 @@ Progressive disclosure elements must follow this structure:
 <summary>📖 Section Title (appropriate emoji)</summary>
 
 Content goes here. Can include:
+
 - Lists
 - Code blocks
 - Additional sections
@@ -549,9 +567,9 @@ interface ProgressiveDisclosureOptions {
   /** Sections to make collapsible (h2, h3, etc.) */
   collapsibleLevels: number[];
   /** Default state for sections */
-  defaultState: 'open' | 'closed';
+  defaultState: "open" | "closed";
   /** Experience level targeting */
-  experienceLevel: 'beginner' | 'intermediate' | 'advanced' | 'all';
+  experienceLevel: "beginner" | "intermediate" | "advanced" | "all";
 }
 
 interface DisclosureSection {
@@ -572,26 +590,26 @@ interface DisclosureSection {
 name: Documentation Validation
 on:
   push:
-    paths: ['**.md', 'docs/**', 'scripts/docs/**']
+    paths: ["**.md", "docs/**", "scripts/docs/**"]
   pull_request:
-    paths: ['**.md', 'docs/**', 'scripts/docs/**']
+    paths: ["**.md", "docs/**", "scripts/docs/**"]
 
 ## Required environment variables
 env:
-  DOCS_CONFIG_PATH: '.docs-config.json'
-  TERMINOLOGY_DB_PATH: 'scripts/docs/terminology.json'
-  MIN_CONSISTENCY_SCORE: '95'
+  DOCS_CONFIG_PATH: ".docs-config.json"
+  TERMINOLOGY_DB_PATH: "scripts/docs/terminology.json"
+  MIN_CONSISTENCY_SCORE: "95"
 
 ## Required outputs
 outputs:
   validation-status:
-    description: 'Overall validation result (passed/failed)'
+    description: "Overall validation result (passed/failed)"
     value: ${{ steps.validate.outputs.status }}
   consistency-score:
-    description: 'Calculated consistency percentage'
+    description: "Calculated consistency percentage"
     value: ${{ steps.validate.outputs.score }}
   issues-count:
-    description: 'Total number of validation issues'
+    description: "Total number of validation issues"
     value: ${{ steps.validate.outputs.issues }}
 ```
 
@@ -738,11 +756,13 @@ interface DocumentationMetrics {
 ### Contract Compliance
 
 #### Breaking Changes
+
 - Changes to command-line interfaces require major version bump
 - Output format changes require minor version bump
 - New optional parameters require minor version bump
 
 #### Testing Contract
+
 All implementing scripts must include contract compliance tests:
 
 ```typescript
@@ -752,16 +772,22 @@ import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 Deno.test("validation script returns proper exit codes", async () => {
   // Test successful validation
   const success = await new Deno.Command("deno", {
-    args: ["run", "--allow-read", "scripts/docs/validate.ts", "test-valid.md"]
+    args: ["run", "--allow-read", "scripts/docs/validate.ts", "test-valid.md"],
   }).output();
   assertEquals(success.code, 0);
 
   // Test failed validation
   const failure = await new Deno.Command("deno", {
-    args: ["run", "--allow-read", "scripts/docs/validate.ts", "test-invalid.md"]
+    args: [
+      "run",
+      "--allow-read",
+      "scripts/docs/validate.ts",
+      "test-invalid.md",
+    ],
   }).output();
   assertEquals(failure.code, 1);
 });
 ```
 
-This contract ensures consistent behavior across all documentation tools and enables reliable automation workflows.
+This contract ensures consistent behavior across all documentation tools and
+enables reliable automation workflows.

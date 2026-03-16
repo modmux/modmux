@@ -1,6 +1,6 @@
 ---
 title: "Copilot Authentication"
-status: draft
+status: complete
 created: "2026-02-28"
 ---
 

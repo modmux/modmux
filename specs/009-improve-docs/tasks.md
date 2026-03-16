@@ -1,12 +1,16 @@
 ## Tasks
 
+> Status: Implemented in main. This task list is kept as a historical record.
 
-**Input**: Design documents from `/specs/009-improve-docs/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+**Input**: Design documents from `/specs/009-improve-docs/` **Prerequisites**:
+plan.md (required), README.md (required for user stories), research.md,
+DATA_MODEL.md, CONTRACTS.md
 
-**Tests**: Not explicitly requested in specification - focusing on implementation and validation tasks
+**Tests**: Not explicitly requested in specification - focusing on
+implementation and validation tasks
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by user story to enable independent
+implementation and testing of each story.
 
 ### Format: `[ID] [P?] [Story] Description`
 
@@ -17,7 +21,8 @@
 ### Path Conventions
 
 Documentation project structure based on plan.md:
-- Documentation files: `README.md`, `AGENTS.md`, `.specify/memory/constitution.md`
+
+- Documentation files: `README.md`, `AGENTS.md`, `CONVENTIONS.md`
 - Automation scripts: `scripts/docs/`
 - GitHub Actions: `.github/workflows/`
 - Configuration files: Repository root
@@ -26,7 +31,8 @@ Documentation project structure based on plan.md:
 
 **Purpose**: Project initialization and validation infrastructure
 
-- [x] T001 Create documentation validation infrastructure directory structure per plan.md
+- [x] T001 Create documentation validation infrastructure directory structure
+      per plan.md
 - [x] T002 [P] Create documentation configuration file `.docs-config.json`
 - [x] T003 [P] Create markdownlint configuration file `.markdownlint.jsonc`
 - [x] T004 [P] Create terminology database file `scripts/docs/terminology.json`
@@ -36,95 +42,130 @@ Documentation project structure based on plan.md:
 
 ### Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core validation infrastructure that MUST be complete before ANY user story documentation can be improved
+**Purpose**: Core validation infrastructure that MUST be complete before ANY
+user story documentation can be improved
 
-**⚠️ CRITICAL**: No user story documentation work can begin until this phase is complete
+**⚠️ CRITICAL**: No user story documentation work can begin until this phase is
+complete
 
 - [x] T006 Implement main validation script `scripts/docs/validate.ts`
-- [x] T007 [P] Implement terminology validation function in `scripts/docs/validate.ts`
-- [x] T008 [P] Implement markdown validation function in `scripts/docs/validate.ts`
-- [x] T009 [P] Implement progressive disclosure generator `scripts/docs/generate-disclosure.ts`
-- [x] T010 [P] Create GitHub Actions workflow `/.github/workflows/docs-validation.yml`
+- [x] T007 [P] Implement terminology validation function in
+      `scripts/docs/validate.ts`
+- [x] T008 [P] Implement markdown validation function in
+      `scripts/docs/validate.ts`
+- [x] T009 [P] Implement progressive disclosure generator
+      `scripts/docs/generate-disclosure.ts`
+- [x] T010 [P] Create GitHub Actions workflow
+      `/.github/workflows/docs-validation.yml`
 - [x] T011 [P] Implement documentation metrics collection in validation script
 - [x] T012 Test validation infrastructure with existing documentation files
 
-**Checkpoint**: Foundation ready - user story documentation improvement can now begin in parallel
+**Checkpoint**: Foundation ready - user story documentation improvement can now
+begin in parallel
 
 ---
 
 ### Phase 3: User Story 1 - Developer Onboarding Experience (Priority: P1) 🎯 MVP
 
-**Goal**: New developers can quickly understand Claudio's purpose, install it correctly, and get it running with their GitHub Copilot subscription within 10 minutes
+**Goal**: New developers can quickly understand Claudio's purpose, install it
+correctly, and get it running with their GitHub Copilot subscription within 10
+minutes
 
-**Independent Test**: Have a new developer follow the README from discovery to successful first run and verify they understand Claudio's purpose and value proposition
+**Independent Test**: Have a new developer follow the README from discovery to
+successful first run and verify they understand Claudio's purpose and value
+proposition
 
 #### Implementation for User Story 1
 
 - [x] T013 [P] [US1] Run validation baseline on current `README.md`
-- [x] T014 [P] [US1] Analyze current README structure against user experience contract
-- [x] T015 [US1] Improve README project title and description section per FR-001 in `README.md`
-- [x] T016 [US1] Add features section with benefits-focused descriptions in `README.md`
-- [x] T017 [US1] Enhance installation instructions for all platforms per FR-002 in `README.md`
-- [x] T018 [US1] Add comprehensive troubleshooting section per FR-003 in `README.md`
-- [x] T019 [US1] Add usage examples and command-line options per FR-004 in `README.md`
-- [x] T020 [US1] Apply progressive disclosure formatting to advanced sections in `README.md`
+- [x] T014 [P] [US1] Analyze current README structure against user experience
+      contract
+- [x] T015 [US1] Improve README project title and description section per FR-001
+      in `README.md`
+- [x] T016 [US1] Add features section with benefits-focused descriptions in
+      `README.md`
+- [x] T017 [US1] Enhance installation instructions for all platforms per FR-002
+      in `README.md`
+- [x] T018 [US1] Add comprehensive troubleshooting section per FR-003 in
+      `README.md`
+- [x] T019 [US1] Add usage examples and command-line options per FR-004 in
+      `README.md`
+- [x] T020 [US1] Apply progressive disclosure formatting to advanced sections in
+      `README.md`
 - [x] T021 [US1] Validate README meets 95% consistency score requirement
 - [x] T022 [US1] Test README with new developer onboarding scenario
 
-**Checkpoint**: At this point, README should enable 10-minute onboarding and be fully functional independently
+**Checkpoint**: At this point, README should enable 10-minute onboarding and be
+fully functional independently
 
 ---
 
 ### Phase 4: User Story 2 - Development Team Clarity (Priority: P2)
 
-**Goal**: Development team members can quickly understand project architecture, coding standards, and contribution guidelines to effectively work on the codebase
+**Goal**: Development team members can quickly understand project architecture,
+coding standards, and contribution guidelines to effectively work on the
+codebase
 
-**Independent Test**: Have a new contributor successfully set up development environment and make their first contribution following the guidelines
+**Independent Test**: Have a new contributor successfully set up development
+environment and make their first contribution following the guidelines
 
 #### Implementation for User Story 2
 
 - [x] T023 [P] [US2] Run validation baseline on current `AGENTS.md`
-- [x] T024 [P] [US2] Analyze current AGENTS.md structure against developer requirements
-- [x] T025 [US2] Update project structure documentation per FR-005 in `AGENTS.md`
+- [x] T024 [P] [US2] Analyze current AGENTS.md structure against developer
+      requirements
+- [x] T025 [US2] Update project structure documentation per FR-005 in
+      `AGENTS.md`
 - [x] T026 [US2] Update active technologies section per FR-006 in `AGENTS.md`
 - [x] T027 [US2] Add clear code style guidelines per FR-007 in `AGENTS.md`
 - [x] T028 [US2] Add contribution workflow documentation in `AGENTS.md`
 - [x] T029 [US2] Add development command reference in `AGENTS.md`
 - [x] T030 [US2] Ensure terminology consistency with README and constitution
-- [x] T031 [US2] Apply progressive disclosure for advanced development topics in `AGENTS.md`
+- [x] T031 [US2] Apply progressive disclosure for advanced development topics in
+      `AGENTS.md`
 - [x] T032 [US2] Validate AGENTS.md meets consistency requirements
 - [x] T033 [US2] Test AGENTS.md with new contributor scenario
 
-**Checkpoint**: At this point, AGENTS.md should enable 15-minute contributor setup and work independently
+**Checkpoint**: At this point, AGENTS.md should enable 15-minute contributor
+setup and work independently
 
 ---
 
 ### Phase 5: User Story 3 - Project Governance Clarity (Priority: P3)
 
-**Goal**: Project maintainers and contributors understand the project's core principles, scope boundaries, and quality standards through a clear, actionable constitution
+**Goal**: Project maintainers and contributors understand the project's core
+principles, scope boundaries, and quality standards through a clear, actionable
+constitution
 
-**Independent Test**: Present maintainers with feature requests and verify they can make consistent decisions using constitutional principles within 5 minutes
+**Independent Test**: Present maintainers with feature requests and verify they
+can make consistent decisions using constitutional principles within 5 minutes
 
 #### Implementation for User Story 3
 
-- [x] T034 [P] [US3] Run validation baseline on current `.specify/memory/constitution.md`
-- [x] T035 [P] [US3] Analyze constitution structure against governance requirements
-- [x] T036 [US3] Enhance scope boundaries definition per FR-008 in `.specify/memory/constitution.md`
-- [x] T037 [US3] Strengthen quality gates and testing requirements per FR-009 in `.specify/memory/constitution.md`
-- [x] T038 [US3] Improve architectural decision guidance per FR-010 in `.specify/memory/constitution.md`
-- [x] T039 [US3] Add decision-making process documentation in `.specify/memory/constitution.md`
+- [x] T034 [P] [US3] Run validation baseline on current `CONVENTIONS.md`
+- [x] T035 [P] [US3] Analyze constitution structure against governance
+      requirements
+- [x] T036 [US3] Enhance scope boundaries definition per FR-008 in
+      `CONVENTIONS.md`
+- [x] T037 [US3] Strengthen quality gates and testing requirements per FR-009 in
+      `CONVENTIONS.md`
+- [x] T038 [US3] Improve architectural decision guidance per FR-010 in
+      `CONVENTIONS.md`
+- [x] T039 [US3] Add decision-making process documentation in `CONVENTIONS.md`
 - [x] T040 [US3] Ensure constitutional principles are numbered and actionable
 - [x] T041 [US3] Apply consistent terminology with other documentation files
 - [x] T042 [US3] Validate constitution meets consistency requirements
 - [x] T043 [US3] Test constitution with feature evaluation scenarios
 
-**Checkpoint**: All user stories should now be independently functional with clear governance guidance
+**Checkpoint**: All user stories should now be independently functional with
+clear governance guidance
 
 ---
 
 ### Phase 6: Cross-Document Consistency & Automation
 
-**Purpose**: Ensure consistency across all documentation files and enable automated maintenance
+**Purpose**: Ensure consistency across all documentation files and enable
+automated maintenance
 
 - [x] T044 [P] Run comprehensive validation across all documentation files
 - [x] T045 [P] Fix terminology inconsistencies identified by validation
@@ -139,13 +180,15 @@ Documentation project structure based on plan.md:
 
 ### Phase 7: Polish & Validation
 
-**Purpose**: Final validation and quality assurance across the complete documentation set
+**Purpose**: Final validation and quality assurance across the complete
+documentation set
 
 - [x] T051 [P] Validate all success criteria are met (SC-001 through SC-007)
 - [ ] T052 [P] Run complete validation suite and ensure 95% consistency score
 - [ ] T053 [P] Test documentation with actual user scenarios
 - [ ] T053a [P] Test documentation with platform-specific installation errors
-- [ ] T053b [P] Validate progressive disclosure works for different experience levels
+- [ ] T053b [P] Validate progressive disclosure works for different experience
+      levels
 - [ ] T053c [P] Test constitutional principle conflict resolution scenarios
 - [ ] T053d [P] Verify documentation maintenance under rapid code changes
 - [ ] T054 [P] Validate GitHub Actions workflows work correctly
@@ -160,18 +203,23 @@ Documentation project structure based on plan.md:
 #### Phase Dependencies
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user
+  stories
 - **User Stories (Phase 3-5)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
-- **Cross-Document Consistency (Phase 6)**: Depends on all user stories being complete
+- **Cross-Document Consistency (Phase 6)**: Depends on all user stories being
+  complete
 - **Polish (Phase 7)**: Depends on Cross-Document Consistency completion
 
 #### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - Independent but may reference US1 for consistency
-- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - Independent but should align with US1/US2 principles
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No
+  dependencies on other stories
+- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - Independent
+  but may reference US1 for consistency
+- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - Independent
+  but should align with US1/US2 principles
 
 #### Within Each User Story
 
@@ -186,8 +234,10 @@ Documentation project structure based on plan.md:
 
 - All Setup tasks marked [P] can run in parallel
 - All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
-- Validation baseline and analysis tasks within each story marked [P] can run in parallel
+- Once Foundational phase completes, all user stories can start in parallel (if
+  team capacity allows)
+- Validation baseline and analysis tasks within each story marked [P] can run in
+  parallel
 - Different user stories can be worked on in parallel by different team members
 - Cross-document consistency tasks marked [P] can run in parallel
 - Polish phase tasks marked [P] can run in parallel

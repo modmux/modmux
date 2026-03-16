@@ -1,6 +1,6 @@
 ---
 title: "Anthropic-Compatible API Proxy"
-status: draft
+status: complete
 created: "2026-02-28"
 ---
 

@@ -30,6 +30,7 @@ Use this template when documenting new features or significant changes.
 ```
 
 **Configuration options:**
+
 - `option1`: Description of what this does
 - `option2`: Description of what this does
 
@@ -41,9 +42,9 @@ Use this template when documenting new features or significant changes.
 <summary>🆘 Common Issues</summary>
 
 ### Issue Name
-**Symptoms**: What the user sees
-**Cause**: Why this happens
-**Solution**: How to fix it
+
+**Symptoms**: What the user sees **Cause**: Why this happens **Solution**: How
+to fix it
 
 ```bash
 # Commands to resolve the issue

@@ -1,6 +1,5 @@
 ## Data Model
 
-
 **Feature**: `005-release-distribution`\
 **Phase**: 1 — Design\
 **Status**: Complete

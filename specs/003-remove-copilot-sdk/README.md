@@ -1,7 +1,7 @@
 ---
 title: "Remove Copilot SDK — Direct HTTP Integration"
-status: draft
-created: '2026-03-15'
+status: complete
+created: "2026-03-15"
 ---
 
 # Remove Copilot SDK — Direct HTTP Integration

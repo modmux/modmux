@@ -1,6 +1,5 @@
 ## Quickstart
 
-
 ### What changed
 
 Claudio no longer uses the `@github/copilot-sdk` npm package or any Copilot CLI

@@ -2,17 +2,18 @@
 
 ### Summary
 
-Coco evolves Claudio's narrow "launch Claude Code" purpose into a universal local AI
-gateway. The proxy (Anthropic-compatible `/v1/messages`) is preserved unchanged. New
-work adds an OpenAI-compatible `/v1/chat/completions` endpoint, a background daemon
-(self-respawn pattern via `Deno.Command` with `detached: true`), an agent-detection
-engine (PATH + VS Code extension + config-file scanning), a per-agent configuration
-manager (reversible file writes with backups), and a minimal ANSI TUI (raw keyboard
-input, dirty-row rendering, no npm dependencies).
+Coco evolves Claudio's narrow "launch Claude Code" purpose into a universal
+local AI gateway. The proxy (Anthropic-compatible `/v1/messages`) is preserved
+unchanged. New work adds an OpenAI-compatible `/v1/chat/completions` endpoint, a
+background daemon (self-respawn pattern via `Deno.Command` with
+`detached: true`), an agent-detection engine (PATH + VS Code extension +
+config-file scanning), a per-agent configuration manager (reversible file writes
+with backups), and a minimal ANSI TUI (raw keyboard input, dirty-row rendering,
+no npm dependencies).
 
 The binary is renamed from `claudio` to `coco`. Two source files are deleted
-(`src/cli/launch.ts`, `src/cli/session.ts`). All other existing modules are preserved
-or lightly extended.
+(`src/cli/launch.ts`, `src/cli/session.ts`). All other existing modules are
+preserved or lightly extended.
 
 ### Project Structure
 
@@ -22,13 +23,10 @@ or lightly extended.
 specs/007-coco-migration/
 ├── plan.md              ← this file
 ├── research.md          ← Phase 0 complete
-├── data-model.md        ← Phase 1 complete
+├── DATA_MODEL.md        ← Phase 1 complete
 ├── quickstart.md        ← Phase 1 complete
-├── contracts/
-│   ├── openai-proxy.md  ← Phase 1 complete
-│   ├── cli-interface.md ← Phase 1 complete
-│   └── agent-configs.md ← Phase 1 complete
-└── tasks.md             ← Phase 2 (speckit.tasks — not yet created)
+├── CONTRACTS.md         ← Phase 1 complete
+└── tasks.md             ← Phase 2 (lean-spec tasks — not yet created)
 ```
 
 #### Source Code (repository root)
@@ -77,9 +75,9 @@ directories under `src/`. Mirrors existing Claudio structure exactly.
 
 ### Complexity Tracking
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|---|---|---|
-| Background daemon | Core feature — agents need a persistent local endpoint | Foreground blocks terminal; agents cannot connect independently |
-| TUI (raw ANSI) | Calm multi-agent control surface | CLI-only lacks discoverability; no npm deps allowed |
-| Per-agent config writers | Each agent has a different config format | Single env-var approach requires manual shell profile edits |
-| Model alias map | Agents send different model names than Copilot uses | Pass-through silently fails for common aliases like `gpt-4o` |
+| Violation                | Why Needed                                             | Simpler Alternative Rejected Because                            |
+| ------------------------ | ------------------------------------------------------ | --------------------------------------------------------------- |
+| Background daemon        | Core feature — agents need a persistent local endpoint | Foreground blocks terminal; agents cannot connect independently |
+| TUI (raw ANSI)           | Calm multi-agent control surface                       | CLI-only lacks discoverability; no npm deps allowed             |
+| Per-agent config writers | Each agent has a different config format               | Single env-var approach requires manual shell profile edits     |
+| Model alias map          | Agents send different model names than Copilot uses    | Pass-through silently fails for common aliases like `gpt-4o`    |

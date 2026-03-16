@@ -38,7 +38,8 @@ async function validateFile(filePath: string): Promise<FileResult> {
   const issues: Issue[] = [];
 
   // Basic metrics
-  const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+  const wordCount =
+    content.split(/\s+/).filter((word) => word.length > 0).length;
   const readingTime = Math.ceil(wordCount / 200);
   const stat = await Deno.stat(filePath);
 
@@ -50,25 +51,30 @@ async function validateFile(filePath: string): Promise<FileResult> {
   const markdownIssues = await validateMarkdown(content, filePath);
   issues.push(...markdownIssues);
 
-  const errorCount = issues.filter(i => i.severity === "error").length;
-  const warningCount = issues.filter(i => i.severity === "warning").length;
+  const errorCount = issues.filter((i) => i.severity === "error").length;
+  const warningCount = issues.filter((i) => i.severity === "warning").length;
 
   return {
     path: filePath,
-    status: errorCount > 0 ? "error" : (warningCount > 0 ? "warning" : "passed"),
+    status: errorCount > 0
+      ? "error"
+      : (warningCount > 0 ? "warning" : "passed"),
     issues,
     metrics: {
       wordCount,
       readingTime,
-      lastModified: stat.mtime?.toISOString() || new Date().toISOString()
-    }
+      lastModified: stat.mtime?.toISOString() || new Date().toISOString(),
+    },
   };
 }
 
-async function validateTerminology(content: string, filePath: string): Promise<Issue[]> {
+async function validateTerminology(
+  content: string,
+  filePath: string,
+): Promise<Issue[]> {
   try {
     const terminologyDB = JSON.parse(
-      await Deno.readTextFile("scripts/docs/terminology.json")
+      await Deno.readTextFile("scripts/docs/terminology.json"),
     );
 
     const issues: Issue[] = [];
@@ -79,7 +85,7 @@ async function validateTerminology(content: string, filePath: string): Promise<I
         let match;
         let lineNumber = 1;
 
-        const lines = content.split('\n');
+        const lines = content.split("\n");
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           const lineMatch = line.match(new RegExp(`\\b${incorrect}\\b`, "g"));
@@ -90,7 +96,7 @@ async function validateTerminology(content: string, filePath: string): Promise<I
               line: i + 1,
               column: line.indexOf(incorrect) + 1,
               message: `Found '${incorrect}' should be '${term.canonical}'`,
-              suggestion: term.canonical
+              suggestion: term.canonical,
             });
           }
         }
@@ -99,12 +105,16 @@ async function validateTerminology(content: string, filePath: string): Promise<I
 
     return issues;
   } catch (error) {
-    console.warn(`Could not validate terminology: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Could not validate terminology: ${message}`);
     return [];
   }
 }
 
-async function validateMarkdown(content: string, filePath: string): Promise<Issue[]> {
+async function validateMarkdown(
+  content: string,
+  filePath: string,
+): Promise<Issue[]> {
   const issues: Issue[] = [];
 
   // Check for broken internal links
@@ -115,33 +125,40 @@ async function validateMarkdown(content: string, filePath: string): Promise<Issu
     const [, , url] = match;
 
     // Skip external URLs
-    if (url.startsWith('http') || url.startsWith('mailto:')) {
+    if (url.startsWith("http") || url.startsWith("mailto:")) {
       continue;
     }
 
     // Check if internal file exists
     try {
-      if (url.startsWith('./') || url.startsWith('../') || !url.startsWith('/')) {
+      if (
+        url.startsWith("./") || url.startsWith("../") || !url.startsWith("/")
+      ) {
         // Simple path resolution for internal links
-        const baseDir = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : '.';
-        const resolvedPath = url.startsWith('./') ? `${baseDir}/${url.substring(2)}` :
-                            url.startsWith('../') ? url : `${baseDir}/${url}`;
+        const baseDir = filePath.includes("/")
+          ? filePath.substring(0, filePath.lastIndexOf("/"))
+          : ".";
+        const resolvedPath = url.startsWith("./")
+          ? `${baseDir}/${url.substring(2)}`
+          : url.startsWith("../")
+          ? url
+          : `${baseDir}/${url}`;
 
         // Remove anchor fragments for file existence check
-        const pathWithoutAnchor = resolvedPath.split('#')[0];
+        const pathWithoutAnchor = resolvedPath.split("#")[0];
         await Deno.stat(pathWithoutAnchor);
       }
     } catch {
       issues.push({
         rule: "link-validation",
         severity: "warning",
-        message: `Broken internal link: ${url}`
+        message: `Broken internal link: ${url}`,
       });
     }
   }
 
   // Check for common markdown issues
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
@@ -152,7 +169,7 @@ async function validateMarkdown(content: string, filePath: string): Promise<Issu
           rule: "heading-format",
           severity: "warning",
           line: i + 1,
-          message: "Heading should have space after # and content"
+          message: "Heading should have space after # and content",
         });
       }
     }
@@ -167,8 +184,8 @@ async function main() {
     string: ["format", "config", "severity"],
     default: {
       format: "human",
-      severity: "all"
-    }
+      severity: "all",
+    },
   });
 
   if (flags.help) {
@@ -199,20 +216,28 @@ Options:
       const result = await validateFile(file);
       results.push(result);
     } catch (error) {
-      console.error(`Error processing ${file}: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error processing ${file}: ${message}`);
     }
   }
 
   const totalIssues = results.reduce((sum, r) => sum + r.issues.length, 0);
-  const errorCount = results.reduce((sum, r) =>
-    sum + r.issues.filter(i => i.severity === "error").length, 0);
-  const warningCount = results.reduce((sum, r) =>
-    sum + r.issues.filter(i => i.severity === "warning").length, 0);
+  const errorCount = results.reduce(
+    (sum, r) => sum + r.issues.filter((i) => i.severity === "error").length,
+    0,
+  );
+  const warningCount = results.reduce(
+    (sum, r) => sum + r.issues.filter((i) => i.severity === "warning").length,
+    0,
+  );
 
   // Calculate consistency score based on formula from FR-014
   const maxPossibleViolations = results.length * 10; // Assume 10 possible violations per file
   const totalViolations = totalIssues;
-  const consistencyScore = Math.max(0, 100 - (totalViolations / maxPossibleViolations) * 100);
+  const consistencyScore = Math.max(
+    0,
+    100 - (totalViolations / maxPossibleViolations) * 100,
+  );
 
   const validationResult: ValidationResult = {
     version: "1.0.0",
@@ -222,9 +247,9 @@ Options:
       totalIssues,
       errorCount,
       warningCount,
-      consistencyScore: Math.round(consistencyScore * 10) / 10
+      consistencyScore: Math.round(consistencyScore * 10) / 10,
     },
-    files: results
+    files: results,
   };
 
   if (flags.format === "json") {
@@ -232,19 +257,26 @@ Options:
   } else {
     // Human-readable output
     for (const file of results) {
-      const status = file.status === "passed" ? "✅" :
-                    file.status === "warning" ? "⚠️" : "❌";
+      const status = file.status === "passed"
+        ? "✅"
+        : file.status === "warning"
+        ? "⚠️"
+        : "❌";
       console.log(`${status} ${file.path} - ${file.status}`);
 
       for (const issue of file.issues) {
-        if (flags.severity !== "all" && issue.severity !== flags.severity) continue;
+        if (flags.severity !== "all" && issue.severity !== flags.severity) {
+          continue;
+        }
 
         const location = issue.line ? ` Line ${issue.line}:` : "";
         console.log(`  ${location} ${issue.message}`);
       }
     }
 
-    console.log(`\nSummary: ${errorCount} errors, ${warningCount} warnings across ${results.length} files (${validationResult.summary.consistencyScore}% consistency)`);
+    console.log(
+      `\nSummary: ${errorCount} errors, ${warningCount} warnings across ${results.length} files (${validationResult.summary.consistencyScore}% consistency)`,
+    );
   }
 
   // Exit with error if there are blocking issues

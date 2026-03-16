@@ -1,12 +1,12 @@
 name: Documentation Validation
 on:
   push:
-    paths: ['**.md', 'docs/**', 'scripts/docs/**']
+    paths: ["**.md", "docs/**", "scripts/docs/**"]
   pull_request:
-    paths: ['**.md', 'docs/**', 'scripts/docs/**']
+    paths: ["**.md", "docs/**", "scripts/docs/**"]
 
 env:
-  MIN_CONSISTENCY_SCORE: '95'
+  MIN_CONSISTENCY_SCORE: "95"
 
 jobs:
   docs-validation:

@@ -1,19 +1,25 @@
 # Coco
 
-**Universal local AI gateway** — Route any coding agent through GitHub Copilot's API.
+**Universal local AI gateway** — Route any coding agent through GitHub Copilot's
+API.
 
-Coco runs a local background service that exposes Anthropic-compatible and OpenAI-compatible
-API endpoints backed by your GitHub Copilot subscription. Any tool that speaks either API
-protocol can be wired through Coco in seconds.
+Coco runs a local background service that exposes Anthropic-compatible and
+OpenAI-compatible API endpoints backed by your GitHub Copilot subscription. Any
+tool that speaks either API protocol can be wired through Coco in seconds.
 
 ## Features
 
-- 🔗 **Anthropic + OpenAI compatible** — `/v1/messages` and `/v1/chat/completions` endpoints
+- 🔗 **Anthropic + OpenAI compatible** — `/v1/messages` and
+  `/v1/chat/completions` endpoints
 - 🚀 **Background service** — `coco start` / `coco stop` / `coco restart`
-- 🤖 **Multi-agent support** — Claude Code, Cline, Kilo, OpenCode, Goose, Aider, GPT-Engineer
-- 🖥️ **Minimal TUI** — bare `coco` opens a radio-toggle interface for batch configuration
-- 🔍 **Agent detection** — scans PATH and VS Code extension dirs to find installed agents
-- ♻️ **Reversible config** — every `coco configure` is undone by `coco unconfigure`
+- 🤖 **Multi-agent support** — Claude Code, Cline, Kilo, OpenCode, Goose, Aider,
+  GPT-Engineer
+- 🖥️ **Minimal TUI** — bare `coco` opens a radio-toggle interface for batch
+  configuration
+- 🔍 **Agent detection** — scans PATH and VS Code extension dirs to find
+  installed agents
+- ♻️ **Reversible config** — every `coco configure` is undone by
+  `coco unconfigure`
 - ⚡ **Stream support** — real-time streaming responses
 - 📦 **Multiple install methods** — npm, Deno/JSR, or direct binary
 
@@ -29,7 +35,8 @@ Coding agent → coco proxy (127.0.0.1:11434) → GitHub Copilot API
 ```
 
 1. **`coco start`** — authenticates with GitHub and starts the background proxy
-2. **`coco configure <agent>`** — writes the agent's config file to point at `http://127.0.0.1:11434`
+2. **`coco configure <agent>`** — writes the agent's config file to point at
+   `http://127.0.0.1:11434`
 3. The agent's API calls are translated and forwarded to GitHub Copilot
 
 ## Installation
@@ -43,22 +50,26 @@ git clone https://github.com/myty/coco.git && cd coco
 ```
 
 **With Deno:**
+
 ```bash
 deno task install
 ```
 
 **With mise:**
+
 ```bash
 mise run install
 ```
 
 After installation, `coco` is available in any terminal:
+
 ```bash
 coco --version
 # Coco v0.2.0
 ```
 
-> **Note**: Ensure `~/.deno/bin` is in your `PATH`. The Deno installer adds this automatically.
+> **Note**: Ensure `~/.deno/bin` is in your `PATH`. The Deno installer adds this
+> automatically.
 
 ### npm (No Deno Required)
 
@@ -71,7 +82,7 @@ npm install -g coco
 The npm package automatically downloads the native binary for your platform:
 
 | OS      | Architecture | Status |
-|---------|--------------|--------|
+| ------- | ------------ | ------ |
 | macOS   | arm64        | ✅     |
 | macOS   | x64          | ✅     |
 | Linux   | x64          | ✅     |
@@ -86,7 +97,8 @@ deno install -A -g jsr:@myty/coco
 
 ### Direct Binary Download
 
-Download platform-specific binaries from [GitHub Releases](https://github.com/myty/coco/releases).
+Download platform-specific binaries from
+[GitHub Releases](https://github.com/myty/coco/releases).
 
 ## Usage
 
@@ -116,26 +128,27 @@ Agents
 Space: toggle   Enter: apply   q: quit
 ```
 
-Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor, **q** quits without changes.
+Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
+**q** quits without changes.
 
 ### CLI Commands
 
-| Command | Description |
-|---|---|
-| `coco` | Open the interactive TUI (on TTY) or print status (non-TTY) |
-| `coco start` | Start the background proxy service |
-| `coco stop` | Stop the background proxy service |
-| `coco restart` | Restart the background proxy service |
-| `coco status` | Print service and auth status |
-| `coco configure <agent>` | Write config for a specific agent |
-| `coco unconfigure <agent>` | Revert config for a specific agent |
-| `coco doctor` | Scan and report all agents' states |
-| `coco models` | List available Copilot model IDs |
-| `coco model-policy [compatible|strict]` | Show or set model mapping policy |
-| `coco install-service` | Register daemon with OS login service manager |
-| `coco uninstall-service` | Remove daemon from OS login service manager |
-| `coco --help` | Show help |
-| `coco --version` | Show version |
+| Command                        | Description                                                 |
+| ------------------------------ | ----------------------------------------------------------- |
+| `coco`                         | Open the interactive TUI (on TTY) or print status (non-TTY) |
+| `coco start`                   | Start the background proxy service                          |
+| `coco stop`                    | Stop the background proxy service                           |
+| `coco restart`                 | Restart the background proxy service                        |
+| `coco status`                  | Print service and auth status                               |
+| `coco configure <agent>`       | Write config for a specific agent                           |
+| `coco unconfigure <agent>`     | Revert config for a specific agent                          |
+| `coco doctor`                  | Scan and report all agents' states                          |
+| `coco models`                  | List available Copilot model IDs                            |
+| `coco model-policy [compatible | strict]`                                                    |
+| `coco install-service`         | Register daemon with OS login service manager               |
+| `coco uninstall-service`       | Remove daemon from OS login service manager                 |
+| `coco --help`                  | Show help                                                   |
+| `coco --version`               | Show version                                                |
 
 ### Quick Start
 
@@ -171,15 +184,15 @@ coco doctor
 
 ### Supported Agents
 
-| Agent | Binary | Extension |
-|---|---|---|
-| Claude Code | `claude` | `anthropic.claude-code` |
-| Cline | `cline` | `saoudrizwan.claude-dev` |
-| Kilo Code | `kilo` | `kilo.kilo-code` |
-| OpenCode | `opencode` | `opencode.opencode` |
-| Goose | `goose` | `0xgoose.goose` |
-| Aider | `aider` | — |
-| GPT-Engineer | `gpt-engineer` | — |
+| Agent        | Binary         | Extension                |
+| ------------ | -------------- | ------------------------ |
+| Claude Code  | `claude`       | `anthropic.claude-code`  |
+| Cline        | `cline`        | `saoudrizwan.claude-dev` |
+| Kilo Code    | `kilo`         | `kilo.kilo-code`         |
+| OpenCode     | `opencode`     | `opencode.opencode`      |
+| Goose        | `goose`        | `0xgoose.goose`          |
+| Aider        | `aider`        | —                        |
+| GPT-Engineer | `gpt-engineer` | —                        |
 
 ## Architecture
 
@@ -220,18 +233,22 @@ deno task compile
 <summary>Common Issues</summary>
 
 ### "Authentication failed"
+
 - Verify you have an active GitHub Copilot subscription
 - Try again — device flow tokens sometimes need a moment
 
 ### "Port already in use"
+
 - Coco automatically scans for an available port starting from 11434
 - Check `coco status` to see the actual port in use
 
 ### "Agent is misconfigured"
+
 - Run `coco unconfigure <agent>` then `coco configure <agent>` again
 - Run `coco doctor` for a full status report
 
 ### macOS "Cannot open" error (binary download)
+
 - Run `xattr -d com.apple.quarantine coco` to remove quarantine
 
 </details>

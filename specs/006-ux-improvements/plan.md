@@ -21,8 +21,8 @@ No new dependencies. All changes are in `src/cli/main.ts` and `src/cli/auth.ts`.
 ```text
 specs/006-ux-improvements/
 ├── plan.md              # This file
-├── spec.md              # Feature specification
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
+├── README.md              # Feature specification
+└── tasks.md             # Phase 2 output (/lean-spec tasks command)
 ```
 
 #### Source Code (repository root)
@@ -101,5 +101,5 @@ if (exitCode === 0) {
 
 #### Contracts
 
-No external interface changes. The proxy HTTP API is unchanged. No contracts/
+No external interface changes. The proxy HTTP API is unchanged. No CONTRACTS.md
 directory needed.

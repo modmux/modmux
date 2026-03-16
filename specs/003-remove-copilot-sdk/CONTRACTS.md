@@ -2,7 +2,6 @@
 
 ### copilot-http
 
-
 ### Overview
 
 This document defines the internal HTTP interface between
@@ -149,6 +148,6 @@ data: [DONE]
 The following contracts from `002-anthropic-proxy` are **not modified** by this
 feature. They remain the stable interface that Claude Code depends on:
 
-- `POST /v1/messages` — see `002-anthropic-proxy/contracts/api.md`
-- `POST /v1/messages/count_tokens` — see `002-anthropic-proxy/contracts/api.md`
+- `POST /v1/messages` — see `002-anthropic-proxy/CONTRACTS.md`
+- `POST /v1/messages/count_tokens` — see `002-anthropic-proxy/CONTRACTS.md`
 - SSE event sequence and format — unchanged

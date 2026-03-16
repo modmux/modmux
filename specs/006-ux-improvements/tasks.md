@@ -1,8 +1,9 @@
 ## Tasks
 
+> Status: Implemented in main. This task list is kept as a historical record.
 
 **Input**: Design documents from `/specs/006-ux-improvements/`
-**Prerequisites**: spec.md ✅, plan.md ✅, clarifications recorded 2026-03-08
+**Prerequisites**: README.md ✅, plan.md ✅, clarifications recorded 2026-03-08
 
 **Organization**: Tasks are grouped by user story to enable independent
 implementation and testing of each story. All three stories are independently

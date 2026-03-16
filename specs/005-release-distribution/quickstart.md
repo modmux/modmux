@@ -1,6 +1,5 @@
 ## Quickstart
 
-
 **Feature**: `005-release-distribution`\
 **Audience**: Developer working on the Claudio project
 

@@ -1,6 +1,5 @@
 ## Quickstart
 
-
 ### Prerequisites
 
 1. **GitHub Copilot CLI installed**

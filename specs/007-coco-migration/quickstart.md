@@ -1,6 +1,5 @@
 ## Quickstart
 
-
 **Feature**: `007-coco-migration` | **Branch**: `007-coco-migration`
 
 ---
@@ -139,55 +138,68 @@ tests/
 ### New Module Responsibilities
 
 #### `src/service/daemon.ts`
+
 - `startDaemon()` — spawn `coco --daemon`, write PID, exit parent
 - `stopDaemon()` — read PID, send SIGTERM, wait for process to exit, remove PID
 - `restartDaemon()` — stop + start
 - `isDaemonRunning()` — read PID + liveness check
 
 #### `src/service/status.ts`
-- `getServiceState(): Promise<ServiceState>` — combines PID check + /health + auth check
+
+- `getServiceState(): Promise<ServiceState>` — combines PID check + /health +
+  auth check
 
 #### `src/agents/registry.ts`
+
 - `AGENT_REGISTRY: AgentRecord[]` — the 7 canonical agent records
 - `getAgent(name: string): AgentRecord | undefined`
 
 #### `src/agents/detector.ts`
+
 - `detectAll(): Promise<DetectionResult[]>` — runs all strategies for all agents
 - `detectOne(agent: AgentRecord): Promise<DetectionResult>`
 
 #### `src/agents/config.ts`
+
 - `configureAgent(agent: AgentRecord, port: number): Promise<ConfigEntry>`
 - `unconfigureAgent(agentName: string, config: CocoConfig): Promise<void>`
 - `validateConfig(port: number): Promise<boolean>` — test call
 
 #### `src/tui/render.ts`
+
 - `renderFull(state: TUIState): void` — initial full draw
 - `renderDirty(state: TUIState, changedRows: number[]): void` — partial redraw
 
 #### `src/tui/input.ts`
+
 - `enableRawMode(): Promise<string>` — returns saved terminal settings
 - `disableRawMode(saved: string): Promise<void>`
 - `readKey(): Promise<Key>` — returns semantic key enum
 
 #### `src/config/store.ts`
-- `loadConfig(): Promise<CocoConfig>` — read ~/.coco/config.json (create defaults if absent)
+
+- `loadConfig(): Promise<CocoConfig>` — read ~/.coco/config.json (create
+  defaults if absent)
 - `saveConfig(config: CocoConfig): Promise<void>` — write with schema validation
 
 #### `src/lib/log.ts`
+
 - `log(level, msg, meta?)` — append JSON log line to ~/.coco/coco.log
 
 #### `src/lib/process.ts`
-- `findBinary(name: string): Promise<string | null>` — generalises existing `findClaudeBinary()`
+
+- `findBinary(name: string): Promise<string | null>` — generalises existing
+  `findClaudeBinary()`
 - `isProcessAlive(pid: number): Promise<boolean>` — kill -0 / PowerShell
 
 ---
 
 ### Files Removed
 
-| File | Replacement |
-|---|---|
-| `src/cli/launch.ts` | `src/agents/config.ts` + `src/service/daemon.ts` |
-| `src/cli/session.ts` | TUI exit message in `src/tui/render.ts` |
+| File                 | Replacement                                      |
+| -------------------- | ------------------------------------------------ |
+| `src/cli/launch.ts`  | `src/agents/config.ts` + `src/service/daemon.ts` |
+| `src/cli/session.ts` | TUI exit message in `src/tui/render.ts`          |
 
 ---
 
@@ -199,7 +211,8 @@ Before implementing, run:
 ## Update constitution from Claudio v1.3.0 → Coco v1.0.0
 ```
 
-Use `speckit.constitution` to amend:
+Use `lean-spec constitution` to amend:
+
 - Remove "No background daemons" constraints
 - Update scope from "Claude Code bridge" to "universal AI gateway"
 - Add Configuration Management principle
@@ -209,8 +222,12 @@ Use `speckit.constitution` to amend:
 
 ### Key Conventions (unchanged from Claudio)
 
-- **Calm output**: Short, emotionally neutral messages. No stack traces to users.
-- **Explicit transforms**: All Anthropic/OpenAI ↔ Copilot translations are documented in contracts/.
+- **Calm output**: Short, emotionally neutral messages. No stack traces to
+  users.
+- **Explicit transforms**: All Anthropic/OpenAI ↔ Copilot translations are
+  documented in CONTRACTS.md.
 - **No SDK dependencies**: All Copilot communication via direct HTTP.
-- **Quality gates**: `deno lint && deno fmt --check && deno check && deno test` must pass.
-- **Contract tests first**: Every user story gets a contract test before implementation.
+- **Quality gates**: `deno lint && deno fmt --check && deno check && deno test`
+  must pass.
+- **Contract tests first**: Every user story gets a contract test before
+  implementation.

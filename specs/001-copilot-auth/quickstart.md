@@ -1,6 +1,5 @@
 ## Quickstart
 
-
 ### Prerequisites
 
 - Deno installed (latest stable)

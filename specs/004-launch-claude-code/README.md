@@ -1,6 +1,6 @@
 ---
 title: "Launch Claude Code Subprocess"
-status: draft
+status: complete
 created: "2026-03-08"
 ---
 

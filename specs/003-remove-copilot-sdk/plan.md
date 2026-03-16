@@ -16,13 +16,13 @@ implementation changes.
 ```text
 specs/003-remove-copilot-sdk/
 ├── plan.md                   # This file
-├── spec.md                   # Feature specification
+├── README.md                   # Feature specification
 ├── research.md               # Phase 0: API endpoints, mappings, decisions
-├── data-model.md             # Phase 1: new entities + mapping rules
+├── DATA_MODEL.md             # Phase 1: new entities + mapping rules
 ├── quickstart.md             # Phase 1: dev guide
-├── contracts/
+├── CONTRACTS.md
 │   └── copilot-http.md       # Copilot HTTP API contract
-└── tasks.md                  # Phase 2 output (/speckit.tasks)
+└── tasks.md                  # Phase 2 output (/lean-spec tasks)
 ```
 
 #### Source Code (repository root)

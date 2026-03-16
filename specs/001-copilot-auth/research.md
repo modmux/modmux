@@ -1,6 +1,5 @@
 ## Research
 
-
 ### Decision: Use Copilot SDK for Authentication
 
 **Rationale**: The Copilot SDK handles device flow authentication internally,

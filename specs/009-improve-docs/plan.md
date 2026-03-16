@@ -2,7 +2,11 @@
 
 ### Summary
 
-Improve the AGENTS, README, and constitution documentation to enhance developer onboarding, contributor clarity, and project governance. This initiative focuses on creating comprehensive, consistent, and maintainable documentation using automated validation tools, progressive disclosure for different user experience levels, and automated maintenance workflows.
+Improve the AGENTS, README, and constitution documentation to enhance developer
+onboarding, contributor clarity, and project governance. This initiative focuses
+on creating comprehensive, consistent, and maintainable documentation using
+automated validation tools, progressive disclosure for different user experience
+levels, and automated maintenance workflows.
 
 ### Project Structure
 
@@ -10,12 +14,12 @@ Improve the AGENTS, README, and constitution documentation to enhance developer 
 
 ```text
 specs/009-improve-docs/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+├── plan.md              # This file (/lean-spec plan command output)
+├── research.md          # Phase 0 output (/lean-spec plan command)
+├── DATA_MODEL.md        # Phase 1 output (/lean-spec plan command)
+├── quickstart.md        # Phase 1 output (/lean-spec plan command)
+├── CONTRACTS.md           # Phase 1 output (/lean-spec plan command)
+└── tasks.md             # Phase 2 output (/lean-spec tasks command - NOT created by /lean-spec plan)
 ```
 
 #### Source Code (repository root)
@@ -24,7 +28,7 @@ specs/009-improve-docs/
 ## Documentation files to be improved
 README.md               # User-facing project documentation
 AGENTS.md              # Development team guidelines and architecture
-.specify/memory/constitution.md  # Project governance and principles
+CONVENTIONS.md  # Project governance and principles
 
 ## Automation and validation
 .github/workflows/     # CI/CD for documentation validation
@@ -44,4 +48,7 @@ docs/                  # Supporting documentation assets
 └── style-guide.md     # Documentation style guidelines
 ```
 
-**Structure Decision**: Single repository approach with documentation files at root level, automated validation through GitHub Actions, and supporting tooling in dedicated directories. This maintains the existing structure while adding necessary automation and consistency tools.
+**Structure Decision**: Single repository approach with documentation files at
+root level, automated validation through GitHub Actions, and supporting tooling
+in dedicated directories. This maintains the existing structure while adding
+necessary automation and consistency tools.

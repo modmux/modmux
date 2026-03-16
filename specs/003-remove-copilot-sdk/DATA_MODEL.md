@@ -1,6 +1,5 @@
 ## Data Model
 
-
 ### New Entities
 
 #### CopilotToken

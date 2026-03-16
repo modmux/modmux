@@ -67,9 +67,12 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
 Deno.test("saveConfig — rejects invalid modelMappingPolicy", async () => {
   await withTempHome(async () => {
     await assertRejects(
-      // deno-lint-ignore no-explicit-any
       () =>
-        saveConfig({ ...DEFAULT_CONFIG, modelMappingPolicy: "auto" as any }),
+        saveConfig({
+          ...DEFAULT_CONFIG,
+          modelMappingPolicy:
+            "auto" as unknown as CocoConfig["modelMappingPolicy"],
+        }),
       Error,
       "Invalid modelMappingPolicy",
     );
@@ -99,8 +102,11 @@ Deno.test("saveConfig — rejects invalid port (high)", async () => {
 Deno.test("saveConfig — rejects invalid logLevel", async () => {
   await withTempHome(async () => {
     await assertRejects(
-      // deno-lint-ignore no-explicit-any
-      () => saveConfig({ ...DEFAULT_CONFIG, logLevel: "verbose" as any }),
+      () =>
+        saveConfig({
+          ...DEFAULT_CONFIG,
+          logLevel: "verbose" as unknown as CocoConfig["logLevel"],
+        }),
       Error,
       "Invalid logLevel",
     );

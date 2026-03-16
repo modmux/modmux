@@ -2,9 +2,9 @@
 
 ### requirements
 
-
 **Purpose**: Validate specification completeness and quality before proceeding
-to planning **Created**: 2026-02-28 **Feature**: [Link to spec.md](./spec.md)
+to planning **Created**: 2026-02-28 **Feature**:
+[Link to README.md](./README.md)
 
 ### Content Quality
 

@@ -5,23 +5,28 @@ Auto-generated from all feature plans. Last updated: 2026-03-10
 ## Active Technologies
 
 ### Core Technologies
+
 - **Deno (latest stable)** - Runtime environment and toolkit
 - **TypeScript** - Primary development language
 - **Deno Standard Library** - HTTP server, utilities, testing
 
 ### Key Dependencies
+
 - **GitHub Copilot API** - AI code completion service (models, chat)
 - **OAuth 2.0 Device Flow** - Authentication with GitHub
 - **@std/yaml / @std/toml** - Agent config file parsing and writing
 - **ANSI/VT100 sequences** - TUI renderer (no external dependencies)
 
 ### Platform Integration
-- **Cross-platform binaries** - macOS (arm64/x64), Linux (x64/arm64), Windows (x64)
+
+- **Cross-platform binaries** - macOS (arm64/x64), Linux (x64/arm64), Windows
+  (x64)
 - **NPM distribution** - `coco` package (`npm install -g coco`)
 - **JSR registry** - `jsr:@myty/coco`
 - **GitHub Actions** - CI/CD and automation
 
 ### Architecture Patterns
+
 - **Proxy server pattern** - Request/response translation (Anthropic + OpenAI)
 - **Background daemon** - Self-spawn with `Deno.Command` + PID file
 - **Command pattern** - CLI interface design (9 sub-commands)
@@ -93,12 +98,15 @@ tests/
 ## Contribution Workflow
 
 ### Getting Started
+
 1. **Fork and clone** the repository
-2. **Create feature branch** from main: `git checkout -b feature/your-feature-name`
+2. **Create feature branch** from main:
+   `git checkout -b feature/your-feature-name`
 3. **Install Deno** if not already available (see README for instructions)
 4. **Run quality checks** to ensure environment works: `deno task quality`
 
 ### Development Process
+
 1. **Write failing tests first** (TDD approach) in appropriate test directory
 2. **Implement feature** following the code style guidelines below
 3. **Update documentation** if API or behavior changes
@@ -106,6 +114,7 @@ tests/
 5. **Commit with clear message** following conventional commit format
 
 ### Quality Requirements
+
 - ✅ **All tests pass** - `deno test --allow-all`
 - ✅ **Linting passes** - `deno lint`
 - ✅ **Formatting correct** - `deno fmt --check`
@@ -113,21 +122,29 @@ tests/
 - ✅ **Documentation updated** if needed
 
 ### Testing Strategy
+
 - **Contract tests** - Test external interfaces and API contracts
-- **Integration tests** - Test component interactions (file I/O, agent config round-trips)
-- **Unit tests** - Test individual functions and modules (detector, translate, model-map)
+- **Integration tests** - Test component interactions (file I/O, agent config
+  round-trips)
+- **Unit tests** - Test individual functions and modules (detector, translate,
+  model-map)
 - **Manual testing** - Verify TUI and daemon behavior
 
 ## Code Style Guidelines
 
 ### TypeScript Standards
+
 - **Strict mode enabled** - All TypeScript strict checks required
-- **Explicit types** - Prefer explicit type annotations over inference where clarity helps
-- **Interface over type** - Use interfaces for object shapes, types for unions/primitives
+- **Explicit types** - Prefer explicit type annotations over inference where
+  clarity helps
+- **Interface over type** - Use interfaces for object shapes, types for
+  unions/primitives
 - **Const assertions** - Use `as const` for immutable data structures
-- **verbatim-module-syntax** - Use `import type { Foo }` when importing type-only symbols
+- **verbatim-module-syntax** - Use `import type { Foo }` when importing
+  type-only symbols
 
 ### Naming Conventions
+
 - **Files**: kebab-case (e.g., `openai-translate.ts`)
 - **Directories**: kebab-case (e.g., `agents/`, `service/`)
 - **Classes**: PascalCase (e.g., `CopilotClient`)
@@ -136,30 +153,39 @@ tests/
 - **Interfaces**: PascalCase (e.g., `DetectionResult`)
 
 ### Code Organization
+
 - **Single responsibility** - Each module/function has one clear purpose
 - **Dependency injection** - Prefer explicit dependencies over global state
-- **Error handling** - Avoid throwing; prefer Result types or explicit error handling
+- **Error handling** - Avoid throwing; prefer Result types or explicit error
+  handling
 - **Immutability** - Prefer immutable data structures and pure functions
 - **Modular exports** - Use `mod.ts` files for clean module boundaries
 
 ### Deno-Specific Practices
+
 - **Import maps** - Use import maps in `deno.json` for path management
 - **Web standards** - Use web platform APIs when available
-- **Standard library** - Prefer Deno std library (`@std/yaml`, `@std/toml`, `@std/path`)
+- **Standard library** - Prefer Deno std library (`@std/yaml`, `@std/toml`,
+  `@std/path`)
 
 ### Specification Workflow
-- **LeanSpec-first** - All feature specifications live under `specs/` as single-file `README.md` documents
-- **Global conventions** - Use `CONVENTIONS.md` as the project-wide constitution and governance baseline
+
+- **LeanSpec-first** - All feature specifications live under `specs/` as
+  single-file `README.md` documents
+- **Global conventions** - Use `CONVENTIONS.md` as the project-wide constitution
+  and governance baseline
 
 ## Development Commands
 
 ### Core Development
+
 ```bash
 deno task dev                   # Start development server with file watching
 deno run -A src/cli/main.ts start   # Start daemon in dev mode
 ```
 
 ### Spec Workflow
+
 ```bash
 lean-spec new                   # Create a new feature spec
 lean-spec plan                  # Plan an existing spec
@@ -169,6 +195,7 @@ lean-spec board                 # View spec board/status
 ```
 
 ### Quality Assurance
+
 ```bash
 deno task quality               # Full quality gate (lint + fmt + check + test)
 deno lint                       # Lint all TypeScript files
@@ -177,6 +204,7 @@ deno check src/**/*.ts tests/**/*.ts  # Type check
 ```
 
 ### Testing
+
 ```bash
 deno test --allow-all           # Run all tests
 deno test tests/unit/           # Unit tests only
@@ -185,6 +213,7 @@ deno test tests/integration/    # Integration tests only
 ```
 
 ### Building
+
 ```bash
 deno task compile               # Compile native binary → bin/coco
 deno task sync-version          # Sync version across all artifacts
@@ -193,9 +222,11 @@ deno task sync-version          # Sync version across all artifacts
 ## Recent Changes
 
 - **2026-03-15**: LeanSpec migration completed
-  - Migrated Speckit multi-file specs to LeanSpec single-file `README.md` format in `specs/`
+  - Migrated Speckit multi-file specs to LeanSpec single-file `README.md` format
+    in `specs/`
   - Added root `CONVENTIONS.md` as the canonical global conventions file
-  - Adopted LeanSpec workflow commands (`new`, `plan`, `validate`, `backfill`, `board`)
+  - Adopted LeanSpec workflow commands (`new`, `plan`, `validate`, `backfill`,
+    `board`)
 
 - **2026-03-10**: Coco v0.2.0 — full migration from Claudio
   - Added background daemon service (start/stop/restart/status)

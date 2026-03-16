@@ -1,6 +1,5 @@
 ## Data Model
 
-
 ### Entities
 
 #### ProxyRequest

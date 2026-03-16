@@ -2,7 +2,6 @@
 
 ### agent-configs
 
-
 **Feature**: `007-coco-migration` | **Phase**: 1
 
 For each supported agent, Coco writes a config file pointing the agent's API
@@ -13,7 +12,7 @@ original file before writing and restores it on `unconfigure`.
 
 ### Claude Code
 
-**Config path**: `~/.claude/settings.json`  
+**Config path**: `~/.claude/settings.json`\
 **Key**: `env.ANTHROPIC_BASE_URL`
 
 ```jsonc
@@ -34,7 +33,7 @@ JSON and sets/overwrites only the `env.ANTHROPIC_BASE_URL` and
 
 ### Cline
 
-**Config path**: `~/.cline/endpoints.json`  
+**Config path**: `~/.cline/endpoints.json`\
 **Key**: `apiBaseUrl`
 
 ```jsonc
@@ -53,7 +52,7 @@ JSON and sets/overwrites only the `env.ANTHROPIC_BASE_URL` and
 
 ### Kilo Code
 
-**Config path**: `.kilocode/config.json` (project root)  
+**Config path**: `.kilocode/config.json` (project root)\
 **Key**: `apiBaseUrl`
 
 ```jsonc
@@ -72,7 +71,7 @@ project root. If the file exists, only `apiBaseUrl` and `apiKey` are updated.
 
 ### OpenCode
 
-**Config path**: `~/.coco/env/opencode.env` (env file fragment)  
+**Config path**: `~/.coco/env/opencode.env` (env file fragment)\
 **Key**: `OPENAI_API_BASE`
 
 ```bash
@@ -82,6 +81,7 @@ OPENAI_API_KEY=coco
 ```
 
 **Activation note**: After writing, Coco prints:
+
 ```
 opencode configured.
 Add this to your shell profile to activate:
@@ -93,7 +93,7 @@ Or run: eval $(coco configure opencode --print-env)
 
 ### Goose
 
-**Config path**: `~/.goose/config.toml`  
+**Config path**: `~/.goose/config.toml`\
 **Key**: `[openai].base_url`
 
 ```toml
@@ -111,7 +111,7 @@ preserved. Backup written to `~/.goose/config.toml.coco-backup`.
 
 ### Aider
 
-**Config path**: `~/.aider.conf.yml`  
+**Config path**: `~/.aider.conf.yml`\
 **Key**: `openai-api-base`
 
 ```yaml
@@ -128,7 +128,7 @@ Backup written to `~/.aider.conf.yml.coco-backup`.
 
 ### GPT-Engineer
 
-**Config path**: `~/.coco/env/gpt-engineer.env`  
+**Config path**: `~/.coco/env/gpt-engineer.env`\
 **Key**: `OPENAI_API_BASE`
 
 ```bash
@@ -143,11 +143,11 @@ Same activation note pattern as OpenCode.
 
 ### Backup & Restore Rules
 
-| Scenario | Coco action on `configure` | Coco action on `unconfigure` |
-|---|---|---|
-| Config file does not exist | Create file; `backupPath = null` | Delete the file |
-| Config file exists | Copy to `<path>.coco-backup`; write | Restore backup; delete backup |
-| Config file exists but is already Coco's | Skip backup; overwrite | Remove Coco keys; if file empty, delete |
+| Scenario                                 | Coco action on `configure`          | Coco action on `unconfigure`            |
+| ---------------------------------------- | ----------------------------------- | --------------------------------------- |
+| Config file does not exist               | Create file; `backupPath = null`    | Delete the file                         |
+| Config file exists                       | Copy to `<path>.coco-backup`; write | Restore backup; delete backup           |
+| Config file exists but is already Coco's | Skip backup; overwrite              | Remove Coco keys; if file empty, delete |
 
 ---
 
@@ -168,7 +168,6 @@ marks the agent as `misconfigured` in the TUI.
 
 ### cli-interface
 
-
 **Feature**: `007-coco-migration` | **Phase**: 1
 
 Coco's CLI is the primary human interface. The binary is named `coco`.
@@ -177,19 +176,19 @@ Coco's CLI is the primary human interface. The binary is named `coco`.
 
 ### Command Summary
 
-| Command | Description |
-|---|---|
-| `coco` | Open the TUI (on TTY) or print status (non-TTY) |
-| `coco start` | Start the background service |
-| `coco stop` | Stop the background service |
-| `coco restart` | Restart the background service |
-| `coco status` | Print service and auth status |
-| `coco configure <agent>` | Write config for a specific agent |
-| `coco unconfigure <agent>` | Revert config for a specific agent |
-| `coco doctor` | Scan and report all agents' state |
-| `coco models` | List available Copilot model IDs |
-| `coco --help` | Show help |
-| `coco --version` | Show version |
+| Command                    | Description                                     |
+| -------------------------- | ----------------------------------------------- |
+| `coco`                     | Open the TUI (on TTY) or print status (non-TTY) |
+| `coco start`               | Start the background service                    |
+| `coco stop`                | Stop the background service                     |
+| `coco restart`             | Restart the background service                  |
+| `coco status`              | Print service and auth status                   |
+| `coco configure <agent>`   | Write config for a specific agent               |
+| `coco unconfigure <agent>` | Revert config for a specific agent              |
+| `coco doctor`              | Scan and report all agents' state               |
+| `coco models`              | List available Copilot model IDs                |
+| `coco --help`              | Show help                                       |
+| `coco --version`           | Show version                                    |
 
 ---
 
@@ -229,11 +228,13 @@ Space: toggle   Enter: apply   q: quit
 Spawn the background service daemon.
 
 **Output (success)**:
+
 ```
 Coco is running on http://localhost:11434
 ```
 
 **Output (already running)**:
+
 ```
 Coco is already running on http://localhost:11434
 ```
@@ -247,11 +248,13 @@ Coco is already running on http://localhost:11434
 Send SIGTERM to the daemon and wait for it to exit.
 
 **Output**:
+
 ```
 Coco stopped.
 ```
 
 **Output (not running)**:
+
 ```
 Coco is not running.
 ```
@@ -265,6 +268,7 @@ Coco is not running.
 Stop then start. Preserves port.
 
 **Output**:
+
 ```
 Coco stopped.
 Coco is running on http://localhost:11434
@@ -282,6 +286,7 @@ Copilot: Authenticated ✓
 ```
 
 Or when not running:
+
 ```
 Status:  Not running
 Copilot: Authenticated ✓
@@ -293,41 +298,48 @@ Copilot: Authenticated ✓
 
 ### `coco configure <agent>`
 
-Agent names match the `name` field of `AgentRecord` (kebab-case):
-`claude-code`, `cline`, `kilo`, `opencode`, `goose`, `aider`, `gpt-engineer`
+Agent names match the `name` field of `AgentRecord` (kebab-case): `claude-code`,
+`cline`, `kilo`, `opencode`, `goose`, `aider`, `gpt-engineer`
 
 **Output (success)**:
+
 ```
 claude-code configured.
 ```
 
 **Output (already configured)**:
+
 ```
 claude-code is already configured.
 ```
 
 **Output (not installed/detected)**:
+
 ```
 claude-code is not installed or detected on this system.
 ```
 
 **Output (validation warning)**:
+
 ```
 claude-code configured, but validation failed: <reason>
 ```
 
-**Exit codes**: 0 on success or already-configured; 1 on error; 2 on validation failure (configured but invalid).
+**Exit codes**: 0 on success or already-configured; 1 on error; 2 on validation
+failure (configured but invalid).
 
 ---
 
 ### `coco unconfigure <agent>`
 
 **Output (success)**:
+
 ```
 claude-code unconfigured.
 ```
 
 **Output (not configured)**:
+
 ```
 claude-code is not configured.
 ```
@@ -381,11 +393,11 @@ Run 'coco configure <agent>' to route an agent through Coco.
 
 ### Global Flags
 
-| Flag | Description |
-|---|---|
-| `--help`, `-h` | Show help and exit 0 |
-| `--version`, `-v` | Print `Coco v{VERSION}` and exit 0 |
-| `--daemon` | Internal flag: run as background daemon (not for direct use) |
+| Flag              | Description                                                  |
+| ----------------- | ------------------------------------------------------------ |
+| `--help`, `-h`    | Show help and exit 0                                         |
+| `--version`, `-v` | Print `Coco v{VERSION}` and exit 0                           |
+| `--daemon`        | Internal flag: run as background daemon (not for direct use) |
 
 ---
 
@@ -414,11 +426,11 @@ No stack traces. No internal paths. Exit code 1.
 
 ### openai-proxy
 
-
 **Feature**: `007-coco-migration` | **Phase**: 1
 
 Coco exposes two OpenAI-compatible endpoints alongside the existing Anthropic
-endpoints. All endpoints are served on `http://127.0.0.1:{port}` (default 11434).
+endpoints. All endpoints are served on `http://127.0.0.1:{port}` (default
+11434).
 
 ---
 
@@ -434,16 +446,16 @@ Authorization: Bearer <any-non-empty-string>
 
 ```jsonc
 {
-  "model": "gpt-4o",               // required; looked up in modelMap before forwarding
-  "messages": [                    // required
-    { "role": "system",    "content": "You are a helpful assistant." },
-    { "role": "user",      "content": "Hello" },
-    { "role": "assistant", "content": "Hi!" },  // optional history
-    { "role": "user",      "content": "How are you?" }
+  "model": "gpt-4o", // required; looked up in modelMap before forwarding
+  "messages": [ // required
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": "Hello" },
+    { "role": "assistant", "content": "Hi!" }, // optional history
+    { "role": "user", "content": "How are you?" }
   ],
-  "stream": false,                 // optional, default false
-  "temperature": 1.0,             // optional, 0.0–2.0
-  "max_tokens": 4096              // optional
+  "stream": false, // optional, default false
+  "temperature": 1.0, // optional, 0.0–2.0
+  "max_tokens": 4096 // optional
 }
 ```
 
@@ -454,7 +466,7 @@ Authorization: Bearer <any-non-empty-string>
   "id": "chatcmpl-<uuid>",
   "object": "chat.completion",
   "created": 1699564865,
-  "model": "gpt-4o",               // echo back the Copilot model ID used
+  "model": "gpt-4o", // echo back the Copilot model ID used
   "usage": {
     "prompt_tokens": 10,
     "completion_tokens": 25,
@@ -463,7 +475,7 @@ Authorization: Bearer <any-non-empty-string>
   "choices": [{
     "index": 0,
     "message": { "role": "assistant", "content": "I'm doing well!" },
-    "finish_reason": "stop"        // "stop" | "length" | "content_filter"
+    "finish_reason": "stop" // "stop" | "length" | "content_filter"
   }]
 }
 ```
@@ -489,13 +501,13 @@ data: [DONE]
 
 #### Error Responses
 
-| HTTP | Condition | Body |
-|---|---|---|
-| 400 | Invalid/missing required field | `{"error":{"message":"...","type":"invalid_request_error","code":"invalid_value"}}` |
-| 401 | Missing or empty Authorization header | `{"error":{"message":"Unauthorized","type":"authentication_error","code":"invalid_api_key"}}` |
-| 429 | Copilot rate limit exhausted (after 3 retries) | `{"error":{"message":"Rate limit exceeded","type":"requests","code":"rate_limit_exceeded"}}` |
-| 503 | Copilot API unavailable | `{"error":{"message":"Service unavailable","type":"api_error","code":"service_unavailable"}}` |
-| 504 | Copilot API timeout | `{"error":{"message":"Request timed out","type":"api_error","code":"request_timeout"}}` |
+| HTTP | Condition                                      | Body                                                                                          |
+| ---- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 400  | Invalid/missing required field                 | `{"error":{"message":"...","type":"invalid_request_error","code":"invalid_value"}}`           |
+| 401  | Missing or empty Authorization header          | `{"error":{"message":"Unauthorized","type":"authentication_error","code":"invalid_api_key"}}` |
+| 429  | Copilot rate limit exhausted (after 3 retries) | `{"error":{"message":"Rate limit exceeded","type":"requests","code":"rate_limit_exceeded"}}`  |
+| 503  | Copilot API unavailable                        | `{"error":{"message":"Service unavailable","type":"api_error","code":"service_unavailable"}}` |
+| 504  | Copilot API timeout                            | `{"error":{"message":"Request timed out","type":"api_error","code":"request_timeout"}}`       |
 
 ---
 
@@ -548,18 +560,19 @@ Before forwarding any request to Copilot, Coco resolves the model name:
 effective_model = modelMap[requested_model] ?? requested_model
 ```
 
-The `modelMap` is the merge of `DEFAULT_MODEL_MAP` (bundled in `src/agents/models.ts`)
-and `CocoConfig.modelMap` (user overrides from `~/.coco/config.json`). User entries win.
+The `modelMap` is the merge of `DEFAULT_MODEL_MAP` (bundled in
+`src/agents/models.ts`) and `CocoConfig.modelMap` (user overrides from
+`~/.coco/config.json`). User entries win.
 
 ---
 
 ### Copilot → OpenAI Translation Notes
 
-| Copilot concept | OpenAI wire format |
-|---|---|
-| Completion text chunk | `choices[0].delta.content` |
-| Stop reason `"stop"` | `finish_reason: "stop"` |
-| Stop reason `"length"` | `finish_reason: "length"` |
+| Copilot concept                | OpenAI wire format                               |
+| ------------------------------ | ------------------------------------------------ |
+| Completion text chunk          | `choices[0].delta.content`                       |
+| Stop reason `"stop"`           | `finish_reason: "stop"`                          |
+| Stop reason `"length"`         | `finish_reason: "length"`                        |
 | Prompt/completion token counts | `usage.prompt_tokens`, `usage.completion_tokens` |
-| Copilot model ID | echoed as `model` in response |
-| Request ID | prefixed as `"chatcmpl-"` + UUID |
+| Copilot model ID               | echoed as `model` in response                    |
+| Request ID                     | prefixed as `"chatcmpl-"` + UUID                 |

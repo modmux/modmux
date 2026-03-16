@@ -2,10 +2,8 @@
 
 ### requirements
 
-
-**Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-03-08
-**Feature**: [spec.md](../spec.md)
+**Purpose**: Validate specification completeness and quality before proceeding
+to planning **Created**: 2026-03-08 **Feature**: [README.md](../README.md)
 
 ### Content Quality
 
@@ -35,8 +33,10 @@
 ### Notes
 
 ✅ **VALIDATION COMPLETE** - All checklist items pass validation
-- Specification is ready for `/speckit.clarify` or `/speckit.plan`
-- No implementation details present - focuses on user outcomes and business value
+
+- Specification is ready for `/lean-spec clarify` or `/lean-spec plan`
+- No implementation details present - focuses on user outcomes and business
+  value
 - All requirements are testable with clear acceptance criteria
 - Success criteria are measurable and technology-agnostic
 - Complete coverage of user scenarios for documentation improvement initiative

@@ -16,7 +16,7 @@ const SECTION_EMOJIS: Record<string, string> = {
   "help": "❓",
   "example": "📖",
   "api": "📚",
-  "reference": "📚"
+  "reference": "📚",
 };
 
 function getEmojiForSection(title: string): string {
@@ -30,7 +30,7 @@ function getEmojiForSection(title: string): string {
 }
 
 function generateProgressiveDisclosure(content: string): string {
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const result: string[] = [];
   let currentSection: string[] = [];
   let currentLevel = 0;
@@ -49,10 +49,10 @@ function generateProgressiveDisclosure(content: string): string {
         const emoji = getEmojiForSection(currentTitle);
         result.push(`<details>`);
         result.push(`<summary>${emoji} ${currentTitle}</summary>`);
-        result.push('');
+        result.push("");
         result.push(...currentSection.slice(1)); // Skip the header line
-        result.push('</details>');
-        result.push('');
+        result.push("</details>");
+        result.push("");
       } else if (currentSection.length > 0) {
         result.push(...currentSection);
       }
@@ -71,14 +71,14 @@ function generateProgressiveDisclosure(content: string): string {
     const emoji = getEmojiForSection(currentTitle);
     result.push(`<details>`);
     result.push(`<summary>${emoji} ${currentTitle}</summary>`);
-    result.push('');
+    result.push("");
     result.push(...currentSection.slice(1)); // Skip the header
-    result.push('</details>');
+    result.push("</details>");
   } else if (currentSection.length > 0) {
     result.push(...currentSection);
   }
 
-  return result.join('\n');
+  return result.join("\n");
 }
 
 async function processFile(filePath: string) {
@@ -95,7 +95,9 @@ async function main() {
   const files = Deno.args;
 
   if (files.length === 0) {
-    console.log("Usage: deno run --allow-read --allow-write generate-disclosure.ts [files...]");
+    console.log(
+      "Usage: deno run --allow-read --allow-write generate-disclosure.ts [files...]",
+    );
     Deno.exit(1);
   }
 
@@ -103,7 +105,8 @@ async function main() {
     try {
       await processFile(file);
     } catch (error) {
-      console.error(`Error processing ${file}: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error processing ${file}: ${message}`);
     }
   }
 }

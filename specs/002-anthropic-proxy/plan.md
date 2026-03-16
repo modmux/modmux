@@ -15,9 +15,9 @@ connecting to the Anthropic API.
 specs/002-anthropic-proxy/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output
-├── data-model.md        # Phase 1 output
+├── DATA_MODEL.md        # Phase 1 output
 ├── quickstart.md        # Phase 1 output
-├── contracts/           # Phase 1 output
+├── CONTRACTS.md           # Phase 1 output
 │   └── api.md           # API contract
 └── tasks.md             # Phase 2 output
 ```

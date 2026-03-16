@@ -1,5 +1,7 @@
 ## Tasks
 
+> Status: Implemented in main. This task list is kept as a historical record.
+
 ---
 
 ### description: "Task list for implementing Copilot Authentication feature"
@@ -7,8 +9,8 @@
 ## Tasks: Copilot Authentication
 
 **Input**: Design documents from `/specs/001-copilot-auth/` **Prerequisites**:
-plan.md (required), spec.md (required for user stories), research.md,
-data-model.md, contracts/
+plan.md (required), README.md (required for user stories), research.md,
+DATA_MODEL.md, CONTRACTS.md
 
 **Tests**: Not explicitly requested - following minimal approach per
 constitution

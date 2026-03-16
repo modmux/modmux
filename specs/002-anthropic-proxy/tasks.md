@@ -1,9 +1,10 @@
 ## Tasks
 
+> Status: Implemented in main. This task list is kept as a historical record.
 
 **Feature**: 002-anthropic-proxy\
 **Date**: 2026-02-28\
-**Spec**: `/specs/002-anthropic-proxy/spec.md`
+**Spec**: `/specs/002-anthropic-proxy/README.md`
 
 ### Overview
 

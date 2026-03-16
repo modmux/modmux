@@ -1,5 +1,7 @@
 ## Tasks
 
+> Status: Implemented in main. This task list is kept as a historical record.
+
 ---
 description: "Task list for Release Distribution feature implementation"
 ---
@@ -8,8 +10,8 @@ description: "Task list for Release Distribution feature implementation"
 
 **Feature**: `005-release-distribution`\
 **Input**: Design documents from `specs/005-release-distribution/`\
-**Prerequisites**: plan.md ✅ spec.md ✅ research.md ✅ data-model.md ✅
-contracts/ ✅ quickstart.md ✅\
+**Prerequisites**: plan.md ✅ README.md ✅ research.md ✅ DATA_MODEL.md ✅
+CONTRACTS.md ✅ quickstart.md ✅\
 **Tests**: No TDD — implementation tasks only (per user request)
 
 **Organization**: Tasks grouped by user story to enable independent
@@ -85,10 +87,9 @@ and all npm `package.json` versions match `deno.json` version. Run
 
 ### Phase 2.5: Contract Tests — CLI Interface (Constitution VIII)
 
-**Purpose**: Verify the stable CLI contract defined in
-`contracts/cli-interface.md` is upheld by the compiled binary and the Deno entry
-point. Constitution Principle VIII mandates these tests exist before any
-distribution channel is released.
+**Purpose**: Verify the stable CLI contract defined in `CONTRACTS.md` is upheld
+by the compiled binary and the Deno entry point. Constitution Principle VIII
+mandates these tests exist before any distribution channel is released.
 
 **⚠️ REQUIRED**: These tests must pass in CI before the release workflow uploads
 any binary.
@@ -182,13 +183,12 @@ the installed platform package.
       `description: "GitHub Copilot bridge for Claude Code"`,
       `bin: { "claudio": "./bin/claudio.js" }`, `engines: { "node": ">=18" }`,
       and `optionalDependencies` for all five `@claudio/*` packages — per
-      `contracts/npm-package.md`
+      `CONTRACTS.md`
 - [x] T018 [US2] Implement `npm/claudio/bin/claudio.js` Node.js shim per
-      `contracts/npm-package.md` resolution algorithm: (1) build platform key
-      from `process.platform + " " + process.arch`; (2) map to
-      `@claudio/<os>-<arch>` package name; (3) attempt
-      `require.resolve("<pkg>/bin/claudio")` (with `.exe` on win32); (4) on
-      success
+      `CONTRACTS.md` resolution algorithm: (1) build platform key from
+      `process.platform + " " + process.arch`; (2) map to `@claudio/<os>-<arch>`
+      package name; (3) attempt `require.resolve("<pkg>/bin/claudio")` (with
+      `.exe` on win32); (4) on success
       `const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: "inherit", shell: false }); process.exit(result.status ?? 1);`
       — use `spawnSync` (not `execFileSync`) so the exit code is returned rather
       than thrown; (5) on failure check if `deno` is on PATH and

@@ -1,7 +1,7 @@
 # Coco Global Conventions
 
-This file replaces Speckit's .specify/memory/constitution.md.
-It is the canonical global conventions document for Coco contributors and agents.
+This file replaces Speckit's CONVENTIONS.md. It is the canonical global
+conventions document for Coco contributors and agents.
 
 # Coco Constitution
 
@@ -26,10 +26,10 @@ Sync Impact Report:
 - Scope > Non-Responsibilities: updated; Claude Code-specific launching removed
 - Success Criteria: revised for multi-agent, TUI, and daemon reliability
 - Templates requiring updates:
-  - ✅ .specify/memory/constitution.md (this file)
-  - ✅ .specify/templates/plan-template.md — no principle-specific hardcoding; generic gates fine
-  - ✅ .specify/templates/spec-template.md — no principle-specific hardcoding; no changes required
-  - ✅ .specify/templates/tasks-template.md — no hardcoded principle refs; no changes required
+  - ✅ CONVENTIONS.md (this file)
+  - ✅ LeanSpec plan template usage verified — no principle-specific hardcoding; generic gates fine
+  - ✅ LeanSpec specification template usage verified — no principle-specific hardcoding; no changes required
+  - ✅ LeanSpec tasks template usage verified — no hardcoded principle refs; no changes required
   - ⚠ AGENTS.md — references Claudio; update to Coco after implementation (task T043)
   - ⚠ CLAUDE.md — references Claudio architecture; update to Coco after implementation (task T043)
   - ⚠ README.md — references Claudio; update to Coco during Polish phase (task T042)
@@ -38,10 +38,10 @@ Sync Impact Report:
 
 Coco is a universal local AI gateway that exposes unified Anthropic-compatible
 and OpenAI-compatible endpoints backed by GitHub Copilot models. Coco runs as a
-persistent background service, automatically configures multiple coding agents to
-use its proxy, and provides a minimal TUI control surface. Its presence is calm
-and unobtrusive: it bridges the diverse agent ecosystem to GitHub Copilot's API
-without imposing itself on the developer's workflow.
+persistent background service, automatically configures multiple coding agents
+to use its proxy, and provides a minimal TUI control surface. Its presence is
+calm and unobtrusive: it bridges the diverse agent ecosystem to GitHub Copilot's
+API without imposing itself on the developer's workflow.
 
 ## Core Principles
 
@@ -57,9 +57,9 @@ configuration surfaces, no workflow layers beyond the gateway mission.
 
 Quiet, steady, reassuring output. Slow, subtle animations (approximately
 350–400ms). Short, emotionally neutral lines. No humor, metaphors, or
-personality spikes. CLI output uses soft blue/green ANSI-safe colors. The TUI
-is calm, minimal, and control-surface only. Coco's presence MUST feel
-understated regardless of how many agents it manages.
+personality spikes. CLI output uses soft blue/green ANSI-safe colors. The TUI is
+calm, minimal, and control-surface only. Coco's presence MUST feel understated
+regardless of how many agents it manages.
 
 ### III. Predictability
 
@@ -72,12 +72,13 @@ identical inputs.
 ### IV. Separation of Concerns
 
 The daemon proxies; coding agents perform. The TUI controls; the configuration
-manager writes. Each of Coco's subsystems has one clearly bounded responsibility:
+manager writes. Each of Coco's subsystems has one clearly bounded
+responsibility:
 
 - The **proxy daemon** translates API formats and forwards to Copilot.
 - The **configuration manager** reads, writes, and reverts agent config files.
-- The **TUI** presents state and accepts user input — it MUST NOT perform
-  side effects directly; it delegates to the configuration manager.
+- The **TUI** presents state and accepts user input — it MUST NOT perform side
+  effects directly; it delegates to the configuration manager.
 - The **CLI** dispatches sub-commands — it MUST NOT contain business logic.
 
 Coco MUST NOT implement a chat or coding interface, replace or modify agent
@@ -90,8 +91,8 @@ Single compiled binary with minimal dependencies. Distributed via JSR, npm (via
 shim), and compiled binaries for macOS (arm64/x64), Linux (x64/arm64), and
 Windows (x64). Implemented in Deno with TypeScript. The background daemon MUST
 be self-contained, spawned as a second instance of the same binary via a
-`--daemon` flag — no separate daemon binary, no OS service manager required.
-The only runtime configuration store is `~/.coco/` (files only; no databases,
+`--daemon` flag — no separate daemon binary, no OS service manager required. The
+only runtime configuration store is `~/.coco/` (files only; no databases,
 registries, or system services).
 
 ### VI. Transparency
@@ -99,8 +100,8 @@ registries, or system services).
 All request/response transformations between agent API semantics (Anthropic or
 OpenAI) and GitHub Copilot's HTTP interface MUST be explicit, documented, and
 spec-driven. No hidden behavior, silent fallbacks, or undocumented mutations.
-Every transformation MUST be reviewable in source and traceable to a contract
-in `specs/*/contracts/`. Model alias resolution MUST be logged at `debug` level.
+Every transformation MUST be reviewable in source and traceable to a contract in
+`specs/*/CONTRACTS.md`. Model alias resolution MUST be logged at `debug` level.
 
 ### VII. Self-Containment
 
@@ -152,8 +153,8 @@ Coco is responsible for:
 - Running a persistent local HTTP proxy bound exclusively to `127.0.0.1`,
   exposing Anthropic-compatible (`/v1/messages`) and OpenAI-compatible
   (`/v1/chat/completions`, `/v1/models`, `/health`) endpoints
-- Translating Anthropic and OpenAI request/response semantics to and from
-  GitHub Copilot's HTTP interface, including streaming and non-streaming flows
+- Translating Anthropic and OpenAI request/response semantics to and from GitHub
+  Copilot's HTTP interface, including streaming and non-streaming flows
 - Managing its own background daemon lifecycle (start, stop, restart, status)
   via PID file and process signals
 - Writing structured logs to `~/.coco/coco.log` at a configurable log level
@@ -212,8 +213,8 @@ Coco must not:
 - Distributed via JSR, npm (via shim), and compiled binaries
 - Binary name: `coco`; configuration directory: `~/.coco/`
 - Proxy is stateless and deterministic per request
-- All request/response transformations are deterministic and spec-documented
-  in `specs/*/contracts/`
+- All request/response transformations are deterministic and spec-documented in
+  `specs/*/CONTRACTS.md`
 - Communication with GitHub Copilot occurs exclusively through a stable HTTP
   interface
 - No Copilot CLI or SDK dependencies
@@ -229,8 +230,8 @@ Coco must not:
 - No external telemetry or analytics
 - No network calls beyond GitHub Copilot's API and the local proxy
 - No logging of authentication tokens, request bodies, or sensitive headers
-- Agent config file backups MUST be stored adjacent to the original file
-  (not in a world-readable central location)
+- Agent config file backups MUST be stored adjacent to the original file (not in
+  a world-readable central location)
 - Proxy MUST NOT forward requests to any host other than GitHub Copilot's
   documented API endpoint
 
@@ -238,12 +239,12 @@ Coco must not:
 
 Coco is successful when:
 
-- Multiple coding agents (Claude Code, Cline, Aider, and others) run
-  seamlessly through Coco with zero manual environment variable setup
+- Multiple coding agents (Claude Code, Cline, Aider, and others) run seamlessly
+  through Coco with zero manual environment variable setup
 - `coco start` and `coco stop` each complete in under 1 second
 - The TUI renders in under 200ms on first open
-- OpenAI-compatible proxy round-trip overhead is under 150ms (excluding
-  Copilot API latency)
+- OpenAI-compatible proxy round-trip overhead is under 150ms (excluding Copilot
+  API latency)
 - `coco configure <agent>` and `coco unconfigure <agent>` are deterministically
   reversible — the config file is byte-identical to its pre-Coco state after
   unconfigure
@@ -260,16 +261,19 @@ Coco is successful when:
 
 **Feature Evaluation**: All feature requests are evaluated against the core
 principles:
+
 1. **Focus Check**: Does this add essential gateway functionality, or
    unnecessary complexity outside the universal AI gateway mission?
 2. **UX Impact**: Will this maintain calm, predictable, minimal user experience?
-3. **Scope Alignment**: Is this within stated responsibilities, or outside scope?
+3. **Scope Alignment**: Is this within stated responsibilities, or outside
+   scope?
 4. **Technical Standards**: Does this meet quality gates and architectural
    standards?
 5. **Reversibility**: If this touches agent configuration, is it fully
    reversible with backup/restore?
 
 **Acceptance Criteria**: Features must satisfy ALL of these requirements:
+
 - Aligns with at least one core principle without violating others
 - Falls within defined scope responsibilities
 - Includes comprehensive tests and documentation
@@ -277,6 +281,7 @@ principles:
 - Maintains constitutional compliance
 
 **Rejection Criteria**: Features are rejected if they:
+
 - Violate any core principle
 - Fall outside defined scope boundaries
 - Add unnecessary complexity or configuration surfaces

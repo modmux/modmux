@@ -2,7 +2,6 @@
 
 ### cli-interface
 
-
 **Package**: `claudio` (npm), `@myty/claudio` (JSR), compiled binaries\
 **Version**: matches `deno.json` version\
 **Contract Type**: CLI Command Interface\
@@ -155,7 +154,6 @@ claudio --dark-mode --model claude-3-5-sonnet-20241022
   `claude` exits. Consumers MUST NOT depend on the proxy persisting.
 
 ### npm-package
-
 
 **Package**: `claudio` (npm)\
 **Version**: matches `deno.json` version\

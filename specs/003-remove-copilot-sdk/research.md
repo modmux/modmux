@@ -1,6 +1,5 @@
 ## Research
 
-
 ### Decision: GitHub Copilot Token Exchange Endpoint
 
 **Chosen**: `GET https://api.github.com/copilot_internal/v2/token`
