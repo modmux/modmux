@@ -1,6 +1,7 @@
 # LeanSpec SDD Workflow (Detailed)
 
-This guide expands the workflow from SKILL.md with practical steps and decision points.
+This guide expands the workflow from SKILL.md with practical steps and decision
+points.
 
 ## Discovery Phase
 
@@ -26,7 +27,8 @@ This guide expands the workflow from SKILL.md with practical steps and decision 
 4. Validate token count
    - MCP: `tokens`
    - CLI: `lean-spec tokens <spec>`
-5. If >2000 tokens, split into separate files (e.g. DESIGN.md, TESTING.md) or extract to references.
+5. If >2000 tokens, split into separate files (e.g. DESIGN.md, TESTING.md) or
+   extract to references.
 
 ## Implementation Phase
 
@@ -38,8 +40,11 @@ This guide expands the workflow from SKILL.md with practical steps and decision 
    - CLI: `lean-spec update <spec> --status in-progress`
 3. Record decisions, constraints, and progress in the spec.
 4. **Set up relationships as they emerge:**
-   - If spec is part of an umbrella → use `relationships` with `action=add`, `type=parent` (MCP) / `lean-spec rel add <spec> --parent <parent>` (CLI)
-   - If spec is blocked by another independent spec → use `relationships` with `action=add`, `type=depends_on` (MCP) / `lean-spec rel add <spec> --depends-on <other>` (CLI)
+   - If spec is part of an umbrella → use `relationships` with `action=add`,
+     `type=parent` (MCP) / `lean-spec rel add <spec> --parent <parent>` (CLI)
+   - If spec is blocked by another independent spec → use `relationships` with
+     `action=add`, `type=depends_on` (MCP) /
+     `lean-spec rel add <spec> --depends-on <other>` (CLI)
    - See SKILL.md "Choosing Relationship Type" for the decision flowchart
 
 ## Validation Phase

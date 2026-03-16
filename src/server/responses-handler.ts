@@ -73,6 +73,8 @@ function toResponsesBody(openAIResp: ReturnType<typeof anthropicToOpenAI>) {
       input_tokens: openAIResp.usage.prompt_tokens,
       output_tokens: openAIResp.usage.completion_tokens,
       total_tokens: openAIResp.usage.total_tokens,
+      input_tokens_details: { cached_tokens: 0 },
+      output_tokens_details: { reasoning_tokens: 0 },
     },
   };
 }

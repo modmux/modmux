@@ -60,6 +60,8 @@ export interface ProxyRequest {
 export interface Usage {
   input_tokens: number;
   output_tokens: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
 }
 
 export interface ProxyResponse {
@@ -252,12 +254,15 @@ export interface OpenAIChatRequest {
     type: "function";
     function: { name: string };
   };
+  stream_options?: { include_usage?: boolean };
 }
 
 export interface OpenAIUsage {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
+  prompt_tokens_details?: { cached_tokens: number };
+  completion_tokens_details?: { reasoning_tokens: number };
 }
 
 export interface OpenAIChoice {
@@ -287,6 +292,7 @@ export interface OpenAIStreamChunk {
   created: number;
   model: string;
   choices: OpenAIStreamChoice[];
+  usage?: OpenAIUsage;
 }
 
 export interface OpenAIModel {

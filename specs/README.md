@@ -33,7 +33,7 @@ Each spec lives in a numbered directory with a `README.md` file:
 
 - `draft` - Being authored or refined
 - `planned` - Not yet started
-- `in-progress` - Currently being worked on  
+- `in-progress` - Currently being worked on
 - `complete` - Finished
 - `archived` - No longer relevant
 

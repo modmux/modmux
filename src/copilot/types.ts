@@ -64,6 +64,7 @@ export interface OpenAIChatRequest {
     type: "function";
     function: { name: string };
   };
+  stream_options?: { include_usage?: boolean };
 }
 
 export interface OpenAIUsage {
@@ -111,6 +112,7 @@ export interface OpenAIStreamChunk {
   id: string;
   object: "chat.completion.chunk";
   choices: OpenAIStreamChoice[];
+  usage?: OpenAIUsage;
 }
 
 /**

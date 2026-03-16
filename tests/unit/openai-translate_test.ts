@@ -165,3 +165,48 @@ Deno.test("anthropicStreamEventToOpenAI — content_block_start returns null", (
   const line = anthropicStreamEventToOpenAI(event, state);
   assertEquals(line, null);
 });
+
+// ---------------------------------------------------------------------------
+// Extended usage fields
+// ---------------------------------------------------------------------------
+
+Deno.test("anthropicToOpenAI — usage includes prompt_tokens_details and completion_tokens_details", () => {
+  const resp = anthropicToOpenAI(
+    {
+      id: "msg_ext",
+      type: "message",
+      role: "assistant",
+      content: [{ type: "text", text: "Hi" }],
+      model: "gpt-4o",
+      stop_reason: "end_turn",
+      stop_sequence: null,
+      usage: { input_tokens: 10, output_tokens: 5 },
+    },
+    "gpt-4o",
+  );
+  assertEquals(resp.usage.prompt_tokens_details?.cached_tokens, 0);
+  assertEquals(resp.usage.completion_tokens_details?.reasoning_tokens, 0);
+});
+
+Deno.test("anthropicStreamEventToOpenAI — message_delta with usage emits stop + usage chunks", () => {
+  const state = makeStreamState("gpt-4o");
+  const event: StreamEvent = {
+    type: "message_delta",
+    delta: { type: "stop_reason", stop_reason: "max_tokens" },
+    usage: { input_tokens: 100, output_tokens: 50 },
+  };
+  const result = anthropicStreamEventToOpenAI(event, state);
+  assertEquals(result !== null, true);
+
+  const parts = result!.split("\n\n").filter((p) => p.startsWith("data:"));
+  assertEquals(parts.length, 2);
+
+  const stopChunk = JSON.parse(parts[0].slice("data: ".length));
+  assertEquals(stopChunk.choices[0].finish_reason, "length");
+
+  const usageChunk = JSON.parse(parts[1].slice("data: ".length));
+  assertEquals(usageChunk.choices.length, 0);
+  assertEquals(usageChunk.usage.prompt_tokens, 100);
+  assertEquals(usageChunk.usage.completion_tokens, 50);
+  assertEquals(usageChunk.usage.total_tokens, 150);
+});

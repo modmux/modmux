@@ -34,6 +34,21 @@ const COPILOT_CHAT_URL = "https://api.githubcopilot.com/chat/completions";
 // Helpers
 // ---------------------------------------------------------------------------
 
+function estimateInputTokens(req: ProxyRequest): number {
+  const parts: string[] = [];
+  if (req.system) parts.push(req.system);
+  for (const msg of req.messages) {
+    if (typeof msg.content === "string") {
+      parts.push(msg.content);
+    } else {
+      for (const block of msg.content) {
+        if (block.type === "text") parts.push(block.text);
+      }
+    }
+  }
+  return Math.ceil(parts.join("\n\n").length / 4);
+}
+
 function buildHeaders(
   copilotToken: string,
   isAgentCall: boolean,
@@ -275,6 +290,8 @@ export async function chat(request: ProxyRequest): Promise<ProxyResponse> {
     usage: {
       input_tokens: data.usage.prompt_tokens,
       output_tokens: data.usage.completion_tokens,
+      cache_read_input_tokens: 0,
+      cache_creation_input_tokens: 0,
     },
   };
 }
@@ -295,6 +312,7 @@ export async function chatStream(
     messages: toOpenAIMessages(request),
     max_tokens: request.max_tokens,
     stream: true,
+    stream_options: { include_usage: true },
     ...(request.temperature !== undefined &&
       { temperature: request.temperature }),
     ...(request.top_p !== undefined && { top_p: request.top_p }),
@@ -323,7 +341,12 @@ export async function chatStream(
         type: "message",
         role: "assistant",
         model: request.model,
-        usage: { input_tokens: 0, output_tokens: 0 },
+        usage: {
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_read_input_tokens: 0,
+          cache_creation_input_tokens: 0,
+        },
       },
     });
     onChunk({
@@ -342,7 +365,12 @@ export async function chatStream(
     onChunk({ type: "content_block_stop", index: 0 });
     onChunk({
       type: "message_delta",
-      usage: { input_tokens: 0, output_tokens: 0 },
+      usage: {
+        input_tokens: 0,
+        output_tokens: 0,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      },
       delta: { type: "stop_reason", stop_reason: "end_turn" },
     });
     onChunk({ type: "message_stop" });
@@ -356,6 +384,10 @@ export async function chatStream(
   let headerEmitted = false;
   let doneEmitted = false;
   const messageId = generateMessageId();
+  const estimatedInputTokens = estimateInputTokens(request);
+  let pendingStopReason: "end_turn" | "max_tokens" | "tool_use" | null = null;
+  let actualInputTokens = estimatedInputTokens;
+  let actualOutputTokens = 0;
 
   // Content block tracking
   let nextBlockIndex = 0;
@@ -376,7 +408,12 @@ export async function chatStream(
         type: "message",
         role: "assistant",
         model: request.model,
-        usage: { input_tokens: 0, output_tokens: 0 },
+        usage: {
+          input_tokens: estimatedInputTokens,
+          output_tokens: 0,
+          cache_read_input_tokens: 0,
+          cache_creation_input_tokens: 0,
+        },
       },
     });
   };
@@ -398,7 +435,12 @@ export async function chatStream(
 
     onChunk({
       type: "message_delta",
-      usage: { input_tokens: 0, output_tokens: 0 },
+      usage: {
+        input_tokens: actualInputTokens,
+        output_tokens: actualOutputTokens,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      },
       delta: { type: "stop_reason", stop_reason: stopReason ?? "end_turn" },
     });
     onChunk({ type: "message_stop" });
@@ -422,7 +464,7 @@ export async function chatStream(
 
         if (data === "[DONE]") {
           emitHeader();
-          emitDone("end_turn");
+          emitDone(pendingStopReason ?? "end_turn");
           continue;
         }
 
@@ -434,7 +476,14 @@ export async function chatStream(
         }
 
         const choice = chunk.choices[0];
-        if (!choice) continue;
+        // Usage-only chunk (choices is empty, usage is present) — capture actual counts
+        if (!choice) {
+          if (chunk.usage) {
+            actualInputTokens = chunk.usage.prompt_tokens;
+            actualOutputTokens = chunk.usage.completion_tokens;
+          }
+          continue;
+        }
 
         const { delta, finish_reason } = choice;
 
@@ -491,7 +540,8 @@ export async function chatStream(
 
         if (finish_reason) {
           emitHeader();
-          emitDone(finishReasonToStopReason(finish_reason));
+          // Defer emitDone — wait for the usage chunk that follows finish_reason
+          pendingStopReason = finishReasonToStopReason(finish_reason);
         }
       }
     }

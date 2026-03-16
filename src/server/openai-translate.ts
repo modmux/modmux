@@ -85,6 +85,8 @@ export function anthropicToOpenAI(
       prompt_tokens: res.usage.input_tokens,
       completion_tokens: res.usage.output_tokens,
       total_tokens: res.usage.input_tokens + res.usage.output_tokens,
+      prompt_tokens_details: { cached_tokens: 0 },
+      completion_tokens_details: { reasoning_tokens: 0 },
     },
   };
 }
@@ -101,6 +103,11 @@ const STREAM_CHUNK_ID = () => `chatcmpl-${generateMessageId()}`;
 export interface StreamState {
   id: string;
   model: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 export function makeStreamState(model: string): StreamState {
@@ -167,7 +174,34 @@ export function anthropicStreamEventToOpenAI(
           finish_reason: stopReasonToFinishReason(stopReason),
         }],
       };
-      return `data: ${JSON.stringify(chunk)}\n\n`;
+      // Capture usage from the Anthropic message_delta event
+      if (event.usage) {
+        state.usage = {
+          prompt_tokens: event.usage.input_tokens,
+          completion_tokens: event.usage.output_tokens,
+          total_tokens: event.usage.input_tokens + event.usage.output_tokens,
+        };
+      }
+      // Emit the stop chunk, then a usage chunk if usage data is available
+      const stopLine = `data: ${JSON.stringify(chunk)}\n\n`;
+      if (state.usage) {
+        const usageChunk: OpenAIStreamChunk = {
+          id: state.id,
+          object: "chat.completion.chunk",
+          created,
+          model: state.model,
+          choices: [],
+          usage: {
+            prompt_tokens: state.usage.prompt_tokens,
+            completion_tokens: state.usage.completion_tokens,
+            total_tokens: state.usage.total_tokens,
+            prompt_tokens_details: { cached_tokens: 0 },
+            completion_tokens_details: { reasoning_tokens: 0 },
+          },
+        };
+        return `${stopLine}data: ${JSON.stringify(usageChunk)}\n\n`;
+      }
+      return stopLine;
     }
 
     case "message_stop":

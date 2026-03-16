@@ -5,6 +5,7 @@
 Title: "Add cached search for large spec repositories"
 
 Sections:
+
 - Overview (problem + motivation)
 - Design (data flow, storage, API changes)
 - Plan (checklist of implementation steps)
@@ -14,7 +15,9 @@ Sections:
 ## Example: Dependency Link
 
 If spec 210 depends on spec 069 (independent blocker):
-- MCP: `relationships` with `specPath=210`, `action=add`, `type=depends_on`, `target=069`
+
+- MCP: `relationships` with `specPath=210`, `action=add`, `type=depends_on`,
+  `target=069`
 - CLI: `lean-spec rel add 210 --depends-on 069`
 
 ## Example: Umbrella with Children
@@ -38,19 +41,22 @@ lean-spec children 250
 ```
 
 With MCP tool (`relationships`):
+
 - add parent: `specPath=251`, `action=add`, `type=parent`, `target=250`
 - add parent: `specPath=252`, `action=add`, `type=parent`, `target=250`
 - list children: `children` with `specPath=250`
 
 ## Example: Choosing Between Parent and Depends-On
 
-**Scenario A**: "Search UI" is part of the "Search Feature" umbrella.
-→ Use **parent/child**: `lean-spec rel add search-ui --parent search-feature`
+**Scenario A**: "Search UI" is part of the "Search Feature" umbrella. → Use
+**parent/child**: `lean-spec rel add search-ui --parent search-feature`
 
-**Scenario B**: "Search Feature" needs "Database Indexing" done first.
-→ Use **depends_on**: `lean-spec rel add search-feature --depends-on database-indexing`
+**Scenario B**: "Search Feature" needs "Database Indexing" done first. → Use
+**depends_on**:
+`lean-spec rel add search-feature --depends-on database-indexing`
 
 **Litmus test**: Remove the other spec — does yours still make sense?
+
 - "Search UI" without "Search Feature"? No → parent/child
 - "Search Feature" without "Database Indexing"? Yes (just blocked) → depends_on
 
@@ -63,5 +69,6 @@ With MCP tool (`relationships`):
 Core SDD workflow is defined in .lean-spec/skills/leanspec-sdd/SKILL.md.
 
 ## Project-Specific Rules
+
 - Use pnpm instead of npm
 - Update both en and zh-CN locales for UI text

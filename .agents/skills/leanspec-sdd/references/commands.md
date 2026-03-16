@@ -1,6 +1,7 @@
 # Command Reference
 
-Accurate reference for LeanSpec CLI commands. For details, run `lean-spec --help` or `lean-spec <command> --help`.
+Accurate reference for LeanSpec CLI commands. For details, run
+`lean-spec --help` or `lean-spec <command> --help`.
 
 ## Discovery
 
@@ -16,6 +17,7 @@ lean-spec files <spec>
 ## Spec Lifecycle
 
 ### Create
+
 ```bash
 lean-spec create <name>
 lean-spec create <name> --title "Human Title"
@@ -28,6 +30,7 @@ lean-spec create <name> --depends-on 210 211
 ```
 
 ### Update Metadata
+
 ```bash
 lean-spec update <spec> --status in-progress
 lean-spec update <spec> --priority high
@@ -38,6 +41,7 @@ lean-spec update <spec> --status complete --force
 ```
 
 ### Archive
+
 ```bash
 lean-spec archive <spec>
 lean-spec archive 001-feature-a 002-feature-b
@@ -144,6 +148,7 @@ lean-spec session list
 ## Output Format
 
 Most commands support:
+
 ```bash
 lean-spec <command> ... -o text
 lean-spec <command> ... -o json
@@ -152,5 +157,6 @@ lean-spec <command> ... -o json
 ## Notes
 
 - CLI uses kebab-case flags (`--check-deps`, `--group-by`).
-- Prefer `rel` for relationship updates; use `children` and `deps` for focused read views.
+- Prefer `rel` for relationship updates; use `children` and `deps` for focused
+  read views.
 - `files` supports `--size` (there is no `--type` flag).

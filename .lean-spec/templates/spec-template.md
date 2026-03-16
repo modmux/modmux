@@ -1,6 +1,6 @@
 ---
 status: planned
-created: '{date}'
+created: "{date}"
 tags: []
 priority: medium
 ---
@@ -21,7 +21,7 @@ priority: medium
 
 <!-- Break down implementation into steps -->
 
-<!-- 💡 TIP: If your plan has >6 phases or this spec approaches 
+<!-- 💡 TIP: If your plan has >6 phases or this spec approaches
      400 lines, consider using sub-spec files:
      - IMPLEMENTATION.md for detailed implementation
      - See spec 012-sub-spec-files for guidance on splitting -->

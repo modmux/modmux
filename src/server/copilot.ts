@@ -11,6 +11,32 @@ import type {
 } from "./types.ts";
 import { generateMessageId } from "./types.ts";
 
+export function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+export function messagesToText(
+  request: { system?: string; messages: Message[] },
+): string {
+  const parts: string[] = [];
+  if (request.system) {
+    parts.push(`System: ${request.system}`);
+  }
+  for (const msg of request.messages) {
+    const label = msg.role === "user" ? "User" : "Assistant";
+    if (typeof msg.content === "string") {
+      parts.push(`${label}: ${msg.content}`);
+    } else {
+      const text = msg.content
+        .filter((b) => b.type === "text")
+        .map((b) => (b as { type: "text"; text: string }).text)
+        .join(" ");
+      if (text) parts.push(`${label}: ${text}`);
+    }
+  }
+  return parts.join("\n\n");
+}
+
 /**
  * No-op stub retained for backwards compatibility with callers in tests/contract/proxy_test.ts.
  * The HTTP-based Copilot client has no persistent connection to close.
@@ -29,10 +55,9 @@ export async function chatStream(
 }
 
 export function countTokens(
-  request: { model: string; messages: Message[] },
+  request: { model: string; messages: Message[]; system?: string },
 ): CountTokensResponse {
-  const prompt = messagesToText(request);
-  const tokens = estimateTokens(prompt);
+  const tokens = estimateTokens(messagesToText(request));
 
   return {
     id: generateMessageId(),
@@ -50,31 +75,3 @@ export function countTokens(
 }
 
 /** Converts messages to a plain text representation for token estimation. */
-function messagesToText(
-  request: { system?: string; messages: Message[] },
-): string {
-  const parts: string[] = [];
-
-  if (request.system) {
-    parts.push(`System: ${request.system}`);
-  }
-
-  for (const msg of request.messages) {
-    const label = msg.role === "user" ? "User" : "Assistant";
-    if (typeof msg.content === "string") {
-      parts.push(`${label}: ${msg.content}`);
-    } else {
-      const text = msg.content
-        .filter((b) => b.type === "text")
-        .map((b) => (b as { type: "text"; text: string }).text)
-        .join(" ");
-      if (text) parts.push(`${label}: ${text}`);
-    }
-  }
-
-  return parts.join("\n\n");
-}
-
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}

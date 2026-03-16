@@ -5,15 +5,18 @@ description: Spec-Driven Development methodology for AI-assisted development. Us
 
 # LeanSpec SDD Skill
 
-Teach agents how to run Spec-Driven Development (SDD) in LeanSpec projects. This skill is an addon: it **does not replace** MCP or CLI tools.
+Teach agents how to run Spec-Driven Development (SDD) in LeanSpec projects. This
+skill is an addon: it **does not replace** MCP or CLI tools.
 
 ## Core Principles
 
-1. **Context Economy**: Keep specs under 2000 tokens when possible. Split large specs.
+1. **Context Economy**: Keep specs under 2000 tokens when possible. Split large
+   specs.
 2. **Discovery First**: Always run board/search before creating new specs.
 3. **Intent Over Implementation**: Capture why first, then how.
 4. **No Manual Frontmatter**: Use tools to update status, tags, dependencies.
-5. **Verify Against Reality**: Check actual codebase, commits, and changes—not just spec status.
+5. **Verify Against Reality**: Check actual codebase, commits, and changes—not
+   just spec status.
 
 ---
 
@@ -31,7 +34,9 @@ Before creating or modifying anything:
 
 Use `create` tool (preferred) or `lean-spec create "spec-name"`.
 
-**Always pass all known fields in the `create` call** — `title`, `content`, `priority`, `tags`, etc. Never create empty specs then populate with follow-up `update`.
+**Always pass all known fields in the `create` call** — `title`, `content`,
+`priority`, `tags`, etc. Never create empty specs then populate with follow-up
+`update`.
 
 **Gather requirements first:**
 
@@ -40,7 +45,8 @@ Use `create` tool (preferred) or `lean-spec create "spec-name"`.
 - **Success Criteria**: How do we know it's done?
 - **Dependencies**: What needs to exist first?
 
-**Naming conventions:** kebab-case, descriptive — `user-auth-oauth-integration`, not `bug-fix`.
+**Naming conventions:** kebab-case, descriptive — `user-auth-oauth-integration`,
+not `bug-fix`.
 
 **Quality content sections:**
 
@@ -57,7 +63,8 @@ Use `create` tool (preferred) or `lean-spec create "spec-name"`.
 
 ### 3. Refine Spec
 
-Pre-implementation research to ensure the spec is implementation-ready. Use when spec is drafted and approaching `in-progress`.
+Pre-implementation research to ensure the spec is implementation-ready. Use when
+spec is drafted and approaching `in-progress`.
 
 **Research the codebase:**
 
@@ -92,10 +99,13 @@ Pre-implementation research to ensure the spec is implementation-ready. Use when
 
 - Use `view <spec>` — includes parent, children, depends_on, required_by
 - Set status to `in-progress`: `update <spec> --status in-progress`
-- ⚠️ Do NOT call `list`, `list_children`, or `list_umbrellas` — `view` provides all relationships
-- If `draft` is enabled, move `draft` → `planned` first (skipping requires `--force`)
+- ⚠️ Do NOT call `list`, `list_children`, or `list_umbrellas` — `view` provides
+  all relationships
+- If `draft` is enabled, move `draft` → `planned` first (skipping requires
+  `--force`)
 
-**For umbrella specs:** Implement children first; parent completes when all children complete.
+**For umbrella specs:** Implement children first; parent completes when all
+children complete.
 
 **For child specs:** Complete independently once requirements are met.
 
@@ -127,7 +137,8 @@ All must pass before marking complete. If any fail, fix and re-run.
 
 Verify spec completion against actual implementation.
 
-**Extract from spec:** checklist items, acceptance criteria, scope boundaries, technical requirements.
+**Extract from spec:** checklist items, acceptance criteria, scope boundaries,
+technical requirements.
 
 **Verify against codebase:**
 
@@ -146,7 +157,8 @@ git log --oneline --since="<spec-created-date>" -- <relevant-paths>
 2. Search codebase for evidence of completion
 3. Mark complete only if implementation is verified
 
-**Update status** based on findings. Never trust status alone — always verify against actual code.
+**Update status** based on findings. Never trust status alone — always verify
+against actual code.
 
 ---
 
@@ -178,7 +190,8 @@ Use during draft/revision phase when requirements are evolving.
 
 ### Organizing Specs
 
-Use when specs need structure, relationships are unclear, or project board is cluttered.
+Use when specs need structure, relationships are unclear, or project board is
+cluttered.
 
 **Survey first:**
 
@@ -189,32 +202,32 @@ Use when specs need structure, relationships are unclear, or project board is cl
 
 **Patterns to look for:**
 
-| Pattern | Action |
-|---------|--------|
-| 3+ related specs, no parent | Create umbrella and group |
-| Spec can't start without another | Add `depends_on` |
-| Completed spec still `in-progress` | Update status |
-| Low-value spec, no activity | Archive |
-| Large spec (>2000 tokens) | Split into parent + children |
-| Duplicate/overlapping specs | Merge or archive redundant one |
+| Pattern                            | Action                         |
+| ---------------------------------- | ------------------------------ |
+| 3+ related specs, no parent        | Create umbrella and group      |
+| Spec can't start without another   | Add `depends_on`               |
+| Completed spec still `in-progress` | Update status                  |
+| Low-value spec, no activity        | Archive                        |
+| Large spec (>2000 tokens)          | Split into parent + children   |
+| Duplicate/overlapping specs        | Merge or archive redundant one |
 
 **Status definitions:**
 
-| Status | Meaning |
-|--------|---------|
-| `planned` | Defined, work not started |
-| `in-progress` | Active development |
-| `complete` | All requirements verified |
-| `archived` | No longer relevant |
+| Status        | Meaning                   |
+| ------------- | ------------------------- |
+| `planned`     | Defined, work not started |
+| `in-progress` | Active development        |
+| `complete`    | All requirements verified |
+| `archived`    | No longer relevant        |
 
 **Priority levels:**
 
-| Priority | When to Use |
-|----------|-------------|
+| Priority   | When to Use                             |
+| ---------- | --------------------------------------- |
 | `critical` | Blocking release or breaking production |
-| `high` | Important for current milestone |
-| `medium` | Standard priority (default) |
-| `low` | Nice-to-have, backlog |
+| `high`     | Important for current milestone         |
+| `medium`   | Standard priority (default)             |
+| `low`      | Nice-to-have, backlog                   |
 
 **Bulk organization checklist:**
 
@@ -232,24 +245,24 @@ Use when specs need structure, relationships are unclear, or project board is cl
 
 Use MCP tools when available. Use CLI as fallback.
 
-| Action | MCP Tool | CLI Command |
-| --- | --- | --- |
-| Project status | `board` | `lean-spec board` |
-| List specs | `list` | `lean-spec list` |
-| Search specs | `search` | `lean-spec search "query"` |
-| View spec | `view` | `lean-spec view <spec>` |
-| Create spec | `create` | `lean-spec create <name>` |
-| Update status | `update` | `lean-spec update <spec> --status <status>` |
-| View relationships | `relationships` | `lean-spec rel <spec>` |
-| Set parent | `relationships` (`action=add`, `type=parent`) | `lean-spec rel add <child> --parent <parent>` |
-| Add child | `relationships` (`action=add`, `type=child`) | `lean-spec rel add <parent> --child <child>` |
-| Add dependency | `relationships` (`action=add`, `type=depends_on`) | `lean-spec rel add <spec> --depends-on <other>` |
-| Remove dependency | `relationships` (`action=remove`, `type=depends_on`) | `lean-spec rel rm <spec> --depends-on <other>` |
-| Dependency graph | `deps` | `lean-spec deps <spec>` |
-| List children | `children` | `lean-spec children <parent>` |
-| Token count | `tokens` | `lean-spec tokens <spec>` |
-| Validate | `validate` | `lean-spec validate` |
-| Stats | `stats` | `lean-spec stats` |
+| Action             | MCP Tool                                             | CLI Command                                     |
+| ------------------ | ---------------------------------------------------- | ----------------------------------------------- |
+| Project status     | `board`                                              | `lean-spec board`                               |
+| List specs         | `list`                                               | `lean-spec list`                                |
+| Search specs       | `search`                                             | `lean-spec search "query"`                      |
+| View spec          | `view`                                               | `lean-spec view <spec>`                         |
+| Create spec        | `create`                                             | `lean-spec create <name>`                       |
+| Update status      | `update`                                             | `lean-spec update <spec> --status <status>`     |
+| View relationships | `relationships`                                      | `lean-spec rel <spec>`                          |
+| Set parent         | `relationships` (`action=add`, `type=parent`)        | `lean-spec rel add <child> --parent <parent>`   |
+| Add child          | `relationships` (`action=add`, `type=child`)         | `lean-spec rel add <parent> --child <child>`    |
+| Add dependency     | `relationships` (`action=add`, `type=depends_on`)    | `lean-spec rel add <spec> --depends-on <other>` |
+| Remove dependency  | `relationships` (`action=remove`, `type=depends_on`) | `lean-spec rel rm <spec> --depends-on <other>`  |
+| Dependency graph   | `deps`                                               | `lean-spec deps <spec>`                         |
+| List children      | `children`                                           | `lean-spec children <parent>`                   |
+| Token count        | `tokens`                                             | `lean-spec tokens <spec>`                       |
+| Validate           | `validate`                                           | `lean-spec validate`                            |
+| Stats              | `stats`                                              | `lean-spec stats`                               |
 
 ## Choosing Relationship Type
 
@@ -257,15 +270,18 @@ Use MCP tools when available. Use CLI as fallback.
 
 ### Parent/Child (Umbrella Decomposition)
 
-Use when a large initiative is **broken into child specs** that together form the whole.
+Use when a large initiative is **broken into child specs** that together form
+the whole.
 
 - "This spec is a piece of that umbrella's scope"
 - Child spec doesn't make sense without parent context
 - Parent completes when **all children** complete
 
-**Tools**: `relationships` with `action=add`, `type=parent`, `target=<parent>` (MCP) / `lean-spec rel add <child> --parent <parent>` (CLI)
+**Tools**: `relationships` with `action=add`, `type=parent`, `target=<parent>`
+(MCP) / `lean-spec rel add <child> --parent <parent>` (CLI)
 
-**Example**: "CLI UX Overhaul" umbrella → children: "Help System", "Error Messages", "Progress Indicators"
+**Example**: "CLI UX Overhaul" umbrella → children: "Help System", "Error
+Messages", "Progress Indicators"
 
 ### Depends On (Technical Blocker)
 
@@ -275,18 +291,22 @@ Use when a spec **cannot start** until another independent spec is done first.
 - Both specs are **independent work items** with separate goals
 - Removal of the dependency doesn't change the spec's scope
 
-**Tools**: `relationships` with `action=add`, `type=depends_on`, `target=<other>` (MCP) / `lean-spec rel add <spec> --depends-on <other>` (CLI)
-**Remove**: `relationships` with `action=remove`, `type=depends_on` (MCP) / `lean-spec rel rm <spec> --depends-on <other>` (CLI)
+**Tools**: `relationships` with `action=add`, `type=depends_on`,
+`target=<other>` (MCP) / `lean-spec rel add <spec> --depends-on <other>` (CLI)
+**Remove**: `relationships` with `action=remove`, `type=depends_on` (MCP) /
+`lean-spec rel rm <spec> --depends-on <other>` (CLI)
 
 **Example**: "Search API" depends on "Database Schema Migration"
 
 ### Decision Flowchart
 
 1. **Is spec B part of spec A's scope?** → Parent/child (`type=parent`)
-2. **Does spec B just need spec A finished first?** → Depends on (`type=depends_on`)
+2. **Does spec B just need spec A finished first?** → Depends on
+   (`type=depends_on`)
 3. **Never use both** parent AND depends_on for the same spec pair.
 
 **Litmus test**: If spec A didn't exist, would spec B still make sense?
+
 - **NO** → B is a child of A
 - **YES** → B depends on A
 
@@ -296,14 +316,16 @@ Use when a spec **cannot start** until another independent spec is done first.
 2. Create each child spec: `create`
 3. Assign children: `relationships` (`action=add`, `type=parent`) for each child
 4. Verify structure: `children`
-5. Add cross-cutting deps if needed: `relationships` (`action=add`, `type=depends_on`)
+5. Add cross-cutting deps if needed: `relationships` (`action=add`,
+   `type=depends_on`)
 
 ---
 
 ## Best Practices
 
 - Never create spec files manually; use `create`.
-- **Always pass all known fields in the `create` call** — never create empty then edit.
+- **Always pass all known fields in the `create` call** — never create empty
+  then edit.
 - Keep specs short and focused; split when >2000 tokens.
 - **Search first** — never create duplicates; link related specs instead.
 - **Checkboxes only for actions** — use plain lists for non-actionable items.
@@ -311,13 +333,14 @@ Use when a spec **cannot start** until another independent spec is done first.
 - **Archive, don't delete** — preserve history.
 - **Survey before organizing** — use `board` and `stats` first.
 - **Research before implementing** — refine specs to avoid surprises.
-- **Verify before completing** — `pnpm typecheck`, `pnpm test`, `pnpm lint` must ALL pass.
+- **Verify before completing** — `pnpm typecheck`, `pnpm test`, `pnpm lint` must
+  ALL pass.
 - Document trade-offs and decisions as they happen.
 - Out-of-scope discoveries become new specs, not scope creep.
 
 See detailed guidance in:
+
 - [references/workflow.md](./references/workflow.md)
 - [references/best-practices.md](./references/best-practices.md)
 - [references/examples.md](./references/examples.md)
 - [references/commands.md](./references/commands.md)
-
