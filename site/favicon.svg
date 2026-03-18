@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Coco</title>
+  <defs>
+    <linearGradient id="coco-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f6f78" />
+      <stop offset="100%" stop-color="#c65b3b" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#coco-gradient)" />
+  <path d="M18 31.5c0-7.2 5.3-12.5 12.8-12.5 3.5 0 6.9 1.1 9.1 3.4l-3.4 3.8c-1.4-1.4-3.3-2.2-5.7-2.2-4.2 0-7.2 3-7.2 7.5s3 7.5 7.2 7.5c2.4 0 4.3-.8 5.7-2.2l3.4 3.8c-2.2 2.3-5.6 3.4-9.1 3.4-7.5 0-12.8-5.3-12.8-12.5z" fill="#fff8ef" />
+</svg>

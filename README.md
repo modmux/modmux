@@ -7,13 +7,14 @@ Coco runs a local background service that exposes Anthropic-compatible and
 OpenAI-compatible API endpoints backed by your GitHub Copilot subscription. Any
 tool that speaks either API protocol can be wired through Coco in seconds.
 
+Website: https://myty.github.io/coco/
+
 ## Features
 
 - 🔗 **Anthropic + OpenAI compatible** — `/v1/messages` and
   `/v1/chat/completions` endpoints
 - 🚀 **Background service** — `coco start` / `coco stop` / `coco restart`
-- 🤖 **Multi-agent support** — Claude Code, Cline, Kilo, OpenCode, Goose, Aider,
-  GPT-Engineer
+- 🤖 **Multi-agent support** — Claude Code, Cline, and Codex
 - 🖥️ **Minimal TUI** — bare `coco` opens a radio-toggle interface for batch
   configuration
 - 🔍 **Agent detection** — scans PATH and VS Code extension dirs to find
@@ -118,11 +119,7 @@ Agents
 ──────────────────────────────────────────────
 [x] Claude Code      detected
 [ ] Cline            installed
-[x] Kilo Code        installed
-[ ] OpenCode         detected
-[ ] Goose            detected
-[-] Aider            installed  (misconfigured)
-[ ] GPT-Engineer     installed
+[ ] Codex            installed
 
 ──────────────────────────────────────────────
 Space: toggle   Enter: apply   q: quit
@@ -144,7 +141,7 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 | `coco unconfigure <agent>`     | Revert config for a specific agent                          |
 | `coco doctor`                  | Scan and report all agents' states                          |
 | `coco models`                  | List available Copilot model IDs                            |
-| `coco model-policy [compatible | strict]`                                                    |
+| `coco model-policy [compatible\|strict]` | Show or set model mapping policy               |
 | `coco install-service`         | Register daemon with OS login service manager               |
 | `coco uninstall-service`       | Remove daemon from OS login service manager                 |
 | `coco --help`                  | Show help                                                   |
@@ -153,7 +150,7 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 ### Quick Start
 
 ```bash
-# 1. Install coco globally (from repo root)
+# 1. Install coco
 deno task install
 
 # 2. Start the proxy (authenticates with GitHub Copilot on first run)
@@ -162,23 +159,13 @@ coco start
 # 3. Configure an agent
 coco configure claude-code
 
-# 4. (Optional) Register as a login service — starts automatically after reboot
+# 4. Check what's running
+coco doctor
+
+# 5. (Optional) Register as a login service
 coco install-service
-# → Coco is running on http://localhost:11434
 
-# 2. Configure Claude Code
-coco configure claude-code
-# → claude-code configured.
-
-# 3. Check what's running
-coco doctor
-
-# → coco install-service → Coco service installed.
-
-# 5. Check what's running
-coco doctor
-
-# To remove the service:
+# To remove the login service later:
 # coco uninstall-service
 ```
 
@@ -188,11 +175,7 @@ coco doctor
 | ------------ | -------------- | ------------------------ |
 | Claude Code  | `claude`       | `anthropic.claude-code`  |
 | Cline        | `cline`        | `saoudrizwan.claude-dev` |
-| Kilo Code    | `kilo`         | `kilo.kilo-code`         |
-| OpenCode     | `opencode`     | `opencode.opencode`      |
-| Goose        | `goose`        | `0xgoose.goose`          |
-| Aider        | `aider`        | —                        |
-| GPT-Engineer | `gpt-engineer` | —                        |
+| Codex        | `codex`        | —                        |
 
 ## Architecture
 
