@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Coco | Local AI Gateway for GitHub Copilot</title>
+    <title>Ardo | Local AI Gateway for GitHub Copilot</title>
     <meta
       name="description"
-      content="Coco is a local AI gateway that routes coding agents through GitHub Copilot with clear install paths, reversible config, and familiar Anthropic and OpenAI compatible endpoints."
+      content="Ardo is a local AI gateway that routes coding agents through GitHub Copilot with clear install paths, reversible config, and familiar Anthropic and OpenAI compatible endpoints."
     />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,16 +21,16 @@
   <body>
     <div class="page-shell">
       <header class="site-header">
-        <a class="brand" href="#top" aria-label="Coco home">
-          <span class="brand-mark">CO</span>
-          <span class="brand-text">Coco</span>
+        <a class="brand" href="#top" aria-label="Ardo home">
+          <span class="brand-mark">AR</span>
+          <span class="brand-text">Ardo</span>
         </a>
         <nav class="site-nav" aria-label="Primary">
           <a href="#why">Why</a>
           <a href="#install">Install</a>
           <a href="#how-it-works">How it works</a>
           <a href="#faq">FAQ</a>
-          <a href="https://github.com/myty/coco">GitHub</a>
+          <a href="https://github.com/ardo-org/ardo">GitHub</a>
         </nav>
       </header>
 
@@ -40,12 +40,12 @@
             <p class="eyebrow">Local AI gateway for GitHub Copilot</p>
             <h1>One local endpoint for the coding agents you already use.</h1>
             <p class="hero-body">
-              Coco runs on your machine, exposes familiar Anthropic and OpenAI
+              Ardo runs on your machine, exposes familiar Anthropic and OpenAI
               compatible endpoints, and lets supported agents route through your
               GitHub Copilot subscription without per-agent provider sprawl.
             </p>
             <div class="hero-actions">
-              <a class="button button-primary" href="#install">Install Coco</a>
+              <a class="button button-primary" href="#install">Install Ardo</a>
               <a class="button button-secondary" href="#how-it-works">See the flow</a>
             </div>
             <ul class="hero-points" aria-label="Key facts">
@@ -55,7 +55,7 @@
             </ul>
           </div>
 
-          <div class="hero-panel reveal reveal-delay-1" aria-label="Coco overview">
+          <div class="hero-panel reveal reveal-delay-1" aria-label="Ardo overview">
             <div class="terminal-card">
               <div class="terminal-topline">
                 <span></span>
@@ -63,13 +63,13 @@
                 <span></span>
               </div>
               <div class="terminal-body">
-                <p><span class="prompt">$</span> coco status</p>
+                <p><span class="prompt">$</span> ardo status</p>
                 <p>Service:&nbsp;&nbsp;Not installed</p>
                 <p>State:&nbsp;&nbsp;&nbsp;&nbsp;Running at http://localhost:11434</p>
                 <p>Agents:&nbsp;&nbsp;&nbsp;claude-code, cline</p>
                 <p>Copilot:&nbsp;&nbsp;Authenticated ✓</p>
                 <p class="terminal-gap"></p>
-                <p><span class="prompt">$</span> coco configure claude-code</p>
+                <p><span class="prompt">$</span> ardo configure claude-code</p>
                 <p>claude-code configured.</p>
               </div>
             </div>
@@ -84,7 +84,7 @@
 
         <section id="why" class="section section-grid reveal">
           <div class="section-heading">
-            <p class="eyebrow">Why Coco</p>
+            <p class="eyebrow">Why Ardo</p>
             <h2>GitHub Copilot is the backend. Your agents still need a clean local path to it.</h2>
           </div>
           <div class="card-grid three-up">
@@ -92,14 +92,14 @@
               <h3>Reduce provider friction</h3>
               <p>
                 Different coding agents expect different providers and config
-                shapes. Coco gives them one local gateway instead of separate
+                shapes. Ardo gives them one local gateway instead of separate
                 ad hoc setups.
               </p>
             </article>
             <article class="info-card accent-mint">
               <h3>Keep the boundary clear</h3>
               <p>
-                Coco binds to localhost, proxies requests to GitHub Copilot,
+                Ardo binds to localhost, proxies requests to GitHub Copilot,
                 and avoids turning into a hosted service or a remote control
                 plane.
               </p>
@@ -107,7 +107,7 @@
             <article class="info-card accent-rust">
               <h3>Undo changes cleanly</h3>
               <p>
-                Agent configuration is designed to be reversible. Coco can
+                Agent configuration is designed to be reversible. Ardo can
                 unconfigure supported agents and restore their previous state.
               </p>
             </article>
@@ -124,7 +124,7 @@
               <article class="feature-row">
                 <h3>Familiar protocol surface</h3>
                 <p>
-                  Coco exposes Anthropic compatible and OpenAI compatible local
+                  Ardo exposes Anthropic compatible and OpenAI compatible local
                   endpoints so supported tools can point at one place.
                 </p>
               </article>
@@ -132,7 +132,7 @@
                 <h3>Background service controls</h3>
                 <p>
                   Start, stop, restart, inspect status, and optionally install
-                  Coco as an OS login service.
+                  Ardo as an OS login service.
                 </p>
               </article>
               <article class="feature-row">
@@ -151,7 +151,7 @@
                 <li>Codex</li>
               </ul>
               <p>
-                Coco is intentionally narrow: it stays focused on being a calm,
+                Ardo is intentionally narrow: it stays focused on being a calm,
                 local gateway rather than becoming a chat client or an agent
                 runtime of its own.
               </p>
@@ -175,13 +175,13 @@
               <h3>npm</h3>
               <p>Use this if you want the shortest path on a machine with Node.js 18+.</p>
               <div class="code-block">
-                <code>npm install -g coco</code>
-                <button class="copy-button" data-copy="npm install -g coco">Copy</button>
+                <code>npm install -g ardo</code>
+                <button class="copy-button" data-copy="npm install -g ardo">Copy</button>
               </div>
               <ol class="step-list">
-                <li>Install Coco globally.</li>
-                <li>Run <code>coco start</code> and complete GitHub authentication.</li>
-                <li>Run <code>coco configure claude-code</code> or another supported agent.</li>
+                <li>Install Ardo globally.</li>
+                <li>Run <code>ardo start</code> and complete GitHub authentication.</li>
+                <li>Run <code>ardo configure claude-code</code> or another supported agent.</li>
               </ol>
             </article>
 
@@ -189,8 +189,8 @@
               <h3>Deno / JSR</h3>
               <p>Useful when Deno is already part of your toolchain.</p>
               <div class="code-block compact">
-                <code>deno install -A -g jsr:@myty/coco</code>
-                <button class="copy-button" data-copy="deno install -A -g jsr:@myty/coco">Copy</button>
+                <code>deno install -A -g jsr:@ardo-org/ardo</code>
+                <button class="copy-button" data-copy="deno install -A -g jsr:@ardo-org/ardo">Copy</button>
               </div>
             </article>
 
@@ -198,7 +198,7 @@
               <h3>Direct binary</h3>
               <p>Download a platform build from GitHub Releases when you do not want a runtime dependency.</p>
               <div class="link-row">
-                <a href="https://github.com/myty/coco/releases">Open releases</a>
+                <a href="https://github.com/ardo-org/ardo/releases">Open releases</a>
               </div>
             </article>
 
@@ -206,8 +206,8 @@
               <h3>From source</h3>
               <p>Good for contributors or if you want to inspect the code before installing.</p>
               <div class="code-block stacked">
-                <code>git clone https://github.com/myty/coco.git</code>
-                <code>cd coco</code>
+                <code>git clone https://github.com/ardo-org/ardo.git</code>
+                <code>cd ardo</code>
                 <code>deno task install</code>
               </div>
             </article>
@@ -226,9 +226,9 @@
             </div>
             <div class="flow-arrow">→</div>
             <div class="flow-node flow-node-primary">
-              <h3>Coco</h3>
+              <h3>Ardo</h3>
               <p>
-                Coco runs on 127.0.0.1, exposes compatible endpoints, and
+                Ardo runs on 127.0.0.1, exposes compatible endpoints, and
                 translates request and response shapes.
               </p>
               <ul>
@@ -242,13 +242,13 @@
             <div class="flow-node">
               <h3>GitHub Copilot</h3>
               <p>
-                Coco authenticates with GitHub and forwards the translated
+                Ardo authenticates with GitHub and forwards the translated
                 request to Copilot-backed models.
               </p>
             </div>
           </div>
           <div class="trust-note">
-            <strong>Trust boundary:</strong> Coco is a local gateway, not a
+            <strong>Trust boundary:</strong> Ardo is a local gateway, not a
             hosted relay. It binds to localhost and keeps configuration changes
             reversible.
           </div>
@@ -283,9 +283,9 @@
           <div class="demo-grid">
             <div class="demo-frame">
               <div class="demo-title">CLI preview</div>
-              <pre class="demo-code">$ coco
+              <pre class="demo-code">$ ardo
 
-Coco - Local AI Gateway
+Ardo - Local AI Gateway
 Status: Running on http://localhost:11434
 Copilot: Authenticated ✓
 
@@ -307,13 +307,13 @@ Copilot: Authenticated ✓
         <section id="comparison" class="section reveal reveal-delay-2">
           <div class="section-heading">
             <p class="eyebrow">Positioning</p>
-            <h2>Manual setup works. Coco makes the local path coherent.</h2>
+            <h2>Manual setup works. Ardo makes the local path coherent.</h2>
           </div>
           <div class="comparison-table" role="table" aria-label="Comparison table">
             <div class="comparison-row comparison-head" role="row">
               <span role="columnheader">Approach</span>
               <span role="columnheader">What you manage</span>
-              <span role="columnheader">What Coco changes</span>
+              <span role="columnheader">What Ardo changes</span>
             </div>
             <div class="comparison-row" role="row">
               <span role="cell">Per-agent manual setup</span>
@@ -321,7 +321,7 @@ Copilot: Authenticated ✓
               <span role="cell">You keep every setup detail in your head</span>
             </div>
             <div class="comparison-row" role="row">
-              <span role="cell">Coco</span>
+              <span role="cell">Ardo</span>
               <span role="cell">One local gateway, one install flow, reversible agent configuration</span>
               <span role="cell">The compatibility surface becomes explicit and shared</span>
             </div>
@@ -336,22 +336,22 @@ Copilot: Authenticated ✓
           <div class="faq-list">
             <details>
               <summary>Do I need a GitHub Copilot subscription?</summary>
-              <p>Yes. Coco routes requests through GitHub Copilot, so you need an active Copilot-backed account.</p>
+              <p>Yes. Ardo routes requests through GitHub Copilot, so you need an active Copilot-backed account.</p>
             </details>
             <details>
-              <summary>Does Coco expose an API on my network?</summary>
+              <summary>Does Ardo expose an API on my network?</summary>
               <p>No. The server configuration binds to 127.0.0.1, which keeps the service local to your machine.</p>
             </details>
             <details>
               <summary>Can I undo a configuration change?</summary>
-              <p>Yes. Coco supports unconfiguring supported agents and is designed around reversible configuration management.</p>
+              <p>Yes. Ardo supports unconfiguring supported agents and is designed around reversible configuration management.</p>
             </details>
             <details>
               <summary>Which agents are supported right now?</summary>
               <p>The current built-in registry includes Claude Code, Cline, and Codex.</p>
             </details>
             <details>
-              <summary>Do I need Deno to use Coco?</summary>
+              <summary>Do I need Deno to use Ardo?</summary>
               <p>No. npm and direct binary installs do not require Deno. Deno is only needed for the JSR and source-based paths.</p>
             </details>
           </div>
@@ -366,7 +366,7 @@ Copilot: Authenticated ✓
             <article class="status-card">
               <h3>Current release posture</h3>
               <p>
-                Coco is at v0.2.0 and focused on a local proxy loop: authenticate,
+                Ardo is at v0.2.0 and focused on a local proxy loop: authenticate,
                 start the service, configure a supported agent, and route requests.
               </p>
             </article>
@@ -378,8 +378,8 @@ Copilot: Authenticated ✓
                 implementation.
               </p>
               <div class="status-links">
-                <a href="https://github.com/myty/coco/tree/main/specs">Browse specs</a>
-                <a href="https://github.com/myty/coco/releases">Read releases</a>
+                <a href="https://github.com/ardo-org/ardo/tree/main/specs">Browse specs</a>
+                <a href="https://github.com/ardo-org/ardo/releases">Read releases</a>
               </div>
             </article>
           </div>
@@ -387,11 +387,11 @@ Copilot: Authenticated ✓
       </main>
 
       <footer class="site-footer">
-        <p>Coco is a universal local AI gateway for GitHub Copilot.</p>
+        <p>Ardo is a universal local AI gateway for GitHub Copilot.</p>
         <div class="footer-links">
-          <a href="https://github.com/myty/coco">Repository</a>
-          <a href="https://github.com/myty/coco/blob/main/README.md">README</a>
-          <a href="https://github.com/myty/coco/tree/main/specs/013-github-pages-website">Spec 13</a>
+          <a href="https://github.com/ardo-org/ardo">Repository</a>
+          <a href="https://github.com/ardo-org/ardo/blob/main/README.md">README</a>
+          <a href="https://github.com/ardo-org/ardo/tree/main/specs/013-github-pages-website">Spec 13</a>
         </div>
       </footer>
     </div>

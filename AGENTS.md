@@ -1,4 +1,4 @@
-# Coco Development Guidelines
+# Ardo Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2026-03-10
 
@@ -21,8 +21,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-10
 
 - **Cross-platform binaries** - macOS (arm64/x64), Linux (x64/arm64), Windows
   (x64)
-- **NPM distribution** - `coco` package (`npm install -g coco`)
-- **JSR registry** - `jsr:@myty/coco`
+- **NPM distribution** - `ardo` package (`npm install -g ardo`)
+- **JSR registry** - `jsr:@ardo-org/ardo`
 - **GitHub Actions** - CI/CD and automation
 
 ### Architecture Patterns
@@ -69,17 +69,17 @@ src/
 │   ├── types.ts     # Type definitions
 │   └── mod.ts       # Module exports
 ├── config/          # Configuration persistence
-│   └── store.ts     # loadConfig/saveConfig, DEFAULT_CONFIG, ~/.coco/config.json
+│   └── store.ts     # loadConfig/saveConfig, DEFAULT_CONFIG, ~/.ardo/config.json
 ├── lib/             # Shared utilities
 │   ├── errors.ts    # Error handling utilities
-│   ├── log.ts       # Structured JSON logger → ~/.coco/coco.log
+│   ├── log.ts       # Structured JSON logger → ~/.ardo/ardo.log
 │   ├── process.ts   # findBinary(name), isProcessAlive(pid)
 │   └── token.ts     # Token utilities
 └── version.ts       # VERSION = "0.2.0"
 
 tests/
 ├── contract/        # Contract tests for external interfaces
-│   ├── cli_test.ts            # coco start/stop output strings
+│   ├── cli_test.ts            # ardo start/stop output strings
 │   ├── cli_interface_test.ts  # full CLI contract
 │   ├── openai-proxy_test.ts   # /v1/chat/completions, /v1/models
 │   ├── model-translation_test.ts  # alias resolution
@@ -218,7 +218,7 @@ deno test tests/integration/    # Integration tests only
 ### Building
 
 ```bash
-deno task compile               # Compile native binary → bin/coco
+deno task compile               # Compile native binary → bin/ardo
 deno task sync-version          # Sync version across all artifacts
 ```
 
@@ -231,13 +231,13 @@ deno task sync-version          # Sync version across all artifacts
   - Adopted LeanSpec workflow commands (`new`, `plan`, `validate`, `backfill`,
     `board`)
 
-- **2026-03-10**: Coco v0.2.0 — full migration from Claudio
+- **2026-03-10**: Ardo v0.2.0 — full migration from Claudio
   - Added background daemon service (start/stop/restart/status)
   - Added OpenAI-compatible proxy endpoint (/v1/chat/completions, /v1/models)
   - Added agent detection engine (PATH + VS Code + JetBrains)
   - Added per-agent config writers (7 agents, backup/restore)
   - Added minimal TUI (Space/Enter/q, ANSI renderer)
-  - Added `coco models`, `coco doctor`, `coco configure`, `coco unconfigure`
+  - Added `ardo models`, `ardo doctor`, `ardo configure`, `ardo unconfigure`
   - Removed Claudio-specific launch/session modules
 
 - **Previous**: Claudio v0.1.x — Claude Code + GitHub Copilot bridge

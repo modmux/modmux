@@ -1,16 +1,16 @@
-# Coco Global Conventions
+# Ardo Global Conventions
 
 This file replaces Speckit's CONVENTIONS.md. It is the canonical global
-conventions document for Coco contributors and agents.
+conventions document for Ardo contributors and agents.
 
-# Coco Constitution
+# Ardo Constitution
 
 <!--
 Sync Impact Report:
-- Version change: 1.3.0 → 2.0.0 (MAJOR: project renamed Claudio→Coco; Principles I/IV/V
+- Version change: 1.3.0 → 2.0.0 (MAJOR: project renamed Claudio→Ardo; Principles I/IV/V
   materially redefined; daemon prohibitions removed; new Principle X added; scope expanded
   to universal multi-agent gateway; Success Criteria revised for multi-agent support)
-- Project renamed: Claudio → Coco
+- Project renamed: Claudio → Ardo
 - Modified principles:
   - Principle I: "Minimalism" → "Focus" (scope expanded from single-tool bridge to universal gateway)
   - Principle IV: "Separation of Concerns" (rewritten: daemon/TUI/config-manager separation replaces
@@ -30,14 +30,14 @@ Sync Impact Report:
   - ✅ LeanSpec plan template usage verified — no principle-specific hardcoding; generic gates fine
   - ✅ LeanSpec specification template usage verified — no principle-specific hardcoding; no changes required
   - ✅ LeanSpec tasks template usage verified — no hardcoded principle refs; no changes required
-  - ⚠ AGENTS.md — references Claudio; update to Coco after implementation (task T043)
-  - ⚠ CLAUDE.md — references Claudio architecture; update to Coco after implementation (task T043)
-  - ⚠ README.md — references Claudio; update to Coco during Polish phase (task T042)
+  - ⚠ AGENTS.md — references Claudio; update to Ardo after implementation (task T043)
+  - ⚠ CLAUDE.md — references Claudio architecture; update to Ardo after implementation (task T043)
+  - ⚠ README.md — references Claudio; update to Ardo during Polish phase (task T042)
 - Follow-up TODOs: None — all placeholders resolved.
 -->
 
-Coco is a universal local AI gateway that exposes unified Anthropic-compatible
-and OpenAI-compatible endpoints backed by GitHub Copilot models. Coco runs as a
+Ardo is a universal local AI gateway that exposes unified Anthropic-compatible
+and OpenAI-compatible endpoints backed by GitHub Copilot models. Ardo runs as a
 persistent background service, automatically configures multiple coding agents
 to use its proxy, and provides a minimal TUI control surface. Its presence is
 calm and unobtrusive: it bridges the diverse agent ecosystem to GitHub Copilot's
@@ -47,7 +47,7 @@ API without imposing itself on the developer's workflow.
 
 ### I. Focus
 
-Coco does one thing well: acts as a universal local AI gateway, translating
+Ardo does one thing well: acts as a universal local AI gateway, translating
 requests from multiple coding agents into GitHub Copilot's HTTP interface.
 Within this mission, minimalism still applies — each module MUST do only what
 its responsibility requires. No unnecessary features, no speculative
@@ -58,7 +58,7 @@ configuration surfaces, no workflow layers beyond the gateway mission.
 Quiet, steady, reassuring output. Slow, subtle animations (approximately
 350–400ms). Short, emotionally neutral lines. No humor, metaphors, or
 personality spikes. CLI output uses soft blue/green ANSI-safe colors. The TUI is
-calm, minimal, and control-surface only. Coco's presence MUST feel understated
+calm, minimal, and control-surface only. Ardo's presence MUST feel understated
 regardless of how many agents it manages.
 
 ### III. Predictability
@@ -72,7 +72,7 @@ identical inputs.
 ### IV. Separation of Concerns
 
 The daemon proxies; coding agents perform. The TUI controls; the configuration
-manager writes. Each of Coco's subsystems has one clearly bounded
+manager writes. Each of Ardo's subsystems has one clearly bounded
 responsibility:
 
 - The **proxy daemon** translates API formats and forwards to Copilot.
@@ -81,9 +81,9 @@ responsibility:
   effects directly; it delegates to the configuration manager.
 - The **CLI** dispatches sub-commands — it MUST NOT contain business logic.
 
-Coco MUST NOT implement a chat or coding interface, replace or modify agent
+Ardo MUST NOT implement a chat or coding interface, replace or modify agent
 behavior, manage project context, or persist state beyond authentication tokens
-and Coco's own configuration.
+and Ardo's own configuration.
 
 ### V. Portability
 
@@ -92,7 +92,7 @@ shim), and compiled binaries for macOS (arm64/x64), Linux (x64/arm64), and
 Windows (x64). Implemented in Deno with TypeScript. The background daemon MUST
 be self-contained, spawned as a second instance of the same binary via a
 `--daemon` flag — no separate daemon binary, no OS service manager required. The
-only runtime configuration store is `~/.coco/` (files only; no databases,
+only runtime configuration store is `~/.ardo/` (files only; no databases,
 registries, or system services).
 
 ### VI. Transparency
@@ -108,8 +108,8 @@ optional supporting context rather than separate authorities.
 
 ### VII. Self-Containment
 
-Coco MUST NOT depend on the Copilot CLI or any Copilot SDK. All communication
-with GitHub Copilot MUST occur through a stable, documented HTTP interface. Coco
+Ardo MUST NOT depend on the Copilot CLI or any Copilot SDK. All communication
+with GitHub Copilot MUST occur through a stable, documented HTTP interface. Ardo
 owns its entire authentication flow. No third-party Copilot tooling may be
 introduced as a runtime dependency.
 
@@ -134,13 +134,13 @@ command is:
 
 All agent configuration operations MUST be reversible without data loss:
 
-- Before writing any agent config file, Coco MUST create a backup at
-  `<original-path>.coco-backup`.
-- `coco unconfigure <agent>` MUST restore the backup exactly, or remove the
+- Before writing any agent config file, Ardo MUST create a backup at
+  `<original-path>.ardo-backup`.
+- `ardo unconfigure <agent>` MUST restore the backup exactly, or remove the
   created file if no backup existed.
-- After writing a config file, Coco MUST perform a validation test call to
+- After writing a config file, Ardo MUST perform a validation test call to
   confirm the configuration is functional before reporting success.
-- Configuration state MUST be persisted in `~/.coco/config.json` after every
+- Configuration state MUST be persisted in `~/.ardo/config.json` after every
   successful configure or unconfigure operation.
 - A failed validation test call MUST be surfaced to the user with a non-zero
   exit code; it MUST NOT silently proceed.
@@ -149,7 +149,7 @@ All agent configuration operations MUST be reversible without data loss:
 
 ### Responsibilities
 
-Coco is responsible for:
+Ardo is responsible for:
 
 - Authenticating with GitHub Copilot using a stable, documented OAuth device
   flow mechanism
@@ -160,7 +160,7 @@ Coco is responsible for:
   Copilot's HTTP interface, including streaming and non-streaming flows
 - Managing its own background daemon lifecycle (start, stop, restart, status)
   via PID file and process signals
-- Writing structured logs to `~/.coco/coco.log` at a configurable log level
+- Writing structured logs to `~/.ardo/ardo.log` at a configurable log level
 - Detecting installed and configured coding agents by scanning PATH, VS Code
   extension directories, JetBrains plugin directories, and known config file
   locations
@@ -170,16 +170,16 @@ Coco is responsible for:
   apply, q exit without applying)
 - Providing calm, minimal CLI output across all sub-commands
 - Mapping model aliases to Copilot model IDs via a bundled default map that is
-  user-overridable in `~/.coco/config.json`
+  user-overridable in `~/.ardo/config.json`
 
 ### Non-Responsibilities
 
-Coco is not responsible for:
+Ardo is not responsible for:
 
 - Implementing a chat or coding interface
 - Replacing, modifying, or interfering with any coding agent's behavior
 - Managing project context, tools, or workflows
-- Persisting state beyond authentication tokens and `~/.coco/config.json`
+- Persisting state beyond authentication tokens and `~/.ardo/config.json`
 - Supporting agents not listed in the built-in agent registry without an
   explicit registry extension
 - Providing network access beyond `127.0.0.1` (the proxy MUST NOT bind to
@@ -189,11 +189,11 @@ Coco is not responsible for:
 
 ### Behavioral Guarantees
 
-Coco must:
+Ardo must:
 
 - Bind exclusively to `127.0.0.1` — never to `0.0.0.0` or any external address
 - Respond to SIGTERM and SIGHUP with graceful shutdown, removing the PID file
-- Write structured JSON log lines to `~/.coco/coco.log` (never to stdout/stderr
+- Write structured JSON log lines to `~/.ardo/ardo.log` (never to stdout/stderr
   in daemon mode)
 - Back up agent config files before any write and restore them on unconfigure
 - Perform a validation test call after each agent configuration write
@@ -201,20 +201,20 @@ Coco must:
   400ms; max 3 attempts) before propagating the error to the caller
 - Never output stack traces or internal error details to end users
 
-Coco must not:
+Ardo must not:
 
 - Emit excessive output
 - Introduce unnecessary latency (proxy overhead target: < 150ms excluding
   Copilot API latency)
 - Override user environment variables without explicit intent
 - Depend on the Copilot CLI or any Copilot SDK
-- Write to any path outside `~/.coco/` and per-agent canonical config locations
+- Write to any path outside `~/.ardo/` and per-agent canonical config locations
 
 ### Technical Standards
 
 - Implemented in Deno (latest stable) with TypeScript (strict mode)
 - Distributed via JSR, npm (via shim), and compiled binaries
-- Binary name: `coco`; configuration directory: `~/.coco/`
+- Binary name: `ardo`; configuration directory: `~/.ardo/`
 - Proxy is stateless and deterministic per request
 - All request/response transformations are deterministic and spec-documented in
   `specs/*/CONTRACTS.md`
@@ -240,20 +240,20 @@ Coco must not:
 
 ## Success Criteria
 
-Coco is successful when:
+Ardo is successful when:
 
 - Multiple coding agents (Claude Code, Cline, Aider, and others) run seamlessly
-  through Coco with zero manual environment variable setup
-- `coco start` and `coco stop` each complete in under 1 second
+  through Ardo with zero manual environment variable setup
+- `ardo start` and `ardo stop` each complete in under 1 second
 - The TUI renders in under 200ms on first open
 - OpenAI-compatible proxy round-trip overhead is under 150ms (excluding Copilot
   API latency)
-- `coco configure <agent>` and `coco unconfigure <agent>` are deterministically
-  reversible — the config file is byte-identical to its pre-Coco state after
+- `ardo configure <agent>` and `ardo unconfigure <agent>` are deterministically
+  reversible — the config file is byte-identical to its pre-Ardo state after
   unconfigure
 - All pre-existing Anthropic proxy and authentication tests continue to pass
   after migration (no regression)
-- `coco doctor` correctly classifies agents on macOS, Linux, and Windows
+- `ardo doctor` correctly classifies agents on macOS, Linux, and Windows
 - Calm, minimal output is preserved across all CLI commands — no stack traces,
   no verbose internal logging exposed to users
 - No Copilot CLI or SDK is required at any point
@@ -295,7 +295,7 @@ principles:
 
 All changes to this constitution MUST be spec-driven and traceable to a user
 story or requirement. Breaking changes (MAJOR version bumps) require explicit
-justification in the Sync Impact Report. UX changes MUST preserve Coco's calm,
+justification in the Sync Impact Report. UX changes MUST preserve Ardo's calm,
 minimal emotional tone. Proxy behavior MUST remain API-compatible with both
 Anthropic and OpenAI wire formats unless the spec explicitly evolves them.
 

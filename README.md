@@ -1,33 +1,33 @@
-# Coco
+# Ardo
 
 **Universal local AI gateway** — Route any coding agent through GitHub Copilot's
 API.
 
-Coco runs a local background service that exposes Anthropic-compatible and
+Ardo runs a local background service that exposes Anthropic-compatible and
 OpenAI-compatible API endpoints backed by your GitHub Copilot subscription. Any
-tool that speaks either API protocol can be wired through Coco in seconds.
+tool that speaks either API protocol can be wired through Ardo in seconds.
 
-Website: https://myty.github.io/coco/
+Website: https://ardo-org.github.io/ardo/
 
 ## Features
 
 - 🔗 **Anthropic + OpenAI compatible** — `/v1/messages` and
   `/v1/chat/completions` endpoints
-- 🚀 **Background service** — `coco start` / `coco stop` / `coco restart`
+- 🚀 **Background service** — `ardo start` / `ardo stop` / `ardo restart`
 - 🤖 **Multi-agent support** — Claude Code, Cline, and Codex
-- 🖥️ **Minimal TUI** — bare `coco` opens a radio-toggle interface for batch
+- 🖥️ **Minimal TUI** — bare `ardo` opens a radio-toggle interface for batch
   configuration
 - 🔍 **Agent detection** — scans PATH and VS Code extension dirs to find
   installed agents
-- ♻️ **Reversible config** — every `coco configure` is undone by
-  `coco unconfigure`
+- ♻️ **Reversible config** — every `ardo configure` is undone by
+  `ardo unconfigure`
 - ⚡ **Stream support** — real-time streaming responses
 - 📦 **Multiple install methods** — npm, Deno/JSR, or direct binary
 
 ## How It Works
 
 ```
-Coding agent → coco proxy (127.0.0.1:11434) → GitHub Copilot API
+Coding agent → ardo proxy (127.0.0.1:11434) → GitHub Copilot API
                 │
                 ├── POST /v1/messages           (Anthropic)
                 ├── POST /v1/chat/completions   (OpenAI)
@@ -35,8 +35,8 @@ Coding agent → coco proxy (127.0.0.1:11434) → GitHub Copilot API
                 └── GET  /health
 ```
 
-1. **`coco start`** — authenticates with GitHub and starts the background proxy
-2. **`coco configure <agent>`** — writes the agent's config file to point at
+1. **`ardo start`** — authenticates with GitHub and starts the background proxy
+2. **`ardo configure <agent>`** — writes the agent's config file to point at
    `http://127.0.0.1:11434`
 3. The agent's API calls are translated and forwarded to GitHub Copilot
 
@@ -49,7 +49,7 @@ Coding agent → coco proxy (127.0.0.1:11434) → GitHub Copilot API
 Clone the repository and install globally with a single command:
 
 ```bash
-git clone https://github.com/myty/coco.git && cd coco
+git clone https://github.com/ardo-org/ardo.git && cd ardo
 ```
 
 **With Deno:**
@@ -64,14 +64,14 @@ deno task install
 mise run install
 ```
 
-After installation, `coco` is available in any terminal:
+After installation, `ardo` is available in any terminal:
 
 ```bash
-coco --version
-</details>
-
-# Coco v0.2.0
+ardo --version
+# Ardo v0.2.0
 ```
+
+</details>
 
 > **Note**: Ensure `~/.deno/bin` is in your `PATH`. The Deno installer adds this
 > automatically.
@@ -83,7 +83,7 @@ coco --version
 **Node.js ≥18 required**
 
 ```bash
-npm install -g coco
+npm install -g ardo
 ```
 
 The npm package automatically downloads the native binary for your platform:
@@ -103,7 +103,7 @@ The npm package automatically downloads the native binary for your platform:
 
 
 ```bash
-deno install -A -g jsr:@myty/coco
+deno install -A -g jsr:@ardo-org/ardo
 ```
 
 </details>
@@ -113,7 +113,7 @@ deno install -A -g jsr:@myty/coco
 
 
 Download platform-specific binaries from
-[GitHub Releases](https://github.com/myty/coco/releases).
+[GitHub Releases](https://github.com/ardo-org/ardo/releases).
 
 </details>
 
@@ -124,11 +124,11 @@ Download platform-specific binaries from
 
 
 ```bash
-coco          # opens the interactive TUI
+ardo          # opens the interactive TUI
 ```
 
 ```
-Coco — Local AI Gateway
+Ardo — Local AI Gateway
 ──────────────────────────────────────────────
 Status: Running on http://localhost:11434
 Copilot: Authenticated ✓
@@ -154,20 +154,20 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 
 | Command                        | Description                                                 |
 | ------------------------------ | ----------------------------------------------------------- |
-| `coco`                         | Open the interactive TUI (on TTY) or print status (non-TTY) |
-| `coco start`                   | Start the background proxy service                          |
-| `coco stop`                    | Stop the background proxy service                           |
-| `coco restart`                 | Restart the background proxy service                        |
-| `coco status`                  | Print service and auth status                               |
-| `coco configure <agent>`       | Write config for a specific agent                           |
-| `coco unconfigure <agent>`     | Revert config for a specific agent                          |
-| `coco doctor`                  | Scan and report all agents' states                          |
-| `coco models`                  | List available Copilot model IDs                            |
-| `coco model-policy [compatible\|strict]` | Show or set model mapping policy               |
-| `coco install-service`         | Register daemon with OS login service manager               |
-| `coco uninstall-service`       | Remove daemon from OS login service manager                 |
-| `coco --help`                  | Show help                                                   |
-| `coco --version`               | Show version                                                |
+| `ardo`                         | Open the interactive TUI (on TTY) or print status (non-TTY) |
+| `ardo start`                   | Start the background proxy service                          |
+| `ardo stop`                    | Stop the background proxy service                           |
+| `ardo restart`                 | Restart the background proxy service                        |
+| `ardo status`                  | Print service and auth status                               |
+| `ardo configure <agent>`       | Write config for a specific agent                           |
+| `ardo unconfigure <agent>`     | Revert config for a specific agent                          |
+| `ardo doctor`                  | Scan and report all agents' states                          |
+| `ardo models`                  | List available Copilot model IDs                            |
+| `ardo model-policy [compatible\|strict]` | Show or set model mapping policy               |
+| `ardo install-service`         | Register daemon with OS login service manager               |
+| `ardo uninstall-service`       | Remove daemon from OS login service manager                 |
+| `ardo --help`                  | Show help                                                   |
+| `ardo --version`               | Show version                                                |
 
 </details>
 
@@ -176,26 +176,26 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 
 
 ```bash
-</details>
-
-# 1. Install coco
+# 1. Install ardo
 deno task install
 
 # 2. Start the proxy (authenticates with GitHub Copilot on first run)
-coco start
+ardo start
 
 # 3. Configure an agent
-coco configure claude-code
+ardo configure claude-code
 
 # 4. Check what's running
-coco doctor
+ardo doctor
 
 # 5. (Optional) Register as a login service
-coco install-service
+ardo install-service
 
 # To remove the login service later:
-# coco uninstall-service
+# ardo uninstall-service
 ```
+
+</details>
 
 <details>
 <summary>📖 Supported Agents</summary>
@@ -220,7 +220,7 @@ src/
 ├── tui/              # Renderer and raw-mode input
 ├── auth/             # GitHub OAuth device flow
 ├── copilot/          # GitHub Copilot API client
-├── config/           # ~/.coco/config.json store
+├── config/           # ~/.ardo/config.json store
 └── lib/              # Shared utilities (log, process, errors, token)
 ```
 
@@ -232,7 +232,7 @@ src/
 
 ```bash
 # Clone and run quality checks
-git clone https://github.com/myty/coco.git && cd coco
+git clone https://github.com/ardo-org/ardo.git && cd ardo
 deno task quality
 
 # Run in development mode
@@ -260,8 +260,8 @@ deno task compile
 <summary>📖 "Port already in use"</summary>
 
 
-- Coco automatically scans for an available port starting from 11434
-- Check `coco status` to see the actual port in use
+- Ardo automatically scans for an available port starting from 11434
+- Check `ardo status` to see the actual port in use
 
 </details>
 
@@ -269,8 +269,8 @@ deno task compile
 <summary>🔧 "Agent is misconfigured"</summary>
 
 
-- Run `coco unconfigure <agent>` then `coco configure <agent>` again
-- Run `coco doctor` for a full status report
+- Run `ardo unconfigure <agent>` then `ardo configure <agent>` again
+- Run `ardo doctor` for a full status report
 
 </details>
 
@@ -278,7 +278,7 @@ deno task compile
 <summary>📖 macOS "Cannot open" error (binary download)</summary>
 
 
-- Run `xattr -d com.apple.quarantine coco` to remove quarantine
+- Run `xattr -d com.apple.quarantine ardo` to remove quarantine
 
 </details>
 
@@ -286,7 +286,7 @@ deno task compile
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License.
 
 ## Acknowledgments
 
