@@ -1,3 +1,16 @@
+const headerSentinel = document.getElementById("header-sentinel");
+const siteHeader = document.querySelector(".site-header");
+
+if (headerSentinel && siteHeader) {
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      siteHeader.classList.toggle("is-stuck", !entry.isIntersecting);
+    },
+    { threshold: 0 }
+  );
+  observer.observe(headerSentinel);
+}
+
 const copyButtons = document.querySelectorAll(".copy-button");
 
 for (const button of copyButtons) {

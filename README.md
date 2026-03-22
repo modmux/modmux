@@ -1,11 +1,11 @@
 # Ardo
 
-**Universal local AI gateway** — Route any coding agent through GitHub Copilot's
-API.
+**Use your GitHub Copilot subscription with the agents that don't support it yet.**
 
-Ardo runs a local background service that exposes Anthropic-compatible and
-OpenAI-compatible API endpoints backed by your GitHub Copilot subscription. Any
-tool that speaks either API protocol can be wired through Ardo in seconds.
+Cline, Codex, and Claude Code are great. But none of them let you use GitHub
+Copilot as a model provider. Ardo fixes that — it runs a local proxy that speaks
+Anthropic and OpenAI protocols, backed entirely by your existing Copilot
+subscription. One login. No extra API keys.
 
 Website: https://ardo-org.github.io/ardo/
 

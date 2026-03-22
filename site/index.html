@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ardo | Local AI Gateway for GitHub Copilot</title>
+    <title>Ardo | Use GitHub Copilot with Cline, Codex, and Claude Code</title>
     <meta
       name="description"
-      content="Ardo is a local AI gateway that routes coding agents through GitHub Copilot with clear install paths, reversible config, and familiar Anthropic and OpenAI compatible endpoints."
+      content="Ardo is an open-source local proxy that lets Cline, Codex, and Claude Code run on your GitHub Copilot subscription. One login, no extra API keys."
     />
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./logo.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,10 +19,11 @@
     <script defer src="./app.js"></script>
   </head>
   <body>
-    <div class="page-shell">
-      <header class="site-header">
+    <div id="header-sentinel" aria-hidden="true"></div>
+    <header class="site-header">
+      <div class="site-header-inner">
         <a class="brand" href="#top" aria-label="Ardo home">
-          <span class="brand-mark">AR</span>
+          <img src="./logo.png" class="brand-logo" alt="" />
           <span class="brand-text">Ardo</span>
         </a>
         <nav class="site-nav" aria-label="Primary">
@@ -32,17 +33,19 @@
           <a href="#faq">FAQ</a>
           <a href="https://github.com/ardo-org/ardo">GitHub</a>
         </nav>
-      </header>
-
+      </div>
+    </header>
+    <div class="page-shell">
       <main id="top">
         <section class="hero section">
           <div class="hero-copy reveal">
-            <p class="eyebrow">Local AI gateway for GitHub Copilot</p>
-            <h1>One local endpoint for the coding agents you already use.</h1>
+            <p class="eyebrow">Works with Cline, Codex, and Claude Code</p>
+            <h1>Your GitHub Copilot subscription. Now for the agents that don't support it yet.</h1>
             <p class="hero-body">
-              Ardo runs on your machine, exposes familiar Anthropic and OpenAI
-              compatible endpoints, and lets supported agents route through your
-              GitHub Copilot subscription without per-agent provider sprawl.
+              Ardo runs locally and proxies Cline, Codex, and Claude Code through
+              your existing GitHub Copilot subscription. No extra API keys. No
+              separate billing. Just authenticate once and point your agents at
+              127.0.0.1.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="#install">Install Ardo</a>
@@ -85,30 +88,31 @@
         <section id="why" class="section section-grid reveal">
           <div class="section-heading">
             <p class="eyebrow">Why Ardo</p>
-            <h2>GitHub Copilot is the backend. Your agents still need a clean local path to it.</h2>
+            <h2>You already have GitHub Copilot. You shouldn't need another subscription to use your favorite agents.</h2>
           </div>
           <div class="card-grid three-up">
             <article class="info-card accent-sand">
-              <h3>Reduce provider friction</h3>
+              <h3>One login, really</h3>
               <p>
-                Different coding agents expect different providers and config
-                shapes. Ardo gives them one local gateway instead of separate
-                ad hoc setups.
+                Authenticate once with GitHub Copilot. Every agent you add
+                after that routes through the same subscription — no new API
+                keys, no new billing.
               </p>
             </article>
             <article class="info-card accent-mint">
-              <h3>Keep the boundary clear</h3>
+              <h3>Stays on your machine</h3>
               <p>
-                Ardo binds to localhost, proxies requests to GitHub Copilot,
-                and avoids turning into a hosted service or a remote control
+                Ardo binds to localhost only. It proxies requests to GitHub
+                Copilot and never becomes a hosted service or remote control
                 plane.
               </p>
             </article>
             <article class="info-card accent-rust">
-              <h3>Undo changes cleanly</h3>
+              <h3>Easy to undo</h3>
               <p>
-                Agent configuration is designed to be reversible. Ardo can
-                unconfigure supported agents and restore their previous state.
+                Agent config is reversible by design. Run
+                <code>ardo unconfigure</code> and your agents go back to
+                exactly where they were.
               </p>
             </article>
           </div>

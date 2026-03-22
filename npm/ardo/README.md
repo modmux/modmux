@@ -1,6 +1,6 @@
 # ardo
 
-Universal local AI gateway for routing coding agents through GitHub Copilot.
+Use your GitHub Copilot subscription with Cline, Codex, and Claude Code.
 
 ## Installation
 
