@@ -11,7 +11,7 @@ async function runCli(
   env?: Record<string, string>,
 ): Promise<RunResult> {
   const command = new Deno.Command("deno", {
-    args: ["run", "-A", "src/cli/main.ts", ...args],
+    args: ["run", "-A", "cli/src/main.ts", ...args],
     stdout: "piped",
     stderr: "piped",
     stdin: "null",
@@ -29,20 +29,20 @@ async function runCli(
 
 Deno.test("CLI contract: --version prints version string and exits 0", async () => {
   const result = await runCli(["--version"]);
-  assertMatch(result.stdout, /^Coco v\d+\.\d+\.\d+/);
+  assertMatch(result.stdout, /^Modmux v\d+\.\d+\.\d+/);
   assertEquals(result.exitCode, 0);
 });
 
 Deno.test("CLI contract: -v alias prints version string and exits 0", async () => {
   const result = await runCli(["-v"]);
-  assertMatch(result.stdout, /^Coco v\d+\.\d+\.\d+/);
+  assertMatch(result.stdout, /^Modmux v\d+\.\d+\.\d+/);
   assertEquals(result.exitCode, 0);
 });
 
 Deno.test("CLI contract: --help prints usage and exits 0", async () => {
   const result = await runCli(["--help"]);
-  assertStringIncludes(result.stdout, "Coco");
-  assertStringIncludes(result.stdout, "Usage: coco");
+  assertStringIncludes(result.stdout, "Modmux");
+  assertStringIncludes(result.stdout, "Usage: modmux");
   assertStringIncludes(result.stdout, "start");
   assertStringIncludes(result.stdout, "--version");
   assertEquals(result.exitCode, 0);
@@ -50,7 +50,7 @@ Deno.test("CLI contract: --help prints usage and exits 0", async () => {
 
 Deno.test("CLI contract: -h alias prints usage and exits 0", async () => {
   const result = await runCli(["-h"]);
-  assertStringIncludes(result.stdout, "Coco");
+  assertStringIncludes(result.stdout, "Modmux");
   assertStringIncludes(result.stdout, "--version");
   assertEquals(result.exitCode, 0);
 });
@@ -63,7 +63,7 @@ Deno.test("CLI contract: --help includes model-policy command", async () => {
 
 Deno.test("CLI contract: model-policy prints current default", async () => {
   const tempHome = await Deno.makeTempDir({
-    prefix: "coco_cli_policy_default_",
+    prefix: "modmux_cli_policy_default_",
   });
   try {
     const result = await runCli(["model-policy"], { HOME: tempHome });
@@ -75,7 +75,7 @@ Deno.test("CLI contract: model-policy prints current default", async () => {
 });
 
 Deno.test("CLI contract: model-policy strict persists setting", async () => {
-  const tempHome = await Deno.makeTempDir({ prefix: "coco_cli_policy_set_" });
+  const tempHome = await Deno.makeTempDir({ prefix: "modmux_cli_policy_set_" });
   try {
     const setResult = await runCli(["model-policy", "strict"], {
       HOME: tempHome,
@@ -96,7 +96,7 @@ Deno.test("CLI contract: model-policy strict persists setting", async () => {
 
 Deno.test("CLI contract: model-policy rejects invalid value", async () => {
   const tempHome = await Deno.makeTempDir({
-    prefix: "coco_cli_policy_invalid_",
+    prefix: "modmux_cli_policy_invalid_",
   });
   try {
     const result = await runCli(["model-policy", "auto"], { HOME: tempHome });

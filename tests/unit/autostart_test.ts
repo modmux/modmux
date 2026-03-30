@@ -13,7 +13,7 @@ import { getServiceManager, UnsupportedPlatformError } from "@modmux/gateway";
 // ---------------------------------------------------------------------------
 
 async function makeTempHome(): Promise<string> {
-  return await Deno.makeTempDir({ prefix: "coco_test_home_" });
+  return await Deno.makeTempDir({ prefix: "modmux_test_home_" });
 }
 
 async function cleanup(dir: string): Promise<void> {
@@ -37,15 +37,15 @@ Deno.test({
       const result = await getServiceManager({ home }).install({
         dryRun: true,
       });
-      assertStringIncludes(result.configContent, "com.myty.coco");
+      assertStringIncludes(result.configContent, "com.modmux.modmux");
       assertStringIncludes(result.configContent, "--daemon");
       assertStringIncludes(result.configContent, "RunAtLoad");
       assertStringIncludes(result.configContent, "KeepAlive");
       assertStringIncludes(result.configContent, "StandardOutPath");
-      assertStringIncludes(result.configContent, "coco.log");
+      assertStringIncludes(result.configContent, "modmux.log");
       assertEquals(result.installed, true);
     } catch (err) {
-      // If coco binary not found, that is expected in CI without global install
+      // If modmux binary not found, that is expected in CI without global install
       if (
         err instanceof Error && err.message.includes("not installed globally")
       ) {
@@ -68,7 +68,7 @@ Deno.test({
         dryRun: true,
       });
       assertStringIncludes(result.configPath, "Library/LaunchAgents");
-      assertStringIncludes(result.configPath, "com.myty.coco.plist");
+      assertStringIncludes(result.configPath, "com.modmux.modmux.plist");
     } catch (err) {
       if (
         err instanceof Error && err.message.includes("not installed globally")
@@ -131,7 +131,7 @@ Deno.test({
       assertStringIncludes(result.configContent, "--daemon");
       assertStringIncludes(result.configContent, "Restart=on-failure");
       assertStringIncludes(result.configContent, "WantedBy=default.target");
-      assertStringIncludes(result.configContent, "coco.log");
+      assertStringIncludes(result.configContent, "modmux.log");
       assertEquals(result.installed, true);
     } catch (err) {
       if (
@@ -160,7 +160,7 @@ Deno.test({
         dryRun: true,
       });
       assertStringIncludes(result.configPath, ".config/systemd/user");
-      assertStringIncludes(result.configPath, "coco.service");
+      assertStringIncludes(result.configPath, "modmux.service");
     } catch (err) {
       if (
         err instanceof Error &&
@@ -201,7 +201,7 @@ Deno.test({
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.modmux.modmux.plist`, "<plist/>");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -219,7 +219,7 @@ Deno.test({
     const home = await makeTempHome();
     const unitDir = `${home}/.config/systemd/user`;
     await Deno.mkdir(unitDir, { recursive: true });
-    await Deno.writeTextFile(`${unitDir}/coco.service`, "[Unit]");
+    await Deno.writeTextFile(`${unitDir}/modmux.service`, "[Unit]");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -260,7 +260,7 @@ Deno.test({
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.modmux.modmux.plist`, "<plist/>");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -277,7 +277,7 @@ Deno.test({
     const home = await makeTempHome();
     const unitDir = `${home}/.config/systemd/user`;
     await Deno.mkdir(unitDir, { recursive: true });
-    await Deno.writeTextFile(`${unitDir}/coco.service`, "[Unit]");
+    await Deno.writeTextFile(`${unitDir}/modmux.service`, "[Unit]");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -295,14 +295,14 @@ Deno.test({
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.modmux.modmux.plist`, "<plist/>");
     try {
       const result = await getServiceManager({ home }).uninstall({
         dryRun: true,
       });
       assertEquals(result.removed, true);
       // dryRun should NOT actually remove the file
-      const stillExists = await Deno.stat(`${plistDir}/com.myty.coco.plist`)
+      const stillExists = await Deno.stat(`${plistDir}/com.modmux.modmux.plist`)
         .then(
           () => true,
           () => false,
@@ -326,13 +326,13 @@ Deno.test({
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.modmux.modmux.plist`, "<plist/>");
     try {
       const result = await getServiceManager({ home }).uninstall({
         dryRun: true,
       });
       assertEquals(result.removed, true);
-      const stillExists = await Deno.stat(`${plistDir}/com.myty.coco.plist`)
+      const stillExists = await Deno.stat(`${plistDir}/com.modmux.modmux.plist`)
         .then(
           () => true,
           () => false,
@@ -361,7 +361,7 @@ Deno.test({
   fn() {
     const err = new UnsupportedPlatformError("Windows");
     assertStringIncludes(err.message, "coming soon");
-    assertStringIncludes(err.message, "coco start");
+    assertStringIncludes(err.message, "modmux start");
     assertEquals(err.name, "UnsupportedPlatformError");
   },
 });

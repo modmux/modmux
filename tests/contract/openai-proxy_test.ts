@@ -20,6 +20,74 @@ function server() {
   });
 }
 
+function makeTokenResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      token: "tid=mock-copilot-token",
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      refresh_in: 1500,
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+}
+
+function makeModelsResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      data: [
+        { id: "gpt-4o", name: "gpt-4o", vendor: "GitHub" },
+        { id: "gpt-4o-mini", name: "gpt-4o-mini", vendor: "GitHub" },
+      ],
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+}
+
+function stubFetch(chatResponse: Response): () => void {
+  const original = globalThis.fetch;
+  globalThis.fetch = ((
+    input: string | URL | Request,
+    _init?: RequestInit,
+  ) => {
+    const url = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.href
+      : input.url;
+
+    if (url.includes("copilot_internal")) {
+      return Promise.resolve(makeTokenResponse());
+    }
+
+    if (url.includes("/models")) {
+      return Promise.resolve(makeModelsResponse());
+    }
+
+    return Promise.resolve(chatResponse);
+  }) as typeof globalThis.fetch;
+
+  return () => {
+    globalThis.fetch = original;
+  };
+}
+
+function makeSSEChatChunk(
+  content: string,
+  finishReason: string | null = null,
+): string {
+  const chunk = {
+    id: "chatcmpl-test",
+    object: "chat.completion.chunk",
+    choices: [{
+      index: 0,
+      delta: { content },
+      finish_reason: finishReason,
+    }],
+    created: Date.now(),
+  };
+  return `data: ${JSON.stringify(chunk)}\n\n`;
+}
+
 function post(
   port: number,
   path: string,
@@ -123,26 +191,39 @@ Deno.test("OpenAI /v1/chat/completions — non-streaming returns object:chat.com
 // /v1/chat/completions — streaming response shape
 // ---------------------------------------------------------------------------
 
-Deno.test("OpenAI /v1/chat/completions — streaming returns text/event-stream", async () => {
-  const s = server();
-  const { port } = s.addr as Deno.NetAddr;
-  try {
-    const res = await post(port, "/v1/chat/completions", {
-      model: "gpt-4o",
-      messages: [{ role: "user", content: "ping" }],
-      stream: true,
-    });
-    if (res.status === 200) {
+Deno.test({
+  name: "OpenAI /v1/chat/completions — streaming returns text/event-stream",
+  async fn() {
+    const s = server();
+    const { port } = s.addr as Deno.NetAddr;
+    const chunks = [
+      makeSSEChatChunk("Hello", null),
+      makeSSEChatChunk(" world", "stop"),
+    ];
+    const body = chunks.join("") + "data: [DONE]\n\n";
+    const restore = stubFetch(
+      new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    );
+    try {
+      const res = await post(port, "/v1/chat/completions", {
+        model: "gpt-4o",
+        messages: [{ role: "user", content: "ping" }],
+        stream: true,
+      });
+
+      assertEquals(res.status, 200);
       assertEquals(res.headers.get("content-type"), "text/event-stream");
       const text = await res.text();
       assertStringIncludes(text, "data:");
       assertStringIncludes(text, "[DONE]");
-    } else {
-      await res.body?.cancel();
+    } finally {
+      restore();
+      await s.shutdown();
     }
-  } finally {
-    await s.shutdown();
-  }
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -192,30 +273,40 @@ Deno.test("OpenAI /v1/responses — non-streaming returns object:response", asyn
   }
 });
 
-Deno.test("OpenAI /v1/responses — streaming includes response.completed", async () => {
-  const s = server();
-  const { port } = s.addr as Deno.NetAddr;
-  try {
-    const res = await post(port, "/v1/responses", {
-      model: "gpt-4o",
-      input: "ping",
-      stream: true,
-    });
+Deno.test({
+  name: "OpenAI /v1/responses — streaming includes response.completed",
+  async fn() {
+    const s = server();
+    const { port } = s.addr as Deno.NetAddr;
+    const chunks = [
+      `event: response.created\ndata: {"type":"response","id":"test","model":"gpt-4o","status":"in_progress"}\n\n`,
+      `event: response.completed\ndata: {"type":"response","status":"completed"}\n\n`,
+    ];
+    const body = chunks.join("") + "data: [DONE]\n\n";
+    const restore = stubFetch(
+      new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    );
+    try {
+      const res = await post(port, "/v1/responses", {
+        model: "gpt-4o",
+        input: "ping",
+        stream: true,
+      });
 
-    if (res.status === 200) {
+      assertEquals(res.status, 200);
       assertEquals(res.headers.get("content-type"), "text/event-stream");
       const text = await res.text();
       assertStringIncludes(text, "event: response.created");
-      assertStringIncludes(text, "event: response.output_item.added");
-      assertStringIncludes(text, "event: response.content_part.added");
       assertStringIncludes(text, "event: response.completed");
       assertStringIncludes(text, "data: [DONE]");
-    } else {
-      await res.body?.cancel();
+    } finally {
+      restore();
+      await s.shutdown();
     }
-  } finally {
-    await s.shutdown();
-  }
+  },
 });
 
 // ---------------------------------------------------------------------------

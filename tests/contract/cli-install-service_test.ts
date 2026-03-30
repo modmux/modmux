@@ -1,5 +1,5 @@
 /**
- * Contract tests for coco install-service / uninstall-service CLI commands.
+ * Contract tests for modmux install-service / uninstall-service CLI commands.
  *
  * Verifies that:
  * - install-service and uninstall-service appear in --help output
@@ -7,7 +7,7 @@
 
 import { assertStringIncludes } from "@std/assert";
 
-const CLI_PATH = "./src/cli/main.ts";
+const CLI_PATH = "./cli/src/main.ts";
 
 // ---------------------------------------------------------------------------
 // Help text contracts

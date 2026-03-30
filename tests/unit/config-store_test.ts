@@ -3,9 +3,9 @@ import { join } from "@std/path";
 import { DEFAULT_CONFIG, loadConfig, saveConfig } from "@modmux/gateway";
 import type { ModmuxConfig } from "@modmux/gateway";
 
-// Use a temp directory for all tests to avoid touching ~/.coco
+// Use a temp directory for all tests to avoid touching ~/.modmux
 async function withTempHome<T>(fn: (dir: string) => Promise<T>): Promise<T> {
-  const tmp = await Deno.makeTempDir({ prefix: "coco_test_" });
+  const tmp = await Deno.makeTempDir({ prefix: "modmux_test_" });
   const origHome = Deno.env.get("HOME");
   Deno.env.set("HOME", tmp);
   try {
@@ -35,18 +35,18 @@ Deno.test("loadConfig — returns DEFAULT_CONFIG on first run", async () => {
   });
 });
 
-Deno.test("loadConfig — creates ~/.coco dir if absent", async () => {
+Deno.test("loadConfig — creates ~/.modmux dir if absent", async () => {
   await withTempHome(async (home) => {
     await loadConfig();
-    const stat = await Deno.stat(join(home, ".coco"));
+    const stat = await Deno.stat(join(home, ".modmux"));
     assertEquals(stat.isDirectory, true);
   });
 });
 
-Deno.test("loadConfig — migrates legacy ~/.coco/config.json to ~/.coco", async () => {
+Deno.test("loadConfig — migrates legacy ~/.modmux/config.json to ~/.modmux", async () => {
   await withTempHome(async (home) => {
-    const legacyDir = join(home, ".coco");
-    const canonicalDir = join(home, ".coco");
+    const legacyDir = join(home, ".modmux");
+    const canonicalDir = join(home, ".modmux");
     await Deno.mkdir(legacyDir, { recursive: true });
 
     const legacyConfig: ModmuxConfig = {
@@ -75,8 +75,8 @@ Deno.test("loadConfig — migrates legacy ~/.coco/config.json to ~/.coco", async
 
 Deno.test("loadConfig — migration remains idempotent across repeated loads", async () => {
   await withTempHome(async (home) => {
-    const legacyDir = join(home, ".coco");
-    const canonicalDir = join(home, ".coco");
+    const legacyDir = join(home, ".modmux");
+    const canonicalDir = join(home, ".modmux");
     await Deno.mkdir(legacyDir, { recursive: true });
 
     await Deno.writeTextFile(
@@ -186,7 +186,7 @@ Deno.test("saveConfig — rejects invalid logLevel", async () => {
 
 Deno.test("loadConfig — throws on malformed JSON", async () => {
   await withTempHome(async (home) => {
-    const dir = join(home, ".coco");
+    const dir = join(home, ".modmux");
     await Deno.mkdir(dir, { recursive: true });
     await Deno.writeTextFile(join(dir, "config.json"), "{ bad json }");
     await assertRejects(
@@ -197,29 +197,29 @@ Deno.test("loadConfig — throws on malformed JSON", async () => {
   });
 });
 
-Deno.test("loadConfig — COCO_PORT overrides file/default", async () => {
+Deno.test("loadConfig — MODMUX_PORT overrides file/default", async () => {
   await withTempHome(async () => {
-    Deno.env.set("COCO_PORT", "13000");
+    Deno.env.set("MODMUX_PORT", "13000");
     try {
       const loaded = await loadConfig();
       assertEquals(loaded.port, 13000);
     } finally {
-      Deno.env.delete("COCO_PORT");
+      Deno.env.delete("MODMUX_PORT");
     }
   });
 });
 
-Deno.test("loadConfig — throws on invalid COCO_PORT", async () => {
+Deno.test("loadConfig — throws on invalid MODMUX_PORT", async () => {
   await withTempHome(async () => {
-    Deno.env.set("COCO_PORT", "not-a-number");
+    Deno.env.set("MODMUX_PORT", "not-a-number");
     try {
       await assertRejects(
         () => loadConfig(),
         Error,
-        "Invalid COCO_PORT value",
+        "Invalid MODMUX_PORT value",
       );
     } finally {
-      Deno.env.delete("COCO_PORT");
+      Deno.env.delete("MODMUX_PORT");
     }
   });
 });
