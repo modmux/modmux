@@ -47,13 +47,19 @@ function stubFetch(chatResponse: Response): () => void {
   const original = globalThis.fetch;
   globalThis.fetch = ((
     input: string | URL | Request,
-    _init?: RequestInit,
+    init?: RequestInit,
   ) => {
     const url = typeof input === "string"
       ? input
       : input instanceof URL
       ? input.href
       : input.url;
+
+    if (
+      url.startsWith("http://127.0.0.1:") || url.startsWith("http://localhost:")
+    ) {
+      return original(input, init);
+    }
 
     if (url.includes("copilot_internal")) {
       return Promise.resolve(makeTokenResponse());
@@ -83,6 +89,24 @@ function makeSSEChatChunk(
       delta: { content },
       finish_reason: finishReason,
     }],
+    created: Date.now(),
+  };
+  return `data: ${JSON.stringify(chunk)}\n\n`;
+}
+
+function makeSSEUsageChunk(
+  promptTokens: number,
+  completionTokens: number,
+): string {
+  const chunk = {
+    id: "chatcmpl-test",
+    object: "chat.completion.chunk",
+    choices: [],
+    usage: {
+      prompt_tokens: promptTokens,
+      completion_tokens: completionTokens,
+      total_tokens: promptTokens + completionTokens,
+    },
     created: Date.now(),
   };
   return `data: ${JSON.stringify(chunk)}\n\n`;
@@ -279,8 +303,9 @@ Deno.test({
     const s = server();
     const { port } = s.addr as Deno.NetAddr;
     const chunks = [
-      `event: response.created\ndata: {"type":"response","id":"test","model":"gpt-4o","status":"in_progress"}\n\n`,
-      `event: response.completed\ndata: {"type":"response","status":"completed"}\n\n`,
+      makeSSEChatChunk("Hello", null),
+      makeSSEChatChunk(" world", "stop"),
+      makeSSEUsageChunk(7, 2),
     ];
     const body = chunks.join("") + "data: [DONE]\n\n";
     const restore = stubFetch(
@@ -300,7 +325,12 @@ Deno.test({
       assertEquals(res.headers.get("content-type"), "text/event-stream");
       const text = await res.text();
       assertStringIncludes(text, "event: response.created");
+      assertStringIncludes(text, "event: response.output_text.delta");
+      assertStringIncludes(text, '"delta":"Hello"');
+      assertStringIncludes(text, '"delta":" world"');
       assertStringIncludes(text, "event: response.completed");
+      assertStringIncludes(text, '"input_tokens":7');
+      assertStringIncludes(text, '"output_tokens":2');
       assertStringIncludes(text, "data: [DONE]");
     } finally {
       restore();

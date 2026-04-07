@@ -191,8 +191,6 @@ async function writeCodex(
       modmux: {
         name: "Modmux",
         base_url: `http://127.0.0.1:${port}/v1/`,
-        // Codex now requires Responses API wiring.
-        wire_api: "responses",
       },
     },
   };
@@ -262,8 +260,9 @@ export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
   try {
     const content = await Deno.readTextFile(entry.configPath);
 
-    // Codex requires explicit responses wiring; older configs may still
-    // point to /v1/responses and should be treated as stale.
+    // Codex uses the Responses API for OpenAI-compatible providers. The
+    // explicit wire_api key is optional, so accept both omitted and legacy
+    // wire_api = "responses" configs.
     if (entry.agentName === "codex") {
       const parsed = parseToml(content) as Record<string, unknown>;
       if (parsed.model_provider !== "modmux") return false;
@@ -282,7 +281,7 @@ export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
       if (typeof baseUrl !== "string" || !baseUrl.includes(entry.endpoint)) {
         return false;
       }
-      return wireApi === "responses";
+      return wireApi === undefined || wireApi === "responses";
     }
 
     return content.includes(entry.endpoint);

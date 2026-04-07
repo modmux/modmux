@@ -85,8 +85,8 @@ Cline, and Codex CLI can display real token counts.
 - Per-session usage aggregation or persistence
 - Accurate tiktoken-compatible token counting (char/4 estimator is acceptable
   for display)
-- Usage metrics for the Responses API streaming path (it buffers internally;
-  non-streaming `chat()` already provides accurate counts)
+- Historical usage backfill for Responses API streaming sessions created before
+  runtime usage translation existed
 
 ## Technical Notes
 
@@ -275,8 +275,7 @@ Three coordinated changes inside `chatStream`:
   in clients that read both events
 - All extended stub fields are `0` — Copilot exposes no cache or reasoning token
   data
-- Responses API streaming already buffers internally (non-streaming `chat()`
-  call), so its `response.completed` usage is accurate without streaming changes
-  — only extended fields need adding
+- Responses API streaming now maps upstream streaming chunks into incremental
+  lifecycle events and emits final usage in `response.completed`
 - A tiktoken-compatible estimator upgrade is explicitly deferred to a follow-on
   spec

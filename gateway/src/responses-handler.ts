@@ -1,4 +1,4 @@
-import { chat } from "@modmux/providers";
+import { chat, chatStream } from "@modmux/providers";
 import { anthropicToOpenAI, openAIToAnthropic } from "./openai-translate.ts";
 import {
   openAIServiceUnavailable,
@@ -12,11 +12,13 @@ import {
   openAIErrorBody,
   openAIErrorResponse,
 } from "./response-utils.ts";
+import { loadConfig } from "./store.ts";
 import type {
   OpenAIChatRequest,
   OpenAIResponsesInputMessage,
   OpenAIResponsesRequest,
   ProxyRequest,
+  StreamEvent,
 } from "./types.ts";
 
 function responsesInputToMessages(
@@ -55,28 +57,88 @@ function responsesInputToMessages(
   return messages.filter((message) => typeof message.content === "string");
 }
 
-function toResponsesBody(openAIResp: ReturnType<typeof anthropicToOpenAI>) {
-  const text = openAIResp.choices[0]?.message?.content ?? "";
+interface ResponsesUsage {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  input_tokens_details: { cached_tokens: number };
+  output_tokens_details: { reasoning_tokens: number };
+}
+
+interface ResponsesBody {
+  id: string;
+  object: "response";
+  created_at: number;
+  status: "completed";
+  model: string;
+  output: Array<{
+    type: "message";
+    role: "assistant";
+    content: Array<{ type: "output_text"; text: string }>;
+  }>;
+  output_text: string;
+  usage: ResponsesUsage;
+}
+
+interface ResponsesStreamState {
+  requestedModel: string;
+  responseId: string | null;
+  outputItemId: string | null;
+  createdAt: number;
+  text: string;
+  usage: ResponsesUsage | null;
+  textBlockIndex: number | null;
+  contentDone: boolean;
+}
+
+function usageFromCounts(
+  promptTokens: number,
+  completionTokens: number,
+): ResponsesUsage {
   return {
-    id: `resp_${openAIResp.id}`,
+    input_tokens: promptTokens,
+    output_tokens: completionTokens,
+    total_tokens: promptTokens + completionTokens,
+    input_tokens_details: { cached_tokens: 0 },
+    output_tokens_details: { reasoning_tokens: 0 },
+  };
+}
+
+function buildResponsesBody(
+  responseId: string,
+  createdAt: number,
+  model: string,
+  text: string,
+  usage: ResponsesUsage,
+): ResponsesBody {
+  return {
+    id: responseId,
     object: "response",
-    created_at: openAIResp.created,
+    created_at: createdAt,
     status: "completed",
-    model: openAIResp.model,
+    model,
     output: [{
       type: "message",
       role: "assistant",
       content: [{ type: "output_text", text }],
     }],
     output_text: text,
-    usage: {
-      input_tokens: openAIResp.usage.prompt_tokens,
-      output_tokens: openAIResp.usage.completion_tokens,
-      total_tokens: openAIResp.usage.total_tokens,
-      input_tokens_details: { cached_tokens: 0 },
-      output_tokens_details: { reasoning_tokens: 0 },
-    },
+    usage,
   };
+}
+
+function toResponsesBody(openAIResp: ReturnType<typeof anthropicToOpenAI>) {
+  const text = openAIResp.choices[0]?.message?.content ?? "";
+  return buildResponsesBody(
+    `resp_${openAIResp.id}`,
+    openAIResp.created,
+    openAIResp.model,
+    text,
+    usageFromCounts(
+      openAIResp.usage.prompt_tokens,
+      openAIResp.usage.completion_tokens,
+    ),
+  );
 }
 
 interface ResponsesSseEvent {
@@ -93,108 +155,221 @@ async function getResponsesBody(
   return toResponsesBody(openAIResp);
 }
 
-function buildResponseLifecycleEvents(
-  responseBody: ReturnType<typeof toResponsesBody>,
-): ResponsesSseEvent[] {
-  const responseId = String(responseBody.id);
-  const outputItemId = `msg_${responseId}`;
-  const text = String(responseBody.output_text);
+function createResponsesStreamState(
+  requestedModel: string,
+): ResponsesStreamState {
+  return {
+    requestedModel,
+    responseId: null,
+    outputItemId: null,
+    createdAt: Math.floor(Date.now() / 1000),
+    text: "",
+    usage: null,
+    textBlockIndex: null,
+    contentDone: false,
+  };
+}
 
+function ensureResponseIds(
+  state: ResponsesStreamState,
+  messageId?: string,
+): void {
+  if (state.responseId && state.outputItemId) return;
+  const baseId = messageId ?? crypto.randomUUID();
+  state.responseId = `resp_${baseId}`;
+  state.outputItemId = `msg_${state.responseId}`;
+}
+
+function finalizeContent(state: ResponsesStreamState): ResponsesSseEvent[] {
+  if (state.contentDone || !state.responseId || !state.outputItemId) {
+    return [];
+  }
+
+  state.contentDone = true;
   return [
-    {
-      event: "response.created",
-      data: {
-        type: "response.created",
-        response: {
-          id: responseId,
-          object: "response",
-          model: responseBody.model,
-          status: "in_progress",
-        },
-      },
-    },
-    {
-      event: "response.output_item.added",
-      data: {
-        type: "response.output_item.added",
-        response_id: responseId,
-        output_index: 0,
-        item: {
-          id: outputItemId,
-          type: "message",
-          role: "assistant",
-          status: "in_progress",
-          content: [],
-        },
-      },
-    },
-    {
-      event: "response.content_part.added",
-      data: {
-        type: "response.content_part.added",
-        response_id: responseId,
-        output_index: 0,
-        item_id: outputItemId,
-        content_index: 0,
-        part: { type: "output_text", text: "" },
-      },
-    },
-    {
-      event: "response.output_text.delta",
-      data: {
-        type: "response.output_text.delta",
-        response_id: responseId,
-        output_index: 0,
-        item_id: outputItemId,
-        content_index: 0,
-        delta: text,
-      },
-    },
     {
       event: "response.output_text.done",
       data: {
         type: "response.output_text.done",
-        response_id: responseId,
+        response_id: state.responseId,
         output_index: 0,
-        item_id: outputItemId,
+        item_id: state.outputItemId,
         content_index: 0,
-        text,
+        text: state.text,
       },
     },
     {
       event: "response.content_part.done",
       data: {
         type: "response.content_part.done",
-        response_id: responseId,
+        response_id: state.responseId,
         output_index: 0,
-        item_id: outputItemId,
+        item_id: state.outputItemId,
         content_index: 0,
-        part: { type: "output_text", text },
-      },
-    },
-    {
-      event: "response.output_item.done",
-      data: {
-        type: "response.output_item.done",
-        response_id: responseId,
-        output_index: 0,
-        item: {
-          id: outputItemId,
-          type: "message",
-          role: "assistant",
-          status: "completed",
-          content: [{ type: "output_text", text }],
-        },
-      },
-    },
-    {
-      event: "response.completed",
-      data: {
-        type: "response.completed",
-        response: responseBody,
+        part: { type: "output_text", text: state.text },
       },
     },
   ];
+}
+
+function mapStreamEventToResponses(
+  event: StreamEvent,
+  state: ResponsesStreamState,
+): ResponsesSseEvent[] {
+  switch (event.type) {
+    case "message_start": {
+      const message = event.message;
+      const messageId =
+        message && typeof message === "object" && "id" in message &&
+          typeof message.id === "string"
+          ? message.id
+          : undefined;
+      ensureResponseIds(state, messageId);
+
+      return [
+        {
+          event: "response.created",
+          data: {
+            type: "response.created",
+            response: {
+              id: state.responseId,
+              object: "response",
+              model: state.requestedModel,
+              status: "in_progress",
+            },
+          },
+        },
+        {
+          event: "response.output_item.added",
+          data: {
+            type: "response.output_item.added",
+            response_id: state.responseId,
+            output_index: 0,
+            item: {
+              id: state.outputItemId,
+              type: "message",
+              role: "assistant",
+              status: "in_progress",
+              content: [],
+            },
+          },
+        },
+        {
+          event: "response.content_part.added",
+          data: {
+            type: "response.content_part.added",
+            response_id: state.responseId,
+            output_index: 0,
+            item_id: state.outputItemId,
+            content_index: 0,
+            part: { type: "output_text", text: "" },
+          },
+        },
+      ];
+    }
+
+    case "content_block_start": {
+      const contentBlock = event.content_block;
+      if (
+        contentBlock && typeof contentBlock === "object" &&
+        "type" in contentBlock && contentBlock.type === "text" &&
+        typeof event.index === "number"
+      ) {
+        state.textBlockIndex = event.index;
+      }
+      return [];
+    }
+
+    case "content_block_delta": {
+      const delta = event.delta;
+      if (
+        !delta || typeof delta !== "object" || !("type" in delta) ||
+        delta.type !== "text_delta" || !("text" in delta) ||
+        typeof delta.text !== "string"
+      ) {
+        return [];
+      }
+
+      ensureResponseIds(state);
+      state.text += delta.text;
+      return [{
+        event: "response.output_text.delta",
+        data: {
+          type: "response.output_text.delta",
+          response_id: state.responseId,
+          output_index: 0,
+          item_id: state.outputItemId,
+          content_index: 0,
+          delta: delta.text,
+        },
+      }];
+    }
+
+    case "content_block_stop": {
+      if (
+        state.textBlockIndex !== null && typeof event.index === "number" &&
+        event.index === state.textBlockIndex
+      ) {
+        return finalizeContent(state);
+      }
+      return [];
+    }
+
+    case "message_delta": {
+      const usage = event.usage;
+      if (
+        usage && typeof usage === "object" && "input_tokens" in usage &&
+        "output_tokens" in usage && typeof usage.input_tokens === "number" &&
+        typeof usage.output_tokens === "number"
+      ) {
+        state.usage = usageFromCounts(usage.input_tokens, usage.output_tokens);
+      }
+      return [];
+    }
+
+    case "message_stop": {
+      ensureResponseIds(state);
+      const events = finalizeContent(state);
+      const usage = state.usage ?? usageFromCounts(0, 0);
+      const responseBody = buildResponsesBody(
+        state.responseId!,
+        state.createdAt,
+        state.requestedModel,
+        state.text,
+        usage,
+      );
+
+      events.push(
+        {
+          event: "response.output_item.done",
+          data: {
+            type: "response.output_item.done",
+            response_id: state.responseId,
+            output_index: 0,
+            item: {
+              id: state.outputItemId,
+              type: "message",
+              role: "assistant",
+              status: "completed",
+              content: [{ type: "output_text", text: state.text }],
+            },
+          },
+        },
+        {
+          event: "response.completed",
+          data: {
+            type: "response.completed",
+            response: responseBody,
+          },
+        },
+      );
+
+      return events;
+    }
+
+    default:
+      return [];
+  }
 }
 
 export async function handleResponses(req: Request): Promise<Response> {
@@ -240,39 +415,80 @@ export async function handleResponses(req: Request): Promise<Response> {
   };
 
   if (responsesReq.stream === true) {
+    const config = await loadConfig();
+
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
-        const write = (event: string, data: Record<string, unknown>) => {
+        const state = createResponsesStreamState(responsesReq.model);
+        let backpressureCount = 0;
+        let isClosed = false;
+
+        const queueChunk = async (data: string): Promise<void> => {
+          if (isClosed) return;
+
+          try {
+            controller.enqueue(encoder.encode(data));
+          } catch (err) {
+            if (err instanceof TypeError && err.message.includes("full")) {
+              backpressureCount++;
+              const delay = Math.min(100 * backpressureCount, 1000);
+              await new Promise((resolve) => setTimeout(resolve, delay));
+
+              if (!isClosed) {
+                controller.enqueue(encoder.encode(data));
+              }
+            } else if (
+              err instanceof TypeError && err.message.includes("close")
+            ) {
+              isClosed = true;
+            } else {
+              throw err;
+            }
+          }
+        };
+
+        const write = async (
+          event: string,
+          data: Record<string, unknown>,
+        ): Promise<void> => {
           const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-          controller.enqueue(encoder.encode(payload));
+          await queueChunk(payload);
         };
 
         try {
-          const responseBody = await getResponsesBody(
-            anthropicReq,
-            responsesReq.model,
-          );
-
-          for (const event of buildResponseLifecycleEvents(responseBody)) {
-            write(event.event, event.data);
-          }
-
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        } catch (err) {
-          write("error", {
-            type: "error",
-            error: openAIErrorBody(
-              err instanceof Error ? err.message : "Service unavailable",
-              "api_error",
-              "service_unavailable",
-            ).error,
+          await chatStream({ ...anthropicReq, stream: true }, async (event) => {
+            for (
+              const responseEvent of mapStreamEventToResponses(event, state)
+            ) {
+              await write(responseEvent.event, responseEvent.data);
+            }
           });
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+
+          if (!isClosed) {
+            await queueChunk("data: [DONE]\n\n");
+          }
+        } catch (err) {
+          if (!isClosed) {
+            await write("error", {
+              type: "error",
+              error: openAIErrorBody(
+                err instanceof Error ? err.message : "Service unavailable",
+                "api_error",
+                "service_unavailable",
+              ).error,
+            });
+            await queueChunk("data: [DONE]\n\n");
+          }
         } finally {
-          controller.close();
+          if (!isClosed) {
+            isClosed = true;
+            controller.close();
+          }
         }
       },
+    }, {
+      highWaterMark: config.streaming.highWaterMark,
     });
 
     return new Response(stream, {

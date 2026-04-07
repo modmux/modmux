@@ -61,8 +61,8 @@ Deno.test("configureAgent(codex) — creates config file when none exists", asyn
     assertStringIncludes(content, "base_url");
     assertStringIncludes(content, "http://127.0.0.1:11434");
     assertStringIncludes(content, "modmux");
-    assertStringIncludes(content, 'wire_api = "responses"');
     assertStringIncludes(content, 'model = "gpt-5.4"');
+    assertEquals(content.includes('wire_api = "responses"'), false);
     assertEquals(content.includes("auth_method"), false);
     assertEquals(content.includes("api_key"), false);
   });
@@ -239,6 +239,32 @@ Deno.test("verifyAgentConfig returns true when config file contains endpoint", a
       homeDir,
       skipValidation: true,
     });
+    assertEquals(await verifyAgentConfig(entry), true);
+  });
+});
+
+Deno.test("verifyAgentConfig accepts legacy wire_api = responses", async () => {
+  await withTempHome(async (homeDir) => {
+    const config = makeTempConfig(homeDir);
+    const entry = await configureAgent("codex", 11434, config, {
+      homeDir,
+      skipValidation: true,
+    });
+
+    await Deno.writeTextFile(
+      entry.configPath,
+      [
+        'model = "gpt-5.4"',
+        'model_provider = "modmux"',
+        "",
+        "[model_providers.modmux]",
+        'name = "Modmux"',
+        'base_url = "http://127.0.0.1:11434/v1/"',
+        'wire_api = "responses"',
+        "",
+      ].join("\n"),
+    );
+
     assertEquals(await verifyAgentConfig(entry), true);
   });
 });
