@@ -44,9 +44,10 @@ function responsesInputToMessages(
 
     if (Array.isArray(item.content)) {
       const text = item.content
-        .filter((part) =>
+        .filter((part): part is { type: "input_text" | "text"; text: string } =>
           part && typeof part === "object" &&
-          (part.type === "input_text" || part.type === "text")
+          (part.type === "input_text" || part.type === "text") &&
+          typeof part.text === "string"
         )
         .map((part) => part.text)
         .join("\n");
@@ -54,7 +55,9 @@ function responsesInputToMessages(
     }
   }
 
-  return messages.filter((message) => typeof message.content === "string");
+  return messages.filter((message) =>
+    typeof message.content === "string" && message.content.trim().length > 0
+  );
 }
 
 interface ResponsesUsage {

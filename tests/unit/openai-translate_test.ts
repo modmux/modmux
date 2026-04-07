@@ -112,6 +112,26 @@ Deno.test("anthropicToOpenAI — stop_reason max_tokens → finish_reason length
   assertEquals(resp.choices[0].finish_reason, "length");
 });
 
+Deno.test("anthropicToOpenAI — ignores malformed text block without string text", () => {
+  const resp = anthropicToOpenAI(
+    {
+      id: "msg_bad_text",
+      type: "message",
+      role: "assistant",
+      content: [
+        { type: "text", text: "Hello" },
+        { type: "text" } as unknown as { type: "text"; text: string },
+      ],
+      model: "gpt-4o",
+      stop_reason: "end_turn",
+      stop_sequence: null,
+      usage: { input_tokens: 3, output_tokens: 1 },
+    },
+    "gpt-4o",
+  );
+  assertEquals(resp.choices[0].message.content, "Hello");
+});
+
 // ---------------------------------------------------------------------------
 // anthropicStreamEventToOpenAI
 // ---------------------------------------------------------------------------

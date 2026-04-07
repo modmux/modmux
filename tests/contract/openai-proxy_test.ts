@@ -124,6 +124,19 @@ function post(
   });
 }
 
+function postWithHeaders(
+  port: number,
+  path: string,
+  body: unknown,
+  headers: Record<string, string>,
+): Promise<Response> {
+  return fetch(`http://127.0.0.1:${port}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+}
+
 function get(port: number, path: string): Promise<Response> {
   return fetch(`http://127.0.0.1:${port}${path}`);
 }
@@ -261,6 +274,93 @@ Deno.test("OpenAI /v1/responses — missing model returns 400", async () => {
     const res = await post(port, "/v1/responses", {
       input: "ping",
     });
+    assertEquals(res.status, 400);
+    const body = await res.json() as Record<string, unknown>;
+    assertEquals(
+      (body.error as Record<string, unknown>).type,
+      "invalid_request_error",
+    );
+  } finally {
+    await s.shutdown();
+  }
+});
+
+Deno.test("OpenAI /v1/responses — malformed text parts only returns 400", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await post(port, "/v1/responses", {
+      model: "gpt-4o",
+      input: [{
+        role: "user",
+        content: [
+          { type: "text" },
+          { type: "input_text", text: null },
+        ],
+      }],
+    });
+    assertEquals(res.status, 400);
+    const body = await res.json() as Record<string, unknown>;
+    assertEquals(
+      (body.error as Record<string, unknown>).type,
+      "invalid_request_error",
+    );
+  } finally {
+    await s.shutdown();
+  }
+});
+
+Deno.test("OpenAI /v1/responses — mixed valid and malformed text parts does not fail validation", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await post(port, "/v1/responses", {
+      model: "gpt-4o",
+      input: [{
+        role: "user",
+        content: [
+          { type: "text", text: "ping" },
+          { type: "text" },
+          { type: "input_text", text: null },
+        ],
+      }],
+      stream: false,
+    });
+
+    // May be 200 (Copilot available) or 503 (no Copilot token in test env)
+    if (res.status === 200) {
+      const body = await res.json() as Record<string, unknown>;
+      assertEquals(body.object, "response");
+      assertEquals(typeof body.output_text, "string");
+    } else {
+      await res.body?.cancel();
+      assertEquals(res.status, 503);
+    }
+  } finally {
+    await s.shutdown();
+  }
+});
+
+Deno.test("Claude Code /v1/responses — malformed text parts return 400 not 500", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await postWithHeaders(
+      port,
+      "/v1/responses",
+      {
+        model: "gpt-4o",
+        input: [{
+          role: "user",
+          content: [
+            { type: "text" },
+            { type: "input_text", text: null },
+          ],
+        }],
+      },
+      { "User-Agent": "claude-code/1.0" },
+    );
+
     assertEquals(res.status, 400);
     const body = await res.json() as Record<string, unknown>;
     assertEquals(

@@ -26,6 +26,10 @@ interface CopilotModelsResponse {
 
 let cachedModelIds: Set<string> | null = null;
 
+function uniq(values: string[]): string[] {
+  return values.filter((value, index, array) => array.indexOf(value) === index);
+}
+
 // ---------------------------------------------------------------------------
 // Fetch
 // ---------------------------------------------------------------------------
@@ -116,6 +120,57 @@ const FALLBACK_PREFERENCE: string[] = [
   "claude-haiku-4-5",
 ];
 
+export async function resolveModelCandidates(
+  anthropicModel: string,
+  opts?: { token?: string },
+): Promise<string[]> {
+  const available = await getAvailableModelIds({ token: opts?.token });
+  const candidates: string[] = [];
+
+  if (available.has(anthropicModel)) {
+    candidates.push(anthropicModel);
+  }
+
+  for (const id of available) {
+    if (anthropicModel.startsWith(id)) {
+      candidates.push(id);
+    }
+  }
+
+  const familyMap: Array<[RegExp, string]> = [
+    [/^claude-(opus|sonnet|haiku)-4-6/, "claude-$1-4-6"],
+    [/^claude-(opus|sonnet|haiku)-4-5/, "claude-$1-4-5"],
+    [/^claude-(opus|sonnet)-4(-0)?$/, "claude-$1-4"],
+    [/^claude-3-7-sonnet/, "claude-sonnet-4-5"],
+    [/^claude-3-5-haiku/, "claude-haiku-4-5"],
+    [/^claude-3-5-sonnet/, "claude-sonnet-4-5"],
+    [/^claude-3-opus/, "claude-opus-4-5"],
+    [/^claude-3-(sonnet|haiku)/, "claude-sonnet-4-5"],
+  ];
+
+  for (const [pattern, template] of familyMap) {
+    const match = anthropicModel.match(pattern);
+    if (!match) continue;
+
+    const candidate = anthropicModel.replace(pattern, template);
+    if (available.has(candidate)) {
+      candidates.push(candidate);
+    }
+  }
+
+  for (const preferred of FALLBACK_PREFERENCE) {
+    if (available.has(preferred)) {
+      candidates.push(preferred);
+    }
+  }
+
+  if (candidates.length === 0) {
+    candidates.push(DEFAULT_COPILOT_MODEL);
+  }
+
+  return uniq(candidates);
+}
+
 /**
  * Maps an Anthropic model ID to a supported Copilot model ID.
  *
@@ -133,42 +188,6 @@ export async function resolveModel(
   anthropicModel: string,
   opts?: { token?: string },
 ): Promise<string> {
-  const available = await getAvailableModelIds({ token: opts?.token });
-
-  // 1. Exact match
-  if (available.has(anthropicModel)) return anthropicModel;
-
-  // 2. Prefix match — Copilot ID is a prefix of the Anthropic ID
-  //    e.g., "claude-sonnet-4-5-20250929" matches prefix "claude-sonnet-4-5"
-  for (const id of available) {
-    if (anthropicModel.startsWith(id)) return id;
-  }
-
-  // 3. Semantic family mapping for older Anthropic IDs
-  const familyMap: Array<[RegExp, string]> = [
-    [/^claude-(opus|sonnet|haiku)-4-6/, "claude-$1-4-6"],
-    [/^claude-(opus|sonnet|haiku)-4-5/, "claude-$1-4-5"],
-    [/^claude-(opus|sonnet)-4(-0)?$/, "claude-$1-4"],
-    [/^claude-3-7-sonnet/, "claude-sonnet-4-5"],
-    [/^claude-3-5-haiku/, "claude-haiku-4-5"],
-    [/^claude-3-5-sonnet/, "claude-sonnet-4-5"],
-    [/^claude-3-opus/, "claude-opus-4-5"],
-    [/^claude-3-(sonnet|haiku)/, "claude-sonnet-4-5"],
-  ];
-
-  for (const [pattern, template] of familyMap) {
-    const match = anthropicModel.match(pattern);
-    if (match) {
-      const candidate = anthropicModel.replace(pattern, template);
-      if (available.has(candidate)) return candidate;
-    }
-  }
-
-  // 4. Pick the first available preference from the fallback list
-  for (const preferred of FALLBACK_PREFERENCE) {
-    if (available.has(preferred)) return preferred;
-  }
-
-  // 5. Absolute fallback (Copilot /models was unreachable at startup)
-  return DEFAULT_COPILOT_MODEL;
+  const [candidate] = await resolveModelCandidates(anthropicModel, opts);
+  return candidate;
 }

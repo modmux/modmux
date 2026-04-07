@@ -63,7 +63,7 @@ export function anthropicToOpenAI(
 ): OpenAIChatResponse {
   const text = res.content
     .filter((b): b is Extract<ContentBlock, { type: "text" }> =>
-      b.type === "text"
+      b.type === "text" && typeof b.text === "string"
     )
     .map((b) => b.text)
     .join("");

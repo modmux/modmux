@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(deno test:*)",
-      "Bash(deno task:*)"
+      "Bash(deno task:*)",
+      "mcp__lean-spec__list",
+      "mcp__lean-spec__board",
+      "mcp__lean-spec__view"
     ]
   },
   "enabledMcpjsonServers": [

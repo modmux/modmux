@@ -1,5 +1,6 @@
 import { basename, join } from "@std/path";
-import { configDir, loadConfig, saveConfig } from "./store.ts";
+import { syncConfiguredAgentsToPort } from "./config.ts";
+import { configDir, loadConfig } from "./store.ts";
 import { isProcessAlive } from "./process.ts";
 import { log } from "./log.ts";
 
@@ -117,7 +118,7 @@ export async function startDaemon(): Promise<StartResult> {
 
   if (port !== config.port) {
     log("info", `Port ${config.port} occupied; using ${port}`);
-    await saveConfig({ ...config, port });
+    await syncConfiguredAgentsToPort(port, config);
   }
 
   // Self-spawn current CLI entrypoint with --daemon

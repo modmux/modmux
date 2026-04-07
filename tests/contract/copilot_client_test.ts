@@ -315,6 +315,74 @@ Deno.test("chat() - 503 response → overloaded_error content", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Test: chat() retries with lower Claude model when Copilot denies access
+// ---------------------------------------------------------------------------
+
+Deno.test(
+  "chat() - retries with fallback Claude model on model access error",
+  async () => {
+    clearTokenCache();
+
+    const attemptedModels: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(makeModelsResponse(TEST_MODEL_IDS));
+      }
+
+      const body = JSON.parse(init?.body as string ?? "{}");
+      attemptedModels.push(body.model);
+
+      if (attemptedModels.length === 1) {
+        return Promise.resolve(
+          new Response("You may not have access to claude-sonnet-4-6", {
+            status: 403,
+          }),
+        );
+      }
+
+      const resp = makeChatResponse("fallback worked", "stop");
+      return Promise.resolve(
+        new Response(JSON.stringify(resp), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }) as typeof globalThis.fetch;
+
+    try {
+      const result = await chat(
+        makeProxyRequest({ model: "claude-sonnet-4-6" }),
+        getTestOptions(),
+      );
+
+      assertEquals(attemptedModels, ["claude-sonnet-4-6", "claude-sonnet-4-5"]);
+      assertEquals(result.content[0].type, "text");
+      assertEquals(
+        (result.content[0] as TextContentBlock).text,
+        "fallback worked",
+      );
+    } finally {
+      globalThis.fetch = original;
+      clearTokenCache();
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Test: chatStream() — emits Anthropic SSE events in correct order
 // ---------------------------------------------------------------------------
 
@@ -421,6 +489,108 @@ Deno.test(
       assertEquals(lastThree[2], "message_stop");
       assertEquals(collectedTexts.includes("Hello"), true);
       assertEquals(collectedTexts.includes(" world"), true);
+    } finally {
+      globalThis.fetch = original;
+      clearTokenCache();
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Test: chatStream() retries with lower Claude model on access error
+// ---------------------------------------------------------------------------
+
+Deno.test(
+  "chatStream() - retries with fallback Claude model on model access error",
+  async () => {
+    clearTokenCache();
+
+    const attemptedModels: string[] = [];
+    const sseBody = [
+      {
+        id: "chatcmpl-stream-fallback",
+        object: "chat.completion.chunk",
+        choices: [{
+          index: 0,
+          delta: { role: "assistant", content: "" },
+          finish_reason: null,
+        }],
+      },
+      {
+        id: "chatcmpl-stream-fallback",
+        object: "chat.completion.chunk",
+        choices: [{
+          index: 0,
+          delta: { content: "hello from fallback" },
+          finish_reason: null,
+        }],
+      },
+      {
+        id: "chatcmpl-stream-fallback",
+        object: "chat.completion.chunk",
+        choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+      },
+    ].map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join("") +
+      "data: [DONE]\n\n";
+
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(makeModelsResponse(TEST_MODEL_IDS));
+      }
+
+      const body = JSON.parse(init?.body as string ?? "{}");
+      attemptedModels.push(body.model);
+
+      if (attemptedModels.length === 1) {
+        return Promise.resolve(
+          new Response("You may not have access to claude-sonnet-4-6", {
+            status: 403,
+          }),
+        );
+      }
+
+      return Promise.resolve(
+        new Response(sseBody, {
+          status: 200,
+          headers: { "Content-Type": "text/event-stream" },
+        }),
+      );
+    }) as typeof globalThis.fetch;
+
+    const collectedTexts: string[] = [];
+
+    try {
+      await chatStream(
+        makeProxyRequest({ model: "claude-sonnet-4-6", stream: true }),
+        (event: StreamEvent) => {
+          if (
+            event.type === "content_block_delta" &&
+            event.delta &&
+            "text" in event.delta
+          ) {
+            collectedTexts.push(event.delta.text);
+          }
+        },
+        undefined,
+        getTestOptions(),
+      );
+
+      assertEquals(attemptedModels, ["claude-sonnet-4-6", "claude-sonnet-4-5"]);
+      assertEquals(collectedTexts.includes("hello from fallback"), true);
     } finally {
       globalThis.fetch = original;
       clearTokenCache();

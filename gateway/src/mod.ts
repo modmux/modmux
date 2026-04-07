@@ -8,6 +8,7 @@ export type { ModmuxConfig } from "./store.ts";
 export {
   configureAgent,
   isAgentConfigured,
+  syncConfiguredAgentsToPort,
   unconfigureAgent,
   validateConfig,
   verifyAgentConfig,

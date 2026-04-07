@@ -11,6 +11,7 @@ import {
   configureAgent,
   isAgentConfigured,
   ModmuxConfig,
+  syncConfiguredAgentsToPort,
   unconfigureAgent,
   validateConfig,
   verifyAgentConfig,
@@ -26,10 +27,17 @@ async function withTempHome(
 ): Promise<void> {
   const homeDir = await Deno.makeTempDir();
   const configDir = `${homeDir}/.modmux`;
+  const previousConfigDir = Deno.env.get("MODMUX_CONFIG_DIR");
   await Deno.mkdir(configDir, { recursive: true });
+  Deno.env.set("MODMUX_CONFIG_DIR", configDir);
   try {
     await fn(homeDir, configDir);
   } finally {
+    if (previousConfigDir === undefined) {
+      Deno.env.delete("MODMUX_CONFIG_DIR");
+    } else {
+      Deno.env.set("MODMUX_CONFIG_DIR", previousConfigDir);
+    }
     await Deno.remove(homeDir, { recursive: true });
   }
 }
@@ -292,6 +300,40 @@ Deno.test("verifyAgentConfig returns false when config file no longer contains e
     // Overwrite with content that doesn't include the modmux endpoint
     await Deno.writeTextFile(entry.configPath, 'model = "gpt-4o"\n');
     assertEquals(await verifyAgentConfig(entry), false);
+  });
+});
+
+Deno.test("syncConfiguredAgentsToPort rewrites Claude endpoint without replacing original backup", async () => {
+  await withTempHome(async (homeDir) => {
+    const settingsPath = `${homeDir}/.claude/settings.json`;
+    await Deno.mkdir(`${homeDir}/.claude`, { recursive: true });
+    await Deno.writeTextFile(
+      settingsPath,
+      JSON.stringify({ env: { ORIGINAL: "keep" } }),
+    );
+
+    const config = makeTempConfig(homeDir);
+    const entry = await configureAgent("claude-code", 11434, config, {
+      homeDir,
+      skipValidation: true,
+    });
+    const synced = await syncConfiguredAgentsToPort(
+      11435,
+      { ...config, agents: [entry] },
+      { homeDir },
+    );
+
+    assertEquals(synced.port, 11435);
+    assertEquals(synced.agents[0].backupPath, entry.backupPath);
+    assertEquals(synced.agents[0].endpoint, "http://127.0.0.1:11435");
+
+    const content = JSON.parse(await Deno.readTextFile(settingsPath));
+    assertEquals(content.env.ORIGINAL, "keep");
+    assertEquals(content.env.ANTHROPIC_BASE_URL, "http://127.0.0.1:11435");
+
+    const backup = JSON.parse(await Deno.readTextFile(entry.backupPath!));
+    assertEquals(backup.env.ORIGINAL, "keep");
+    assertEquals(backup.env.ANTHROPIC_BASE_URL, undefined);
   });
 });
 

@@ -21,7 +21,7 @@ import {
   type ToolChoice,
   VSCODE_VERSION,
 } from "./types.ts";
-import { resolveModel } from "./models.ts";
+import { resolveModelCandidates } from "./models.ts";
 import { getToken } from "./token.ts";
 
 // ---------------------------------------------------------------------------
@@ -201,6 +201,78 @@ async function fetchWithRetry(
   return lastResponse!;
 }
 
+function isModelAccessDenied(status: number, errorBody: string): boolean {
+  if (status !== 400 && status !== 403) return false;
+
+  const normalized = errorBody.toLowerCase();
+  return [
+    "may not have access",
+    "do not have access",
+    "does not have access",
+    "not allowed to use this model",
+    "model is not available to you",
+    "no access to model",
+  ].some((needle) => normalized.includes(needle));
+}
+
+interface ModelAttemptResult {
+  ok: boolean;
+  response?: Response;
+  status: number;
+  errorBody: string;
+}
+
+async function postWithModelFallback(
+  request: ProxyRequest,
+  body: OpenAIChatRequest,
+  copilotToken: string,
+  opts?: ChatOptions,
+): Promise<ModelAttemptResult> {
+  const candidates = await resolveModelCandidates(request.model, {
+    token: opts?.token,
+  });
+
+  for (let index = 0; index < candidates.length; index++) {
+    const candidate = candidates[index];
+    const response = await fetchWithRetry(COPILOT_CHAT_URL, {
+      method: "POST",
+      headers: buildHeaders(copilotToken, isAgentCall(request)),
+      body: JSON.stringify({
+        ...body,
+        model: candidate,
+      }),
+    });
+
+    if (response.ok) {
+      return {
+        ok: true,
+        response,
+        status: response.status,
+        errorBody: "",
+      };
+    }
+
+    const errorBody = await response.text().catch(() => "");
+    const canRetry = index < candidates.length - 1 &&
+      isModelAccessDenied(response.status, errorBody);
+    if (canRetry) {
+      continue;
+    }
+
+    return {
+      ok: false,
+      status: response.status,
+      errorBody,
+    };
+  }
+
+  return {
+    ok: false,
+    status: 503,
+    errorBody: "No compatible Copilot model available",
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Token counting (for /v1/messages/count_tokens endpoint)
 // ---------------------------------------------------------------------------
@@ -281,12 +353,9 @@ export async function chat(
   opts?: ChatOptions,
 ): Promise<ProxyResponse> {
   const copilotToken = await getToken({ getGitHubToken: opts?.getGitHubToken });
-  const copilotModel = await resolveModel(request.model, {
-    token: opts?.token,
-  });
 
   const body: OpenAIChatRequest = {
-    model: copilotModel,
+    model: request.model,
     messages: toOpenAIMessages(request),
     max_tokens: request.max_tokens ?? 4096,
     stream: false,
@@ -299,24 +368,23 @@ export async function chat(
       { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
   };
 
-  const response = await fetchWithRetry(COPILOT_CHAT_URL, {
-    method: "POST",
-    headers: buildHeaders(copilotToken.token, isAgentCall(request)),
-    body: JSON.stringify(body),
-  });
+  const result = await postWithModelFallback(
+    request,
+    body,
+    copilotToken.token,
+    opts,
+  );
 
-  if (!response.ok) {
-    const errorType = statusToAnthropicError(response.status);
-    // response.text() consumes the body — no need to cancel afterward
-    const errorBody = await response.text().catch(() => "");
+  if (!result.ok) {
+    const errorType = statusToAnthropicError(result.status);
     return {
       id: generateMessageId(),
       type: "message",
       role: "assistant",
       content: [{
         type: "text",
-        text: `Error: ${errorType} (HTTP ${response.status})${
-          errorBody ? ` — ${errorBody}` : ""
+        text: `Error: ${errorType} (HTTP ${result.status})${
+          result.errorBody ? ` — ${result.errorBody}` : ""
         }`,
       }],
       model: request.model,
@@ -331,7 +399,7 @@ export async function chat(
     };
   }
 
-  const data = await response.json() as OpenAIChatResponse;
+  const data = await result.response!.json() as OpenAIChatResponse;
   const choice = data.choices[0];
 
   const contentBlocks: ContentBlock[] = [];
@@ -544,13 +612,10 @@ export async function chatStream(
   opts?: ChatOptions,
 ): Promise<void> {
   const copilotToken = await getToken({ getGitHubToken: opts?.getGitHubToken });
-  const copilotModel = await resolveModel(request.model, {
-    token: opts?.token,
-  });
   const config = { ...DEFAULT_STREAMING_CONFIG, ...streamingConfig };
 
   const body: OpenAIChatRequest = {
-    model: copilotModel,
+    model: request.model,
     messages: toOpenAIMessages(request),
     max_tokens: request.max_tokens ?? 4096,
     stream: true,
@@ -564,16 +629,16 @@ export async function chatStream(
       { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
   };
 
-  const response = await fetchWithRetry(COPILOT_CHAT_URL, {
-    method: "POST",
-    headers: buildHeaders(copilotToken.token, isAgentCall(request)),
-    body: JSON.stringify(body),
-  });
+  const result = await postWithModelFallback(
+    request,
+    body,
+    copilotToken.token,
+    opts,
+  );
 
-  if (!response.ok) {
+  if (!result.ok) {
     // Emit a minimal stream with the error, then close
-    const errorType = statusToAnthropicError(response.status);
-    await response.body?.cancel();
+    const errorType = statusToAnthropicError(result.status);
     const messageId = generateMessageId();
 
     onChunk({
@@ -601,7 +666,9 @@ export async function chatStream(
       index: 0,
       delta: {
         type: "text_delta",
-        text: `Error: ${errorType} (HTTP ${response.status})`,
+        text: `Error: ${errorType} (HTTP ${result.status})${
+          result.errorBody ? ` — ${result.errorBody}` : ""
+        }`,
       },
     });
     onChunk({ type: "content_block_stop", index: 0 });
@@ -619,7 +686,7 @@ export async function chatStream(
     return;
   }
 
-  const reader = response.body!.getReader();
+  const reader = result.response!.body!.getReader();
 
   let headerEmitted = false;
   let doneEmitted = false;

@@ -22,6 +22,8 @@ export interface ConfigureOptions {
   cwd?: string;
   /** Skip the post-write validation test call. */
   skipValidation?: boolean;
+  /** Skip creating a fresh backup before rewriting an existing config. */
+  backupExisting?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,10 +95,13 @@ async function writeClaudeCode(
 ): Promise<WriteResult> {
   const configPath = claudeCodeConfigPath(resolveHome(options));
   let backupPath: string | null = null;
+  const backupExisting = options?.backupExisting ?? true;
 
   let existing: Record<string, unknown> = {};
   if (await fileExists(configPath)) {
-    backupPath = await backupFile(configPath);
+    if (backupExisting) {
+      backupPath = await backupFile(configPath);
+    }
     const raw = await Deno.readTextFile(configPath);
     existing = JSON.parse(raw) as Record<string, unknown>;
   }
@@ -124,10 +129,13 @@ async function writeCline(
   const configPath = clineConfigPath(homeDir);
   const secretsPath = clineSecretsPath(homeDir);
   let backupPath: string | null = null;
+  const backupExisting = options?.backupExisting ?? true;
 
   let existing: Record<string, unknown> = {};
   if (await fileExists(configPath)) {
-    backupPath = await backupFile(configPath);
+    if (backupExisting) {
+      backupPath = await backupFile(configPath);
+    }
     const raw = await Deno.readTextFile(configPath);
     existing = JSON.parse(raw) as Record<string, unknown>;
   }
@@ -171,10 +179,13 @@ async function writeCodex(
 ): Promise<WriteResult> {
   const configPath = codexConfigPath(resolveHome(options));
   let backupPath: string | null = null;
+  const backupExisting = options?.backupExisting ?? true;
 
   let existing: Record<string, unknown> = {};
   if (await fileExists(configPath)) {
-    backupPath = await backupFile(configPath);
+    if (backupExisting) {
+      backupPath = await backupFile(configPath);
+    }
     const raw = await Deno.readTextFile(configPath);
     existing = parseToml(raw) as Record<string, unknown>;
   }
@@ -339,6 +350,60 @@ export async function configureAgent(
   await saveConfig({ ...cocoConfig, agents });
 
   return entry;
+}
+
+/**
+ * Rewrite configured agent endpoints to match the currently active Modmux port.
+ * Preserves the original backup paths so unconfigure restores the true pre-Modmux files.
+ */
+export async function syncConfiguredAgentsToPort(
+  port: number,
+  cocoConfig: ModmuxConfig,
+  options?: ConfigureOptions,
+): Promise<ModmuxConfig> {
+  const endpoint = `http://127.0.0.1:${port}`;
+  const staleEntries = cocoConfig.agents.filter((entry) =>
+    entry.endpoint !== endpoint
+  );
+
+  if (staleEntries.length === 0) {
+    return cocoConfig;
+  }
+
+  const updatedAgents: ConfigEntry[] = [];
+  for (const entry of cocoConfig.agents) {
+    if (entry.endpoint === endpoint) {
+      updatedAgents.push(entry);
+      continue;
+    }
+
+    const writer = AGENT_WRITERS[entry.agentName];
+    if (!writer) {
+      updatedAgents.push(entry);
+      continue;
+    }
+
+    const result = await writer(port, {
+      ...options,
+      backupExisting: false,
+    });
+
+    updatedAgents.push({
+      ...entry,
+      configPath: result.configPath,
+      endpoint,
+      appliedAt: new Date().toISOString(),
+      validatedAt: null,
+    });
+  }
+
+  const nextConfig = {
+    ...cocoConfig,
+    port,
+    agents: updatedAgents,
+  };
+  await saveConfig(nextConfig);
+  return nextConfig;
 }
 
 /**
