@@ -27,23 +27,28 @@ jobs:
           - platform: macos-arm64
             runner: macos-latest
             target: aarch64-apple-darwin
-            artifact: coco-macos-arm64
+            artifact: modmux-macos-arm64
+            npm_platform: darwin-arm64
           - platform: macos-x64
             runner: macos-13
             target: x86_64-apple-darwin
-            artifact: coco-macos-x64
+            artifact: modmux-macos-x64
+            npm_platform: darwin-x64
           - platform: linux-x64
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: coco-linux-x64
+            artifact: modmux-linux-x64
+            npm_platform: linux-x64
           - platform: linux-arm64
             runner: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            artifact: coco-linux-arm64
+            artifact: modmux-linux-arm64
+            npm_platform: linux-arm64
           - platform: windows-x64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: coco-windows-x64.exe
+            artifact: modmux-windows-x64.exe
+            npm_platform: win32-x64
     steps:
       - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
@@ -61,7 +66,7 @@ jobs:
           --allow-net --allow-env --allow-run --allow-read --allow-write
           --target ${{ matrix.target }}
           --output ${{ matrix.artifact }}
-          src/cli/main.ts
+          cli/src/main.ts
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
@@ -74,32 +79,41 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      prerelease: ${{ steps.detect.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
         with:
-          pattern: coco-*
+          pattern: modmux-*
           merge-multiple: true
+      - name: Detect pre-release
+        id: detect
+        run: |
+          TAG="${{ github.ref_name }}"
+          if echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+-'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Generate release manifest
         run: |
-          VERSION=$(cat deno.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+          VERSION=$(python3 -c "import sys,json; print(json.load(open('deno.json'))['version'])")
           TAG="${{ github.ref_name }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Build checksums array
           CHECKSUMS="["
           FIRST=true
-           for f in coco-*; do
-             SHA256=$(sha256sum "$f" | awk '{print $1}')
-             PLATFORM="${f#coco-}"
-             FILENAME="$f"
-             DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${FILENAME}"
+          for f in modmux-*; do
+            SHA256=$(sha256sum "$f" | awk '{print $1}')
+            PLATFORM="${f#modmux-}"
+            DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${f}"
             if [ "$FIRST" = true ]; then
               FIRST=false
             else
               CHECKSUMS="${CHECKSUMS},"
             fi
-            CHECKSUMS="${CHECKSUMS}{\"platform\":\"${PLATFORM}\",\"filename\":\"${FILENAME}\",\"downloadUrl\":\"${DOWNLOAD_URL}\",\"sha256\":\"${SHA256}\"}"
+            CHECKSUMS="${CHECKSUMS}{\"platform\":\"${PLATFORM}\",\"filename\":\"${f}\",\"downloadUrl\":\"${DOWNLOAD_URL}\",\"sha256\":\"${SHA256}\"}"
           done
           CHECKSUMS="${CHECKSUMS}]"
 
@@ -117,9 +131,10 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            coco-*
+            modmux-*
             release-manifest.json
           generate_release_notes: true
+          prerelease: ${{ steps.detect.outputs.prerelease == 'true' }}
 
   publish-jsr:
     name: Publish to JSR
@@ -133,9 +148,6 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      # One-Time Setup: In your JSR package settings, enable "Publish from CI"
-      # and add this repository as a trusted publisher.
-      # See: https://jsr.io/@myty/coco/settings
       - name: Publish to JSR
         run: deno publish
 
@@ -155,38 +167,49 @@ jobs:
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: coco-*
+          pattern: modmux-*
           merge-multiple: true
+      - name: Sync version into npm packages
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno run -A scripts/sync-version.ts
+      - name: Set npm dist-tag
+        id: npm-tag
+        run: |
+          if [ "${{ needs.release.outputs.prerelease }}" = "true" ]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
       - name: Copy binaries into platform packages and publish
         run: |
-          # Publish platform packages first (they must exist before main package)
           declare -A PLATFORM_MAP=(
-            ["coco-macos-arm64"]="darwin-arm64"
-            ["coco-macos-x64"]="darwin-x64"
-            ["coco-linux-x64"]="linux-x64"
-            ["coco-linux-arm64"]="linux-arm64"
-            ["coco-windows-x64.exe"]="win32-x64"
+            ["modmux-macos-arm64"]="darwin-arm64"
+            ["modmux-macos-x64"]="darwin-x64"
+            ["modmux-linux-x64"]="linux-x64"
+            ["modmux-linux-arm64"]="linux-arm64"
+            ["modmux-windows-x64.exe"]="win32-x64"
           )
+
+          NPM_TAG="${{ steps.npm-tag.outputs.tag }}"
 
           for artifact in "${!PLATFORM_MAP[@]}"; do
             platform="${PLATFORM_MAP[$artifact]}"
-            pkg_dir="npm/@myty/${platform}"
+            pkg_dir="npm/@modmux/${platform}"
             bin_dir="${pkg_dir}/bin"
             mkdir -p "${bin_dir}"
 
             if [[ "$artifact" == *.exe ]]; then
-              cp "${artifact}" "${bin_dir}/coco.exe"
+              cp "${artifact}" "${bin_dir}/modmux.exe"
             else
-              cp "${artifact}" "${bin_dir}/coco"
-              chmod +x "${bin_dir}/coco"
+              cp "${artifact}" "${bin_dir}/modmux"
+              chmod +x "${bin_dir}/modmux"
             fi
 
-            echo "Publishing @myty/${platform}..."
-            npm publish "${pkg_dir}" --access public
+            echo "Publishing @modmux/${platform}..."
+            npm publish "${pkg_dir}" --access public --tag "${NPM_TAG}"
           done
 
-          # Publish main package after platform packages.
-          echo "Publishing coco..."
-          npm publish npm/coco --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          echo "Publishing @modmux/core..."
+          npm publish npm/modmux --access public --tag "${NPM_TAG}"

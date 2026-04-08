@@ -100,10 +100,10 @@ mise run install
 
 Default install locations:
 
-| Platform | Location |
-| -------- | -------- |
-| macOS    | `~/.local/bin/modmux` |
-| Linux    | `~/.local/bin/modmux` |
+| Platform | Location                                  |
+| -------- | ----------------------------------------- |
+| macOS    | `~/.local/bin/modmux`                     |
+| Linux    | `~/.local/bin/modmux`                     |
 | Windows  | `%LOCALAPPDATA%\\modmux\\bin\\modmux.exe` |
 
 Override install directory on any platform with:

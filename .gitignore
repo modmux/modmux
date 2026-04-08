@@ -15,4 +15,4 @@ Thumbs.db
 
 # Environment
 .env*
-bin/claudio
+/bin

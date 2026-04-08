@@ -16,16 +16,16 @@ if (!version) {
 
 console.log(`Syncing version ${version} across all distribution artifacts...`);
 
-// 1. Write src/version.ts
-const versionTsPath = join(repoRoot, "src", "version.ts");
+// 1. Write cli/src/version.ts
+const versionTsPath = join(repoRoot, "cli", "src", "version.ts");
 await Deno.writeTextFile(
   versionTsPath,
   `export const VERSION = "${version}";\n`,
 );
-console.log(`  ✓ src/version.ts`);
+console.log(`  ✓ cli/src/version.ts`);
 
-// 2. Update npm/coco package.json (version + optionalDependencies)
-for (const pkgName of ["coco"]) {
+// 2. Update npm/modmux package.json (version + optionalDependencies)
+for (const pkgName of ["modmux"]) {
   const mainPkgPath = join(repoRoot, "npm", pkgName, "package.json");
   const mainPkg = JSON.parse(await Deno.readTextFile(mainPkgPath));
   mainPkg.version = version;
@@ -41,7 +41,7 @@ for (const pkgName of ["coco"]) {
   console.log(`  ✓ npm/${pkgName}/package.json`);
 }
 
-// 3. Update each @myty platform package.json
+// 3. Update each @modmux platform package.json
 const platforms = [
   "darwin-arm64",
   "darwin-x64",
@@ -51,11 +51,11 @@ const platforms = [
 ];
 
 for (const platform of platforms) {
-  const pkgPath = join(repoRoot, "npm", "@myty", platform, "package.json");
+  const pkgPath = join(repoRoot, "npm", "@modmux", platform, "package.json");
   const pkg = JSON.parse(await Deno.readTextFile(pkgPath));
   pkg.version = version;
   await Deno.writeTextFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-  console.log(`  ✓ npm/@myty/${platform}/package.json`);
+  console.log(`  ✓ npm/@modmux/${platform}/package.json`);
 }
 
 console.log(`\nAll artifacts synced to version ${version} ✅`);

@@ -1,0 +1,15 @@
+{
+  "name": "@modmux/darwin-arm64",
+  "version": "0.3.0",
+  "license": "MIT",
+  "description": "macOS arm64 binary for modmux",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "bin": {
+    "modmux": "bin/modmux"
+  }
+}

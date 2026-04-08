@@ -1,0 +1,15 @@
+{
+  "name": "@modmux/linux-x64",
+  "version": "0.3.0",
+  "license": "MIT",
+  "description": "Linux x64 binary for modmux",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "bin": {
+    "modmux": "bin/modmux"
+  }
+}
