@@ -33,13 +33,13 @@ bash: modmux: command not found
 
 **Solutions:**
 
-1. **NPM Installation Missing from PATH**
+1. **From Source Installation Missing from PATH**
    ```bash
-   # Check if npm global bin is in PATH
-   echo $PATH | grep $(npm prefix -g)/bin
+   # Check if install directory is in PATH
+   echo $PATH | grep ~/.local/bin
 
    # If missing, add to shell profile (.bashrc, .zshrc, etc.)
-   echo 'export PATH="$(npm prefix -g)/bin:$PATH"' >> ~/.bashrc
+   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
    source ~/.bashrc
    ```
 
@@ -54,7 +54,8 @@ bash: modmux: command not found
    source ~/.bashrc
 
    # Reinstall Modmux
-   deno install --global --allow-all jsr:@myty/modmux
+   git clone https://github.com/modmux/modmux.git && cd modmux
+   deno task install
    ```
 
 3. **Binary Installation**
@@ -107,15 +108,16 @@ modmux --version
 
 2. **Try Alternative Installation**
    ```bash
-   # If NPM failed, try Deno
-   npm uninstall -g @myty/modmux
-   deno install --global --allow-all jsr:@myty/modmux
+   # If from source failed, try binary
+   curl -L https://github.com/modmux/modmux/releases/latest/download/modmux-$(uname -s)-$(uname -m) -o modmux
+   chmod +x modmux
+   sudo mv modmux /usr/local/bin/
    ```
 
 3. **Manual Binary Installation**
    ```bash
    # Download latest release
-   curl -L https://github.com/myty/modmux/releases/latest/download/modmux-$(uname -s)-$(uname -m) -o modmux
+   curl -L https://github.com/modmux/modmux/releases/latest/download/modmux-$(uname -s)-$(uname -m) -o modmux
    chmod +x modmux
    sudo mv modmux /usr/local/bin/
    ```
@@ -335,8 +337,7 @@ tail -50 ~/.modmux/modmux.log
 2. **Dependencies Missing**
    ```bash
    # Check system dependencies
-   deno --version  # Should work if using Deno
-   node --version  # Should work if using NPM
+   deno --version  # Should work if using Deno install
    ```
 
 ---
@@ -371,8 +372,8 @@ modmux doctor
    # Check installation
    which cline
 
-   # Install if missing
-   npm install -g @cline/cli
+   # Install if missing - refer to Cline documentation
+   # https://github.com/saoudrizwan/claude-dev
 
    # Verify VS Code extension
    code --list-extensions | grep saoudrizwan.claude-dev
@@ -855,7 +856,7 @@ curl -v http://127.0.0.1:11435/health
 If this guide doesn't solve your issue:
 
 1. **Check GitHub Issues**:
-   [github.com/myty/modmux/issues](https://github.com/myty/modmux/issues)
+   [github.com/modmux/modmux/issues](https://github.com/modmux/modmux/issues)
 2. **Create Detailed Bug Report** with:
    - Output of `modmux status`
    - Output of `modmux doctor`

@@ -30,7 +30,7 @@
           <a href="#install">Install</a>
           <a href="#how-it-works">How it works</a>
           <a href="#faq">FAQ</a>
-          <a href="https://github.com/myty/modmux">GitHub</a>
+          <a href="https://github.com/modmux/modmux">GitHub</a>
         </nav>
       </div>
     </header>
@@ -196,30 +196,32 @@
             <p class="eyebrow">Install</p>
             <h2>Install it fast. Keep the setup explicit.</h2>
             <p>
-              Most users should use npm. Deno, direct binary, and source-based
-              setup stay available when they better match your environment.
+              Most users should install from source. Direct binary downloads are
+              available when you don't want to install Deno.
             </p>
           </div>
 
           <div class="install-grid">
-            <article class="install-card featured-install">
+            <article class="install-card">
               <div class="install-label">Recommended</div>
-              <h3>npm</h3>
+              <h3>From source</h3>
               <p>
-                The shortest path on a machine with Node.js 18+.
+                Clone and install with Deno. The most up-to-date installation method.
               </p>
-              <div class="code-block">
-                <code>npm install -g @modmux/core</code>
+              <div class="code-block stacked">
+                <code>git clone https://github.com/modmux/modmux.git</code>
+                <code>cd modmux</code>
+                <code>deno task install</code>
                 <button
                   type="button"
                   class="copy-button"
-                  data-copy="npm install -g @modmux/core"
+                  data-copy="git clone https://github.com/modmux/modmux.git && cd modmux && deno task install"
                 >
                   Copy
                 </button>
               </div>
               <ol class="step-list">
-                <li>Install Modmux globally.</li>
+                <li>Clone the repository and install globally.</li>
                 <li>
                   Run <code>modmux start</code> and complete GitHub
                   authentication.
@@ -232,42 +234,14 @@
             </article>
 
             <article class="install-card">
-              <h3>Deno / JSR</h3>
-              <p>Useful when Deno is already part of your toolchain.</p>
-              <div class="code-block compact">
-                <code>deno install -A -g jsr:@modmux/cli</code>
-                <button
-                  type="button"
-                  class="copy-button"
-                  data-copy="deno install -A -g jsr:@modmux/cli"
-                >
-                  Copy
-                </button>
-              </div>
-            </article>
-
-            <article class="install-card">
               <h3>Direct binary</h3>
               <p>
                 Download a platform build from GitHub Releases when you do not
                 want a runtime dependency.
               </p>
               <div class="link-row">
-                <a href="https://github.com/myty/modmux/releases"
+                <a href="https://github.com/modmux/modmux/releases"
                 >Open releases</a>
-              </div>
-            </article>
-
-            <article class="install-card">
-              <h3>From source</h3>
-              <p>
-                Good for contributors or if you want to inspect the code before
-                installing.
-              </p>
-              <div class="code-block stacked">
-                <code>git clone https://github.com/myty/modmux.git</code>
-                <code>cd modmux</code>
-                <code>deno task install</code>
               </div>
             </article>
           </div>
@@ -360,16 +334,16 @@
 <span style="color:#ff00aa">$</span> modmux
 
 <span style="color:#00f0ff">┌─────────────────────────────────────┐</span>
-<span style="color:#00f0ff">│</span>  MODMUX v0.3.0                 <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  MODMUX v0.3.0                      <span style="color:#00f0ff">│</span>
 <span style="color:#00f0ff">├─────────────────────────────────────┤</span>
-<span style="color:#00f0ff">│</span>  Status:    Running           <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  Endpoint:  127.0.0.1:11435   <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  Auth:      Authenticated ✓    <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  Status:    Running                 <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  Endpoint:  127.0.0.1:11435         <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  Auth:      Authenticated ✓         <span style="color:#00f0ff">│</span>
 <span style="color:#00f0ff">├─────────────────────────────────────┤</span>
-<span style="color:#00f0ff">│</span>  Agents:                        <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  [ ] claude-code                <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  [x] cline                      <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  [ ] codex                     <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  Agents:                            <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  [ ] claude-code                    <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  [x] cline                          <span style="color:#00f0ff">│</span>
+<span style="color:#00f0ff">│</span>  [ ] codex                          <span style="color:#00f0ff">│</span>
 <span style="color:#00f0ff">└─────────────────────────────────────┘</span></pre>
               </div>
             </div>
@@ -465,8 +439,9 @@
             <details>
               <summary>Do I need Deno to use Modmux?</summary>
               <p>
-                No. npm and direct binary installs do not require Deno. Deno is
-                only needed for the JSR and source-based paths.
+                Deno is required for the recommended from-source installation.
+                If you don't want to install Deno, you can download a direct binary
+                from GitHub Releases instead.
               </p>
             </details>
           </div>
@@ -496,9 +471,9 @@
                 hidden background magic.
               </p>
               <div class="status-links">
-                <a href="https://github.com/myty/modmux/blob/main/README.md"
+                <a href="https://github.com/modmux/modmux/blob/main/README.md"
                 >Read the README</a>
-                <a href="https://github.com/myty/modmux/releases"
+                <a href="https://github.com/modmux/modmux/releases"
                 >Read releases</a>
               </div>
             </article>
@@ -520,10 +495,10 @@
           Copilot.
         </p>
         <div class="footer-links">
-          <a href="https://github.com/myty/modmux">Repository</a>
-          <a href="https://github.com/myty/modmux/blob/main/README.md"
+          <a href="https://github.com/modmux/modmux">Repository</a>
+          <a href="https://github.com/modmux/modmux/blob/main/README.md"
           >README</a>
-          <a href="https://github.com/myty/modmux/releases">Releases</a>
+          <a href="https://github.com/modmux/modmux/releases">Releases</a>
         </div>
       </footer>
     </div>

@@ -45,13 +45,11 @@ function resolveBinaryDirs(overrides?: string[]): string[] {
   if (home) {
     dirs.push(
       `${home}/.local/bin`,
-      `${home}/.npm-global/bin`,
       `${home}/go/bin`,
     );
   }
   if (isWindows) {
-    const appData = Deno.env.get("APPDATA") ?? "";
-    if (appData) dirs.push(`${appData}\\npm`);
+    // Add Windows-specific paths if needed
   }
   return dirs;
 }

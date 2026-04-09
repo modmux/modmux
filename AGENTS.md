@@ -21,8 +21,7 @@ Auto-generated from all feature plans. Last updated: 2026-03-28
 
 - **Cross-platform binaries** - macOS (arm64/x64), Linux (x64/arm64), Windows
   (x64)
-- **NPM distribution** - `@modmux/core` package
-- **JSR registry** - `jsr:@modmux/core`
+- **From source installation** - Clone repository and build with Deno
 - **GitHub Actions** - CI/CD and automation
 
 ### Architecture Patterns
@@ -38,13 +37,13 @@ Auto-generated from all feature plans. Last updated: 2026-03-28
 ```text
 modmux/
 ├── deno.json              # Workspace root
-├── cli/                   # @modmux/cli - Command-line interface
+├── cli/                   # Command-line interface
 │   ├── deno.json
 │   └── src/
 │       ├── main.ts        # Main entry point + all sub-command handlers
 │       ├── auth.ts        # Authentication handling
 │       └── version.ts     # VERSION = "0.3.0"
-├── gateway/               # @modmux/gateway - HTTP proxy server
+├── gateway/               # HTTP proxy server
 │   ├── deno.json
 │   └── src/
 │       ├── mod.ts         # Module exports
@@ -64,7 +63,7 @@ modmux/
 │       ├── daemon.ts      # startDaemon/stopDaemon/getDaemonPid
 │       ├── render.ts      # TUI renderer
 │       └── managers/      # Platform-specific daemon managers
-├── providers/             # @modmux/providers - GitHub Copilot API client
+├── providers/             # GitHub Copilot API client
 │   ├── deno.json
 │   └── src/
 │       ├── mod.ts         # Module exports
@@ -72,9 +71,6 @@ modmux/
 │       ├── models.ts      # Model ID resolution + fetchModelList()
 │       ├── token.ts       # Token management
 │       └── types.ts       # Type definitions
-├── npm/                   # NPM package distribution
-│   └── modmux/
-│       └── package.json   # @modmux/core
 ├── branding/              # Brand assets
 ├── site/                  # Documentation website
 └── tests/                 # Test files
@@ -219,7 +215,7 @@ deno task sync-version          # Sync version across all artifacts
   - Full rebrand from coco to modmux
   - Deno workspace with 3 packages: cli, gateway, providers
   - Config directory: ~/.coco → ~/.modmux
-  - NPM package: @myty/coco → @modmux/core
+  - Binary name: coco → modmux (from source installation)
 
 - **2026-03-15**: LeanSpec migration completed
   - Migrated Speckit specs to a LeanSpec `README.md`-first format in `specs/`,

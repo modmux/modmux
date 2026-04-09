@@ -2,7 +2,7 @@
 # modmux is installed via GitHub Releases binary or deno
 
 [settings]
-# See: https://github.com/myty/modmux/releases
+# See: https://github.com/modmux/modmux/releases
 
 [tasks.install]
 description = "Install modmux globally from source (cross-platform)"

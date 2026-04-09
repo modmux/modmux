@@ -11,17 +11,17 @@ configuration namespace.
 - Canonical CLI command is now `modmux`.
 - Canonical config/state directory is now `~/.modmux`.
 - Canonical environment variables now use `MODMUX_`.
-- npm package `@modmux/core` is now canonical.
-- npm package `@myty/coco` has been discontinued; use `@modmux/core` instead.
+- npm and JSR package distributions have been discontinued.
+- Installation is now via repository source or direct binary download.
 
 ## Before/After Mapping
 
 | Area             | Before                 | After                    |
 | ---------------- | ---------------------- | ------------------------ |
-| Repository       | `github.com/myty/coco` | `github.com/myty/modmux` |
+| Repository       | `github.com/myty/coco` | `github.com/modmux/modmux` |
 | CLI command      | `coco`                 | `modmux`                 |
-| Deno/JSR install | `jsr:@myty/coco`       | `jsr:@modmux/cli`        |
-| npm package      | `@myty/coco`           | `@modmux/core`           |
+| Installation     | `jsr:@myty/coco`       | From source or binary    |
+| Installation     | `@myty/coco`           | From source or binary    |
 | Config directory | `~/.coco`              | `~/.modmux`              |
 | PID file         | `~/.coco/coco.pid`     | `~/.modmux/modmux.pid`   |
 | Log file         | `~/.coco/coco.log`     | `~/.modmux/modmux.log`   |
@@ -29,17 +29,14 @@ configuration namespace.
 
 ## Upgrade Steps
 
-1. Install the canonical CLI.
+1. Install from source:
 
 ```bash
-npm install -g @modmux/core
+git clone https://github.com/modmux/modmux.git && cd modmux
+deno task install
 ```
 
-Or with Deno:
-
-```bash
-deno install --global --allow-all -n modmux jsr:@modmux/cli
-```
+Or download a binary from [GitHub Releases](https://github.com/modmux/modmux/releases).
 
 2. Update scripts and automation from `coco` to `modmux`.
 
@@ -70,45 +67,42 @@ configuration namespace.
 - Canonical config/state directory is now `~/.coco`.
 - Canonical environment variables now use `COCO_`.
 - npm package `@myty/coco` is now canonical.
-- npm package `@myty/ardo` has been discontinued; use the canonical `@myty/coco`
-  package.
+- Package manager distributions (npm/JSR) were discontinued in favor of source
+  installation and direct binaries.
 
 ## Before/After Mapping
 
-| Area             | Before                     | After                  |
-| ---------------- | -------------------------- | ---------------------- |
-| Repository       | `github.com/ardo-org/ardo` | `github.com/myty/coco` |
-| CLI command      | `ardo`                     | `coco`                 |
-| Deno/JSR install | `jsr:@ardo-org/ardo`       | `jsr:@myty/coco`       |
-| npm package      | `@myty/ardo`               | `@myty/coco`           |
-| Config directory | `~/.ardo`                  | `~/.coco`              |
-| PID file         | `~/.ardo/ardo.pid`         | `~/.coco/coco.pid`     |
-| Log file         | `~/.ardo/ardo.log`         | `~/.coco/coco.log`     |
-| Env prefix       | `ARDO_*`                   | `COCO_*`               |
+| Area             | Before                     | After                        |
+| ---------------- | -------------------------- | ---------------------------- |
+| Repository       | `github.com/ardo-org/ardo` | `github.com/modmux/modmux`     |
+| CLI command      | `ardo`                     | `modmux`                     |
+| Installation     | `jsr:@ardo-org/ardo`       | From source or binary        |
+| Installation     | `@myty/ardo`               | From source or binary        |
+| Config directory | `~/.ardo`                  | `~/.modmux`                  |
+| PID file         | `~/.ardo/ardo.pid`         | `~/.modmux/modmux.pid`       |
+| Log file         | `~/.ardo/ardo.log`         | `~/.modmux/modmux.log`       |
+| Env prefix       | `ARDO_*`                   | `MODMUX_*`                   |
 
 ## Upgrade Steps
 
-1. Install the canonical CLI.
+1. Install from source:
 
 ```bash
-npm install -g @myty/coco
+git clone https://github.com/modmux/modmux.git && cd modmux
+deno task install
 ```
 
-Or with Deno:
+Or download a binary from [GitHub Releases](https://github.com/modmux/modmux/releases).
 
-```bash
-deno install --global --allow-all -n coco jsr:@myty/coco
-```
+2. Update scripts and automation from `ardo` to `modmux`.
 
-2. Update scripts and automation from `ardo` to `coco`.
+3. Update environment variables from `ARDO_*` to `MODMUX_*`.
 
-3. Update environment variables from `ARDO_*` to `COCO_*`.
-
-4. Move any direct path references from `~/.ardo` to `~/.coco`.
+4. Move any direct path references from `~/.ardo` to `~/.modmux`.
 
 ## Compatibility Behavior
 
-- Running `ardo` no longer works; use `coco` instead.
-- `ARDO_*` variables are no longer supported; use `COCO_*` variables instead.
+- Running `ardo` no longer works; use `modmux` instead.
+- `ARDO_*` variables are no longer supported; use `MODMUX_*` variables instead.
 - Existing data under `~/.ardo` is not automatically migrated; manual migration
   may be required.

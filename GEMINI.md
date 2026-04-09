@@ -21,8 +21,7 @@ Auto-generated from all feature plans. Last updated: 2026-03-10
 
 - **Cross-platform binaries** - macOS (arm64/x64), Linux (x64/arm64), Windows
   (x64)
-- **NPM distribution** - `@myty/coco` package (`npm install -g @myty/coco`) --
-  **JSR registry** - `jsr:@myty/coco`
+- **From source installation** - Clone repository and build with Deno
 - **GitHub Actions** - CI/CD and automation
 
 ### Architecture Patterns

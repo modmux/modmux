@@ -28,7 +28,7 @@ Migration guide: [MIGRATION.md](MIGRATION.md) Release notes:
 - ♻️ **Reversible config** — every `modmux configure` is undone by
   `modmux unconfigure`
 - ⚡ **Stream support** — real-time streaming responses
-- 📦 **Multiple install methods** — npm, Deno/JSR, or direct binary
+- 📦 **Multiple install methods** — from source or direct binary
 
 ## How It Works
 
@@ -55,33 +55,12 @@ Coding agent → Modmux proxy (127.0.0.1:11435) → GitHub Copilot API
 ## Installation
 
 <details>
-<summary>📖 npm (Recommended, No Deno Required)</summary>
-
-**Node.js ≥18 required**
-
-```bash
-npm install -g @modmux/core
-```
-
-The npm package automatically downloads the native binary for your platform:
-
-| OS      | Architecture | Status |
-| ------- | ------------ | ------ |
-| macOS   | arm64        | ✅     |
-| macOS   | x64          | ✅     |
-| Linux   | x64          | ✅     |
-| Linux   | arm64        | ✅     |
-| Windows | x64          | ✅     |
-
-</details>
-
-<details>
-<summary>📖 From Source (Development / Try It Out)</summary>
+<summary>📖 From Source (Recommended)</summary>
 
 Clone the repository and install globally with a single command:
 
 ```bash
-git clone https://github.com/myty/modmux.git && cd modmux
+git clone https://github.com/modmux/modmux.git && cd modmux
 ```
 
 **With Deno:**
@@ -124,19 +103,10 @@ modmux --version
 > **Note**: Ensure the install directory is in your `PATH`.
 
 <details>
-<summary>📖 JSR (Deno Runtime)</summary>
-
-```bash
-[Optional] deno install -A -g jsr:@modmux/cli
-```
-
-</details>
-
-<details>
 <summary>📖 Direct Binary Download</summary>
 
 Download platform-specific binaries from
-[GitHub Releases](https://github.com/myty/modmux/releases).
+[GitHub Releases](https://github.com/modmux/modmux/releases).
 
 </details>
 
@@ -197,7 +167,8 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 
 ```bash
 # 1. Install Modmux
-npm install -g @modmux/core
+git clone https://github.com/modmux/modmux.git && cd modmux
+deno task install
 
 # 2. Start the proxy (authenticates with GitHub Copilot on first run)
 modmux start
@@ -294,7 +265,7 @@ modmux/
 
 ```bash
 # Clone and run quality checks
-git clone https://github.com/myty/modmux.git && cd modmux
+git clone https://github.com/modmux/modmux.git && cd modmux
 deno task quality
 
 # Run in development mode

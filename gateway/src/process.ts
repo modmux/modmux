@@ -4,7 +4,7 @@
 
 /**
  * Search for a binary by name. Checks PATH entries and common tool-specific
- * install locations (npm global, pip user bin).
+ * install locations (local bin, go bin).
  * Returns the absolute path if found, otherwise null.
  */
 export async function findBinary(name: string): Promise<string | null> {
@@ -18,13 +18,11 @@ export async function findBinary(name: string): Promise<string | null> {
   if (home) {
     dirs.push(
       `${home}/.local/bin`,
-      `${home}/.npm-global/bin`,
       `${home}/go/bin`,
     );
   }
   if (isWindows) {
-    const appData = Deno.env.get("APPDATA") ?? "";
-    if (appData) dirs.push(`${appData}\\npm`);
+    // Add Windows-specific paths if needed
   }
 
   const exts = isWindows ? [".exe", ".cmd", ".bat", ""] : [""];

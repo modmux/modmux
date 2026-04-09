@@ -17,22 +17,17 @@ Before starting, ensure you have:
 
 Choose your preferred installation method:
 
-### Option A: NPM (Recommended)
+### Option A: From Source (Recommended)
 
 ```bash
-npm install -g @myty/modmux
+git clone https://github.com/modmux/modmux.git && cd modmux
+deno task install
 ```
 
-### Option B: Deno
-
-```bash
-deno install --global --allow-all jsr:@myty/modmux
-```
-
-### Option C: Manual Binary
+### Option B: Manual Binary
 
 1. Download the latest release from
-   [GitHub](https://github.com/myty/modmux/releases)
+   [GitHub](https://github.com/modmux/modmux/releases)
 2. Extract and move the binary to your PATH
 3. Make it executable (macOS/Linux): `chmod +x modmux`
 

@@ -28,27 +28,22 @@ jobs:
             runner: macos-latest
             target: aarch64-apple-darwin
             artifact: modmux-macos-arm64
-            npm_platform: darwin-arm64
           - platform: macos-x64
             runner: macos-13
             target: x86_64-apple-darwin
             artifact: modmux-macos-x64
-            npm_platform: darwin-x64
           - platform: linux-x64
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: modmux-linux-x64
-            npm_platform: linux-x64
           - platform: linux-arm64
             runner: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             artifact: modmux-linux-arm64
-            npm_platform: linux-arm64
           - platform: windows-x64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: modmux-windows-x64.exe
-            npm_platform: win32-x64
     steps:
       - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
@@ -135,81 +130,3 @@ jobs:
             release-manifest.json
           generate_release_notes: true
           prerelease: ${{ steps.detect.outputs.prerelease == 'true' }}
-
-  publish-jsr:
-    name: Publish to JSR
-    needs: quality
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v6
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - name: Publish to JSR
-        run: deno publish
-
-  publish-npm:
-    name: Publish to npm
-    needs: release
-    runs-on: ubuntu-latest
-    # NOTE: Add NPM_TOKEN secret in GitHub repository settings:
-    # Settings → Secrets and variables → Actions → New repository secret
-    # Name: NPM_TOKEN, Value: your npm access token with publish permissions
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          registry-url: https://registry.npmjs.org
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: modmux-*
-          merge-multiple: true
-      - name: Sync version into npm packages
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - run: deno run -A scripts/sync-version.ts
-      - name: Set npm dist-tag
-        id: npm-tag
-        run: |
-          if [ "${{ needs.release.outputs.prerelease }}" = "true" ]; then
-            echo "tag=next" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Copy binaries into platform packages and publish
-        run: |
-          declare -A PLATFORM_MAP=(
-            ["modmux-macos-arm64"]="darwin-arm64"
-            ["modmux-macos-x64"]="darwin-x64"
-            ["modmux-linux-x64"]="linux-x64"
-            ["modmux-linux-arm64"]="linux-arm64"
-            ["modmux-windows-x64.exe"]="win32-x64"
-          )
-
-          NPM_TAG="${{ steps.npm-tag.outputs.tag }}"
-
-          for artifact in "${!PLATFORM_MAP[@]}"; do
-            platform="${PLATFORM_MAP[$artifact]}"
-            pkg_dir="npm/@modmux/${platform}"
-            bin_dir="${pkg_dir}/bin"
-            mkdir -p "${bin_dir}"
-
-            if [[ "$artifact" == *.exe ]]; then
-              cp "${artifact}" "${bin_dir}/modmux.exe"
-            else
-              cp "${artifact}" "${bin_dir}/modmux"
-              chmod +x "${bin_dir}/modmux"
-            fi
-
-            echo "Publishing @modmux/${platform}..."
-            npm publish "${pkg_dir}" --access public --tag "${NPM_TAG}"
-          done
-
-          echo "Publishing @modmux/core..."
-          npm publish npm/modmux --access public --tag "${NPM_TAG}"
