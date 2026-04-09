@@ -99,6 +99,11 @@ function findFreePort(preferred: number): number {
  * terminal window. Work around this by routing through PowerShell
  * `Start-Process -WindowStyle Hidden`, which sets SW_HIDE in STARTUPINFO
  * so the console window is never shown.
+ *
+ * Note: `-WindowStyle Hidden` is passed only to `Start-Process` inside the
+ * script, NOT to the outer `powershell.exe` process. Passing it to the outer
+ * process would hide the shared console window (the user's terminal) because
+ * the spawned PowerShell inherits the parent's console.
  */
 async function spawnDetached(exe: string, args: string[]): Promise<number> {
   if (Deno.build.os === "windows") {
@@ -108,7 +113,7 @@ async function spawnDetached(exe: string, args: string[]): Promise<number> {
       ? `(Start-Process -FilePath '${esc(exe)}' -ArgumentList ${argList} -WindowStyle Hidden -PassThru).Id`
       : `(Start-Process -FilePath '${esc(exe)}' -WindowStyle Hidden -PassThru).Id`;
     const { success, stdout } = await new Deno.Command("powershell", {
-      args: ["-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
+      args: ["-NonInteractive", "-Command", script],
       stdin: "null",
       stdout: "piped",
       stderr: "null",

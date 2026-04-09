@@ -71,8 +71,6 @@ async function isProcessAlive(pid: number): Promise<boolean> {
         args: [
           "-NoProfile",
           "-NonInteractive",
-          "-WindowStyle",
-          "Hidden",
           "-Command",
           `Get-Process -Id ${pid} -ErrorAction SilentlyContinue`,
         ],
@@ -131,8 +129,6 @@ function restartDaemon(binaryPath: string): void {
       new Deno.Command("powershell", {
         args: [
           "-NonInteractive",
-          "-WindowStyle",
-          "Hidden",
           "-Command",
           `Start-Process -FilePath '${esc(binaryPath)}' -ArgumentList 'start' -WindowStyle Hidden`,
         ],
@@ -249,8 +245,6 @@ async function addToWindowsUserPath(installDir: string): Promise<boolean> {
     args: [
       "-NoProfile",
       "-NonInteractive",
-      "-WindowStyle",
-      "Hidden",
       "-Command",
       "[Environment]::GetEnvironmentVariable('PATH','User')",
     ],
@@ -274,8 +268,6 @@ async function addToWindowsUserPath(installDir: string): Promise<boolean> {
     args: [
       "-NoProfile",
       "-NonInteractive",
-      "-WindowStyle",
-      "Hidden",
       "-Command",
       `[Environment]::SetEnvironmentVariable('PATH','${newPath}','User')`,
     ],
