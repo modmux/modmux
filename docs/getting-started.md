@@ -1,369 +1,101 @@
 # Getting Started with Modmux
 
+Use this guide to go from install to a working local request as quickly as
+possible.
+
 ## Prerequisites
 
-Before starting, ensure you have:
+- GitHub Copilot subscription
+- GitHub account with Copilot access
+- Terminal access
 
-- **GitHub Copilot Subscription** - Individual, Business, or Enterprise plan
-- **GitHub Account** - The same account used for your Copilot subscription
-- **Terminal Access** - Command line interface (Terminal, PowerShell, or Command
-  Prompt)
+## 1. Install
 
-## Step 1: Installation
-
-Choose your preferred installation method:
-
-### Option A: From Source (Recommended)
+### From source
 
 ```bash
 git clone https://github.com/modmux/modmux.git && cd modmux
 deno task install
 ```
 
-### Option B: Manual Binary
+### Direct binary
 
-1. Download the latest release from
-   [GitHub](https://github.com/modmux/modmux/releases)
-2. Extract and move the binary to your PATH
-3. Make it executable (macOS/Linux): `chmod +x modmux`
+Download a platform build from
+[GitHub Releases](https://github.com/modmux/modmux/releases).
 
-### Verify installation
+### Check the install
 
 ```bash
 modmux --version
 ```
 
-Expected output: `Modmux v0.2.0`
+If this fails, the install location is probably not in your `PATH`.
 
-If this fails, check that the install directory is in your PATH.
-
-## Step 2: Authentication
-
-Modmux needs to authenticate with GitHub Copilot to proxy requests.
-
-### Start the Authentication Flow
+## 2. Start Modmux
 
 ```bash
 modmux start
 ```
 
-**What happens:**
+On first run, Modmux starts the GitHub device flow. Complete the login in your
+browser, then return to the terminal.
 
-1. Modmux checks if you're already authenticated
-2. If not, it starts the GitHub OAuth device flow
-3. You'll see a message like this:
-
-```
-Please visit: https://github.com/login/device
-Enter code: ABCD-EFGH
-Waiting for authentication...
-```
-
-### Complete Authentication
-
-1. **Open the URL** in your browser: `https://github.com/login/device`
-2. **Enter the code** shown in your terminal
-3. **Authorize the application** when prompted by GitHub
-4. **Return to terminal** - it should show:
-
-```
-Authentication successful!
-Modmux is running on http://localhost:11435
-```
-
-### Verify authentication
+Use this to confirm the service is running:
 
 ```bash
 modmux status
 ```
 
-Expected output:
+If port `11435` is already in use, Modmux scans upward for another available
+port. Use the port shown by `modmux status`.
 
-```
-Service:        running (PID 12345) on port 11435
-Authentication: valid (expires in 29 days)
-Agents:         none configured
-```
+## 3. Configure an agent
 
-Common issues:
-
-- **No GitHub Copilot subscription** - Verify your subscription at
-  github.com/settings/copilot
-- **Network issues** - Check firewall/proxy settings
-- **Wrong GitHub account** - Ensure you're using the account with Copilot access
-
-## Step 3: Configure an Agent
-
-Modmux supports three agents out of the box. Configure at least one to start
-using the service.
-
-### Detect Available Agents
+Check which supported agents are installed:
 
 ```bash
 modmux doctor
 ```
 
-**Example output:**
-
-```
-Modmux Doctor
-──────────────────────────────────────────────
-claude-code     installed    not configured
-cline           installed    not configured
-codex           not-installed
-──────────────────────────────────────────────
-Log: /Users/username/.modmux/modmux.log
-Last 5 errors: (none)
-```
-
-### Configure an Agent
-
-Choose an installed agent and configure it:
+Configure one of them:
 
 ```bash
 modmux configure claude-code
 ```
 
-**Expected output:**
-
-```
-claude-code configured.
-```
-
-For other agents:
+You can also configure:
 
 ```bash
-modmux configure cline    # For Cline
-modmux configure codex    # For Codex
+modmux configure cline
+modmux configure codex
 ```
 
-### Verify configuration
+Run `modmux doctor` again to confirm the agent is configured.
+
+## 4. Test the local endpoint
 
 ```bash
-modmux doctor
-```
-
-Expected output:
-
-```
-claude-code     installed    configured ✓
-```
-
-If configuration failed:
-
-- Check the agent is properly installed
-- Ensure Modmux service is running (`modmux status`)
-- Check logs for errors (`modmux doctor` shows recent errors)
-
-## Step 4: Test the Connection
-
-Now test that everything is working with a simple API call.
-
-### Option A: Using cURL (Direct API Test)
-
-```bash
-curl -X POST http://localhost:11435/v1/chat/completions \
+curl -X POST http://127.0.0.1:11435/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",
-    "messages": [
-      {
-        "role": "user",
-        "content": "Say hello"
-      }
-    ],
+    "messages": [{"role": "user", "content": "Say hello"}],
     "max_tokens": 50
   }'
 ```
 
-**Expected output:**
+If `modmux status` shows a different port, use that port instead.
 
-```json
-{
-  "id": "chatcmpl-abc123",
-  "object": "chat.completion",
-  "created": 1677652288,
-  "model": "gpt-4o",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Hello! How can I help you today?"
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 8,
-    "completion_tokens": 9,
-    "total_tokens": 17
-  }
-}
-```
-
-### Option B: Using Your Configured Agent
-
-If you configured Claude Code, test it by:
-
-1. **Open VS Code** or your editor
-2. **Trigger Claude Code** (usually Cmd/Ctrl+Shift+P → "Claude: New Chat")
-3. **Send a test message** like "Hello, are you working?"
-4. **Verify response** comes through successfully
-
-### Verify requests are flowing
+You can also verify health and metrics directly:
 
 ```bash
-curl http://localhost:11435/v1/usage
+curl http://127.0.0.1:11435/health
+curl http://127.0.0.1:11435/v1/usage
 ```
 
-If you see request counts with `200` status codes, everything is working.
+## Next steps
 
-## Step 5: Explore Available Models
-
-Check what models are available through your Copilot subscription:
-
-```bash
-modmux models
-```
-
-**Example output:**
-
-```
-Available models (via GitHub Copilot):
-
-  gpt-4o
-  gpt-4o-mini
-  o1-preview
-  claude-3-5-sonnet-20241022
-  claude-3-5-haiku-20241022
-
-Run 'modmux configure <agent>' to route an agent through Modmux.
-```
-
-### Test Different Models
-
-```bash
-# Test with GPT-4o Mini (faster, cheaper)
-curl -X POST http://localhost:11435/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [{"role": "user", "content": "Write a Python hello world"}],
-    "max_tokens": 100
-  }'
-
-# Test with Claude alias (for Anthropic-compatible agents)
-curl -X POST http://localhost:11435/v1/messages \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-3-5-sonnet-20241022",
-    "messages": [{"role": "user", "content": "Explain Python variables"}],
-    "max_tokens": 150
-  }'
-```
-
-## Common Next Steps
-
-### 1. Configure Additional Agents
-
-```bash
-# Configure all your installed agents
-modmux configure cline
-modmux configure codex
-modmux doctor  # Verify all configurations
-```
-
-### 2. Set Up Auto-Start (Optional)
-
-To start Modmux automatically on login:
-
-```bash
-# Install as a system service
-modmux install-service
-
-# Verify it's running
-modmux status
-```
-
-### 3. Monitor Usage
-
-Keep an eye on your API usage:
-
-```bash
-# Check current usage
-curl http://localhost:11435/v1/usage
-
-# Monitor status
-modmux status
-
-# Check for errors
-modmux doctor
-```
-
-### 4. Explore Advanced Features
-
-- **[API Documentation](./api/README.md)** - Complete endpoint reference
-- **[Advanced Configuration](./advanced-configuration.md)** - Custom settings
-  and environment variables
-- **[Troubleshooting Guide](./troubleshooting.md)** - Solutions for common
-  issues
-
-## Troubleshooting Quick Fixes
-
-### Service Won't Start
-
-```bash
-# Check if already running
-modmux status
-
-# Stop and restart
-modmux stop
-modmux start
-
-# Check for port conflicts
-lsof -i :11435  # macOS/Linux
-netstat -an | findstr 11435  # Windows
-```
-
-### Authentication Issues
-
-```bash
-# Re-authenticate
-modmux stop
-rm ~/.modmux/token.json  # Clear stored token
-modmux start  # Will trigger new auth flow
-```
-
-### Agent Configuration Failed
-
-```bash
-# Reset agent configuration
-modmux unconfigure claude-code
-modmux configure claude-code
-
-# Check agent is properly installed
-which claude  # Should show path to binary
-```
-
-### API Requests Fail
-
-```bash
-# Verify service is running
-curl http://localhost:11435/health
-# Expected: {"status": "ok"}
-
-# Check authentication
-modmux status
-# Should show "Authentication: valid"
-
-# Test with simple request
-curl -X POST http://localhost:11435/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model": "gpt-4o", "messages": [{"role": "user", "content": "test"}], "max_tokens": 10}'
-```
-
----
-
-For more detail, see the [API documentation](./api/README.md) or the
-[Troubleshooting Guide](./troubleshooting.md).
+- [Troubleshooting](./troubleshooting.md) if setup fails
+- [API reference](./api/README.md) for endpoint details
+- `modmux models` to see available Copilot-backed models
+- `modmux install-service` if you want Modmux to start with your OS login

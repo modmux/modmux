@@ -1,7 +1,6 @@
 # Usage Metrics API
 
-Modmux automatically tracks usage metrics for all API requests and provides
-endpoints to query usage data and implement custom response formats.
+Reference for the usage and responses endpoints exposed by Modmux.
 
 ## Usage Endpoint
 

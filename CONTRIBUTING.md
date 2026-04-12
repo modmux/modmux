@@ -1,5 +1,8 @@
 # Contributing to Modmux
 
+README.md covers installation and user-facing usage. This guide covers working
+on the codebase.
+
 ## Project Structure
 
 ```text
@@ -37,18 +40,28 @@ modmux/
 
 ## Design Principles
 
-- **Focus** — does one thing: routes requests between coding agents and GitHub Copilot. Each module does only what its responsibility requires.
-- **Predictability** — deterministic transforms per request. Model alias resolution, retry logic, and config writes produce identical outputs for identical inputs. No hidden behavior.
-- **Separation of concerns** — the daemon proxies; the config manager writes; the TUI controls. The CLI dispatches and contains no business logic.
-- **Reversibility** — all agent config writes create a `.modmux-backup` file first. `modmux unconfigure` restores the original exactly.
-- **Security** — bind to `127.0.0.1` only. No external telemetry. No logging of tokens, request bodies, or sensitive headers. No Copilot CLI or SDK dependency.
-- **Contract testing** — tests verify external interfaces and API contracts, not implementation details. Every feature includes contract tests in `tests/contract/`.
+- **Focus** — does one thing: routes requests between coding agents and GitHub
+  Copilot. Each module does only what its responsibility requires.
+- **Predictability** — deterministic transforms per request. Model alias
+  resolution, retry logic, and config writes produce identical outputs for
+  identical inputs. No hidden behavior.
+- **Separation of concerns** — the daemon proxies; the config manager writes;
+  the TUI controls. The CLI dispatches and contains no business logic.
+- **Reversibility** — all agent config writes create a `.modmux-backup` file
+  first. `modmux unconfigure` restores the original exactly.
+- **Security** — bind to `127.0.0.1` only. No external telemetry. No logging of
+  tokens, request bodies, or sensitive headers. No Copilot CLI or SDK
+  dependency.
+- **Contract testing** — tests verify external interfaces and API contracts, not
+  implementation details. Every feature includes contract tests in
+  `tests/contract/`.
 
 ## Getting Started
 
 1. Fork and clone the repository
 2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Install Deno if not already available (see [README](README.md) for instructions)
+3. Install Deno if not already available (see [README](README.md) for
+   instructions)
 4. Verify your environment: `deno task quality`
 
 ## Development Process
@@ -57,7 +70,8 @@ modmux/
 2. Implement the feature following the code style guidelines below
 3. Update documentation if API or behavior changes
 4. Run quality gates before committing: `deno task quality`
-5. Commit using [conventional commit](https://www.conventionalcommits.org/) format
+5. Commit using [conventional commit](https://www.conventionalcommits.org/)
+   format
 
 ## Commands
 
@@ -116,4 +130,12 @@ lean-spec validate                   # Validate all specs
 
 ### Specifications
 
-All feature work starts with a spec under `specs/`. Each spec's `README.md` is the canonical entrypoint. Run `lean-spec board` to see current project state before starting.
+All feature work starts with a spec under `specs/`. Each spec's `README.md` is
+the canonical entrypoint. Run `lean-spec board` to see current project state
+before starting.
+
+### Documentation
+
+Keep user-facing docs short and direct. See
+[`docs/documentation-style.md`](./docs/documentation-style.md) for documentation
+roles and writing rules.

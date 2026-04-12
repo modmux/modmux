@@ -6,308 +6,104 @@ external dependencies.
 
 Website: https://modmux.dev/
 
-## Features
+## What it does
 
-- 🔗 **Anthropic + OpenAI compatible** — `/v1/messages` and
-  `/v1/chat/completions` endpoints, plus `/v1/responses`
-- 🧮 **Token counting** — `POST /v1/messages/count_tokens`
-- 📊 **Usage metrics** — `GET /v1/usage` for request, status, and latency data
-- 🚀 **Background service** — `modmux start` / `modmux stop` / `modmux restart`
-- 🤖 **Multi-agent support** — Claude Code, Cline, and Codex
-- 🖥️ **Minimal TUI** — bare `modmux` opens a toggle interface for agent
-  configuration
-- 🔍 **Agent detection** — scans PATH and VS Code extensions
-- ♻️ **Reversible config** — every `modmux configure` is undone by
-  `modmux unconfigure`
-- ⚡ **Stream support** — streaming responses
-- 📦 **Multiple install methods** — from source or direct binary
+- Exposes one local endpoint for supported coding agents
+- Supports Anthropic-compatible and OpenAI-compatible APIs
+- Supports Claude Code, Cline, and Codex
+- Keeps configuration reversible with `modmux unconfigure`
+- Exposes status, health, usage, and model discovery endpoints
 
-## How It Works
+## Install
 
-```
-Coding agent → Modmux proxy (127.0.0.1:11435) → GitHub Copilot API
-                │
-                ├── POST /v1/messages           (Anthropic)
-                ├── POST /v1/messages/count_tokens
-                ├── POST /v1/chat/completions   (OpenAI)
-                ├── POST /v1/responses          (OpenAI)
-                ├── GET  /v1/usage
-                ├── GET  /v1/models
-                └── GET  /health
-```
-
-1. **`modmux start`** — authenticates with GitHub and starts the proxy
-2. **`modmux configure <agent>`** — points the agent's config at the local
-   Modmux endpoint
-3. Agent API calls are translated and forwarded to GitHub Copilot
-4. Inspect state with `modmux status`, `GET /health`, or `GET /v1/usage`
-
-## Installation
-
-<details>
-<summary>📖 From Source (Recommended)</summary>
-
-Clone the repository and install globally with a single command:
+### Recommended: from source
 
 ```bash
 git clone https://github.com/modmux/modmux.git && cd modmux
-```
-
-**With Deno:**
-
-```bash
 deno task install
 ```
 
-**With mise:**
+If the install location is not already in your `PATH`, add it first.
 
-```bash
-mise run install
-```
+### Direct binary
 
-`mise run install` runs the same cross-platform install flow shown above.
-
-Default install locations:
-
-| Platform | Location                                  |
-| -------- | ----------------------------------------- |
-| macOS    | `~/.local/bin/modmux`                     |
-| Linux    | `~/.local/bin/modmux`                     |
-| Windows  | `%LOCALAPPDATA%\\modmux\\bin\\modmux.exe` |
-
-Override install directory on any platform with:
-
-```bash
-MODMUX_INSTALL_DIR=/your/path/bin deno task install
-```
-
-After installation, `modmux` is available in any terminal:
-
-```bash
-modmux --version
-# Modmux v0.3.0
-```
-
-</details>
-
-> **Note**: Ensure the install directory is in your `PATH`.
-
-<details>
-<summary>📖 Direct Binary Download</summary>
-
-Download platform-specific binaries from
+Download a platform build from
 [GitHub Releases](https://github.com/modmux/modmux/releases).
 
-</details>
-
-## Usage
-
-<details>
-<summary>📖 TUI (recommended for first-time setup)</summary>
+## Quick start
 
 ```bash
-modmux          # opens the interactive TUI
-```
-
-```
-modmux — GitHub Copilot gateway
-─────────────────────────────────────────────
-Status: Running on http://localhost:11435
-Copilot: Authenticated ✓
-
-Agents
-─────────────────────────────────────────────
-[x] Claude Code      detected
-[ ] Cline            installed
-[ ] Codex            installed
-
-─────────────────────────────────────────────
-Space: toggle   Enter: apply   q: quit
-```
-
-Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
-**q** quits without changes.
-
-</details>
-
-<details>
-<summary>📖 CLI Commands</summary>
-
-| Command                          | Description                                                 |
-| -------------------------------- | ----------------------------------------------------------- |
-| `modmux`                         | Open the interactive TUI (on TTY) or print status (non-TTY) |
-| `modmux start`                   | Start the background proxy service                          |
-| `modmux stop`                    | Stop the background proxy service                           |
-| `modmux restart`                 | Restart the background proxy service                        |
-| `modmux status`                  | Print service and auth status                               |
-| `modmux configure <agent>`       | Write config for a specific agent                           |
-| `modmux unconfigure <agent>`     | Revert config for a specific agent                          |
-| `modmux doctor`                  | Scan and report all agents' states                          |
-| `modmux models`                  | List available Copilot model IDs                            |
-| `modmux model-policy <compatible\|strict>` | Set model compatibility policy                              |
-| `modmux install-service`         | Register daemon with OS login service manager               |
-| `modmux uninstall-service`       | Remove daemon from OS login service manager                 |
-| `modmux --help`                  | Show help                                                   |
-| `modmux --version`               | Show version                                                |
-
-</details>
-
-<details>
-<summary>🚀 Quick Start</summary>
-
-```bash
-# 1. Install Modmux
-git clone https://github.com/modmux/modmux.git && cd modmux
-deno task install
-
-# 2. Start the proxy (authenticates with GitHub Copilot on first run)
+# Start the local proxy and complete GitHub auth on first run
 modmux start
 
-# 3. Configure an agent
+# Point an agent at Modmux
 modmux configure claude-code
 
-# 4. Check what's running
+# Check service state, auth, and configured agents
+modmux status
 modmux doctor
-
-# 5. (Optional) Register as a login service
-modmux install-service
 ```
 
-</details>
+Modmux binds to localhost and starts at port `11435`. If that port is already in
+use, it scans upward for an available port. Use `modmux status` to confirm the
+active endpoint.
 
-<details>
-<summary>📖 Usage Metrics API</summary>
+## Core commands
 
-Modmux exposes a local metrics snapshot endpoint:
+| Command                      | Purpose                                             |
+| ---------------------------- | --------------------------------------------------- |
+| `modmux`                     | Open the TUI on a TTY, or print status on a non-TTY |
+| `modmux start`               | Start the background proxy service                  |
+| `modmux stop`                | Stop the background proxy service                   |
+| `modmux status`              | Show service and auth state                         |
+| `modmux doctor`              | Scan supported agents and show recent errors        |
+| `modmux configure <agent>`   | Configure a supported agent                         |
+| `modmux unconfigure <agent>` | Restore a supported agent's previous config         |
+| `modmux models`              | List available Copilot-backed models                |
+| `modmux --help`              | Show the full command list                          |
 
-```bash
-curl http://127.0.0.1:11435/v1/usage
+## Local endpoints
+
+```text
+POST /v1/messages
+POST /v1/messages/count_tokens
+POST /v1/chat/completions
+POST /v1/responses
+GET  /v1/models
+GET  /v1/usage
+GET  /health
 ```
 
-Response shape:
+## Docs
 
-```json
-{
-  "process": {
-    "started_at": "2026-03-23T00:00:00.000Z",
-    "updated_at": "2026-03-23T00:01:00.000Z"
-  },
-  "totals": {
-    "requests": 0,
-    "success": 0,
-    "errors": 0
-  },
-  "endpoints": {
-    "/v1/messages": {
-      "calls": 0,
-      "status": { "2xx": 0, "4xx": 0, "5xx": 0 },
-      "latency_ms": { "count": 0, "min": 0, "max": 0, "avg": 0 }
-    }
-  },
-  "models": {},
-  "agents": {}
-}
-```
-
-Persistence is optional and configurable via `~/.modmux/config.json`:
-
-```json
-{
-  "usageMetrics": {
-    "persist": false,
-    "snapshotIntervalMs": 60000,
-    "filePath": null
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>📖 Supported Agents</summary>
-
-| Agent       | Binary   | Extension                |
-| ----------- | -------- | ------------------------ |
-| Claude Code | `claude` | `anthropic.claude-code`  |
-| Cline       | `cline`  | `saoudrizwan.claude-dev` |
-| Codex       | `codex`  | —                        |
-
-</details>
-
-## Architecture
-
-```
-modmux/
-├── cli/              # Command-line interface (main.ts)
-├── gateway/          # HTTP proxy (router, OpenAI/Anthropic translation)
-├── providers/        # Model backend integrations (Copilot)
-└── site/             # Website
-```
-
-## Prerequisites
-
-- **GitHub Copilot subscription** — Individual, Business, or Enterprise
+- [Getting started](./docs/getting-started.md) — shortest path from install to
+  first request
+- [Troubleshooting](./docs/troubleshooting.md) — common fixes and diagnostic
+  commands
+- [API reference](./docs/api/README.md) — endpoint reference
+- [Documentation style](./docs/documentation-style.md) — writing rules for this
+  docs set
+- [Contributing](./CONTRIBUTING.md) — contributor workflow and codebase
+  conventions
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for project structure, design principles, code style, and full command reference.
+Run the full quality gate before you commit:
 
 ```bash
-# Clone and run quality checks
-git clone https://github.com/modmux/modmux.git && cd modmux
 deno task quality
+```
 
-# Run in development mode
+Common development commands:
+
+```bash
 deno task dev
-
-# Compile native binary
 deno task compile
 ```
 
-## Troubleshooting
-
-<details>
-<summary>Common Issues</summary>
-
-<details>
-<summary>📖 "Authentication failed"</summary>
-
-- Verify you have an active GitHub Copilot subscription
-- Try again — device flow tokens sometimes need a moment
-
-</details>
-
-<details>
-<summary>📖 "Port already in use"</summary>
-
-- Modmux automatically scans for an available port starting from 11435
-- Check `modmux status` to see the actual port in use
-
-</details>
-
-<details>
-<summary>🔧 "Agent is misconfigured"</summary>
-
-- Run `modmux unconfigure <agent>` then `modmux configure <agent>` again
-- Run `modmux doctor` for a full status report
-
-</details>
-
-<details>
-<summary>📖 macOS "Cannot open" error (binary download)</summary>
-
-- Run `xattr -d com.apple.quarantine modmux` to remove quarantine
-
-</details>
-
-</details>
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for project structure, commands, and
+code style.
 
 ## License
 
 MIT License.
-
-## Acknowledgments
-
-- **GitHub** for the Copilot API
-- **Anthropic** for Claude Code
-- **Deno** for the excellent runtime and tooling

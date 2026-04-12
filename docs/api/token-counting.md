@@ -1,8 +1,7 @@
 # Token Counting API
 
-The token counting endpoint allows you to estimate token usage before sending
-requests to the main API endpoints. This is useful for cost estimation, request
-planning, and debugging.
+Reference for `POST /v1/messages/count_tokens`, which estimates token usage
+before you send a request.
 
 ## Endpoint
 
