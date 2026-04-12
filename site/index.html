@@ -3,35 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Modmux | The Model Multiplexing Layer for Coding Agents</title>
+    <title>Modmux | Local GitHub Copilot gateway for coding agents</title>
     <meta
       name="description"
-      content="Local gateway that routes requests between coding agents and GitHub Copilot. OpenAI and Anthropic compatible endpoints, reversible configuration, zero external dependencies."
+      content="Local gateway for Claude Code, Cline, and Codex on GitHub Copilot. One stable localhost endpoint, Anthropic and OpenAI compatible, reversible configuration."
     />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Modmux" />
     <meta property="og:url" content="https://modmux.dev/" />
-    <meta property="og:title" content="Modmux | The Model Multiplexing Layer for Coding Agents" />
+    <meta
+      property="og:title"
+      content="Modmux | Local GitHub Copilot gateway for coding agents"
+    />
     <meta
       property="og:description"
-      content="Local gateway that routes requests between coding agents and GitHub Copilot. OpenAI and Anthropic compatible endpoints, reversible configuration, zero external dependencies."
+      content="Local gateway for Claude Code, Cline, and Codex on GitHub Copilot. One stable localhost endpoint, Anthropic and OpenAI compatible, reversible configuration."
     />
     <meta property="og:image" content="https://modmux.dev/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Modmux — The model routing layer for coding agents" />
+    <meta
+      property="og:image:alt"
+      content="Modmux — local GitHub Copilot gateway for coding agents"
+    />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Modmux | The Model Multiplexing Layer for Coding Agents" />
+    <meta
+      name="twitter:title"
+      content="Modmux | Local GitHub Copilot gateway for coding agents"
+    />
     <meta
       name="twitter:description"
-      content="Local gateway that routes requests between coding agents and GitHub Copilot. OpenAI and Anthropic compatible endpoints, reversible configuration, zero external dependencies."
+      content="Local gateway for Claude Code, Cline, and Codex on GitHub Copilot. One stable localhost endpoint, Anthropic and OpenAI compatible, reversible configuration."
     />
     <meta name="twitter:image" content="https://modmux.dev/og.png" />
-    <meta name="twitter:image:alt" content="Modmux — The model routing layer for coding agents" />
+    <meta
+      name="twitter:image:alt"
+      content="Modmux — local GitHub Copilot gateway for coding agents"
+    />
 
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -45,43 +57,41 @@
   </head>
   <body>
     <header class="site-header">
-      <div class="site-header-inner">
+      <div class="page-shell site-header-inner">
         <a class="brand" href="#top" aria-label="Modmux home">
           <img src="./favicon.svg" class="brand-logo" alt="" />
           <span class="brand-text">MODMUX</span>
         </a>
         <nav class="site-nav" aria-label="Primary">
           <a href="#why">Why</a>
-          <a href="#install">Install</a>
           <a href="#how-it-works">How it works</a>
+          <a href="#install">Install</a>
           <a href="#faq">FAQ</a>
           <a href="https://github.com/modmux/modmux">GitHub</a>
         </nav>
       </div>
     </header>
+
     <div class="page-shell">
       <main id="top">
         <section class="hero section">
           <div class="hero-copy reveal">
-            <p class="eyebrow">Model Routing Layer</p>
-            <h1>
-              One interface.<br />Every model.
-            </h1>
+            <p class="eyebrow">Local gateway for coding agents</p>
+            <h1>Local Copilot gateway for coding agents.</h1>
             <p class="hero-body">
-              Local gateway that routes requests between coding agents and
-              GitHub Copilot. OpenAI and Anthropic compatible endpoints,
-              reversible configuration, zero external dependencies.
+              Modmux gives Claude Code, Cline, and Codex one stable localhost
+              endpoint with compatible APIs, reversible config, and visible
+              runtime controls.
             </p>
             <div class="hero-actions">
-              <a class="button button-primary" href="#install"
+              <a class="button button-primary" href="#how-it-works"
+              >See how it works</a>
+              <a class="button button-secondary" href="#install"
               >Install Modmux</a>
-              <a class="button button-secondary" href="#how-it-works"
-              >See the flow</a>
             </div>
             <ul class="hero-points" aria-label="Key facts">
-              <li>Localhost only (127.0.0.1:11435)</li>
-              <li>Reversible agent configuration</li>
-              <li>Built-in status, health, and usage</li>
+              <li>Runs on localhost only</li>
+              <li>Supports reversible agent configuration</li>
             </ul>
           </div>
 
@@ -90,148 +100,134 @@
             aria-label="Modmux overview"
           >
             <div class="terminal-card">
-              <div class="terminal-topline">
+              <div class="terminal-topline" aria-hidden="true">
                 <span></span>
                 <span></span>
                 <span></span>
               </div>
               <div class="terminal-body">
-                <p><span class="prompt">$</span> modmux status</p>
-                <p>Service:&nbsp;&nbsp;Not installed</p>
-                <p>
-                  State:&nbsp;&nbsp;&nbsp;&nbsp;Running at
-                  http://localhost:11435
-                </p>
-                <p>Agents:&nbsp;&nbsp;&nbsp;claude-code, cline</p>
-                <p>Copilot:&nbsp;&nbsp;Authenticated ✓</p>
+                <p><span class="prompt">$</span> modmux start</p>
+                <p>Authenticates with GitHub Copilot</p>
                 <p class="terminal-gap"></p>
                 <p>
                   <span class="prompt">$</span> modmux configure claude-code
                 </p>
-                <p>claude-code configured.</p>
+                <p>Writes reversible local agent config</p>
+                <p class="terminal-gap"></p>
+                <p><span class="prompt">$</span> modmux status</p>
+                <p>Running on http://127.0.0.1:11435</p>
               </div>
             </div>
-            <div class="protocol-strip" aria-label="Endpoint compatibility">
-              <span>/v1/messages</span>
-              <span>/v1/responses</span>
-              <span>/v1/chat/completions</span>
-              <span>/v1/usage</span>
-              <span>/v1/models</span>
-              <span>/health</span>
+            <div class="support-strip" aria-label="Supported agents">
+              <span>Claude Code</span>
+              <span>Cline</span>
+              <span>Codex</span>
             </div>
           </div>
         </section>
 
-        <section id="why" class="section section-grid reveal">
+        <section id="why" class="section reveal">
           <div class="section-heading">
-            <p class="eyebrow">Why Modmux</p>
-            <h2>
-              The model routing layer for coding agents.
-            </h2>
+            <p class="eyebrow">Why use Modmux</p>
+            <h2>Keep agent setup in one place.</h2>
             <p>
-              Modmux normalizes differences between APIs so your agents can
-              focus on logic—not plumbing. A stable, local gateway that keeps
-              configuration reversible and visible.
+              Use one local gateway between supported coding agents and GitHub
+              Copilot instead of maintaining separate per-tool config paths.
             </p>
           </div>
           <div class="card-grid three-up">
-            <article class="info-card accent-sand">
-              <h3>One login, really</h3>
+            <article class="info-card">
+              <h3>One shared local endpoint</h3>
               <p>
-                Authenticate once with GitHub Copilot. Supported agents reuse
-                the same subscription path without extra API keys, provider
-                sprawl, or a second bill.
+                Point supported agents at one stable localhost gateway instead
+                of wiring each tool to a different provider-specific path.
               </p>
             </article>
-            <article class="info-card accent-mint">
-              <h3>Stays on your machine</h3>
+            <article class="info-card">
+              <h3>Local and reversible</h3>
               <p>
-                Modmux stays on localhost. It acts as a local compatibility
-                layer rather than a hosted relay, sync service, or remote
-                control plane.
+                Modmux binds to <code>127.0.0.1</code>. Supported config changes
+                can be undone with <code>modmux unconfigure</code>.
               </p>
             </article>
-            <article class="info-card accent-rust">
-              <h3>Easy to undo</h3>
+            <article class="info-card">
+              <h3>Visible to operate</h3>
               <p>
-                Agent configuration is reversible by design. Run
-                <code>modmux unconfigure</code> and restore supported agents to
-                their previous state.
+                Start, stop, restart, inspect status, check health, and review
+                usage without losing track of what is actually running.
               </p>
             </article>
           </div>
         </section>
 
-        <section
-          id="what-it-does"
-          class="section section-grid reveal reveal-delay-1"
-        >
-          <div class="section-heading narrow">
-            <p class="eyebrow">What It Does</p>
-            <h2>
-              Make the integration predictable so the tooling fades into the
-              background.
-            </h2>
+        <section id="how-it-works" class="section reveal reveal-delay-1">
+          <div class="section-heading">
+            <p class="eyebrow">How it works</p>
+            <h2>The request path stays short and explainable.</h2>
+            <p>
+              A supported agent talks to Modmux on localhost. Modmux translates
+              compatible request and response shapes, then forwards them through
+              GitHub Copilot.
+            </p>
           </div>
-          <div class="split-layout">
-            <div class="feature-list">
-              <article class="feature-row">
-                <h3>One local API surface</h3>
-                <p>
-                  Modmux exposes Anthropic-compatible and OpenAI-compatible
-                  local endpoints so supported tools can point at one place
-                  instead of drifting into one-off configuration branches.
-                </p>
-              </article>
-              <article class="feature-row">
-                <h3>Operational controls you can inspect</h3>
-                <p>
-                  Start, stop, restart, inspect status, check health, and
-                  optionally install Modmux as an OS login service. The runtime
-                  stays visible instead of disappearing behind guesswork.
-                </p>
-              </article>
-              <article class="feature-row">
-                <h3>Predictable agent configuration</h3>
-                <p>
-                  Configure and unconfigure supported agents from the CLI while
-                  keeping configuration state explicit, reversible, and easy to
-                  audit when something changes.
-                </p>
-              </article>
-            </div>
-            <div class="compat-panel">
-              <h3>Supported agents today</h3>
-              <ul class="agent-tags">
-                <li>Claude Code</li>
-                <li>Cline</li>
-                <li>Codex</li>
-              </ul>
+          <div class="flow-board" aria-label="Request flow diagram">
+            <div class="flow-node">
+              <h3>Supported agent</h3>
               <p>
-                Modmux stays focused on the gateway problem: not a chat client,
-                not an agent runtime.
+                Claude Code, Cline, or Codex sends requests to one local
+                endpoint.
               </p>
             </div>
+            <div class="flow-arrow" aria-hidden="true">→</div>
+            <div class="flow-node flow-node-primary">
+              <h3>Modmux</h3>
+              <p>
+                Exposes compatible endpoints, translates traffic, and keeps the
+                runtime visible from the CLI.
+              </p>
+              <ul class="endpoint-list">
+                <li><code>/v1/messages</code></li>
+                <li><code>/v1/chat/completions</code></li>
+                <li><code>/v1/responses</code></li>
+                <li>
+                  <code>/v1/models</code>, <code>/v1/usage</code>, <code
+                  >/health</code>
+                </li>
+              </ul>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">→</div>
+            <div class="flow-node">
+              <h3>GitHub Copilot</h3>
+              <p>
+                Modmux authenticates with GitHub and forwards requests through
+                the Copilot-backed model path.
+              </p>
+            </div>
+          </div>
+          <div class="trust-note">
+            <strong>Trust boundary:</strong> Modmux is a local gateway, not a
+            hosted relay or agent runtime. It keeps the network surface local
+            and the configuration changes explicit.
           </div>
         </section>
 
         <section id="install" class="section reveal">
           <div class="section-heading">
             <p class="eyebrow">Install</p>
-            <h2>Install it fast. Keep the setup explicit.</h2>
+            <h2>Install it, start it, point an agent at it.</h2>
             <p>
-              Most users should install from source. Direct binary downloads are
-              available when you don't want to install Deno.
+              The recommended path is still from source. If you do not want to
+              install Deno, use a direct binary from GitHub Releases.
             </p>
           </div>
 
           <div class="install-grid">
-            <article class="install-card">
+            <article class="install-card featured-install">
               <div class="install-label">Recommended</div>
               <h3>From source</h3>
               <p>
-                Clone and install with Deno. The most up-to-date installation
-                method.
+                Clone the repository and install globally with the current Deno
+                task.
               </p>
               <div class="code-block stacked">
                 <code>git clone https://github.com/modmux/modmux.git</code>
@@ -246,181 +242,32 @@
                 </button>
               </div>
               <ol class="step-list">
-                <li>Clone the repository and install globally.</li>
-                <li>
-                  Run <code>modmux start</code> and complete GitHub
-                  authentication.
-                </li>
-                <li>
-                  Run <code>modmux configure claude-code</code> or configure
-                  another supported agent.
-                </li>
+                <li>Run <code>modmux start</code> and complete GitHub auth.</li>
+                <li>Run <code>modmux configure claude-code</code>.</li>
+                <li>Confirm the endpoint with <code>modmux status</code>.</li>
               </ol>
             </article>
 
             <article class="install-card">
               <h3>Direct binary</h3>
               <p>
-                Download a platform build from GitHub Releases when you do not
-                want a runtime dependency.
+                Download a platform build from GitHub Releases if you want to
+                skip the runtime dependency.
               </p>
-              <div class="link-row">
+              <div class="link-list">
                 <a href="https://github.com/modmux/modmux/releases"
                 >Open releases</a>
+                <a href="https://github.com/modmux/modmux/blob/main/README.md"
+                >Read installation docs</a>
               </div>
             </article>
           </div>
         </section>
 
-        <section id="how-it-works" class="section reveal reveal-delay-2">
-          <div class="section-heading">
-            <p class="eyebrow">How It Works</p>
-            <h2>A narrow request path you can explain in one sentence.</h2>
-          </div>
-          <div class="flow-board" aria-label="Request flow diagram">
-            <div class="flow-node">
-              <h3>Coding agent</h3>
-              <p>
-                Claude Code, Cline, or Codex sends a request to a local endpoint
-                instead of managing a provider-specific path itself.
-              </p>
-            </div>
-            <div class="flow-arrow">→</div>
-            <div class="flow-node flow-node-primary">
-              <h3>Modmux</h3>
-              <p>
-                Modmux runs on 127.0.0.1, exposes compatible endpoints, and
-                translates request and response shapes through one stable local
-                gateway between your tools and Copilot.
-              </p>
-              <ul>
-                <li>POST /v1/messages</li>
-                <li>POST /v1/responses</li>
-                <li>POST /v1/chat/completions</li>
-                <li>GET /v1/usage</li>
-                <li>GET /v1/models</li>
-                <li>GET /health</li>
-              </ul>
-            </div>
-            <div class="flow-arrow">→</div>
-            <div class="flow-node">
-              <h3>GitHub Copilot</h3>
-              <p>
-                Modmux authenticates with GitHub and forwards the translated
-                request to Copilot-backed models while the trust boundary stays
-                local and visible.
-              </p>
-            </div>
-          </div>
-          <div class="trust-note">
-            <strong>Trust boundary:</strong> Modmux is a local gateway, not a
-            hosted relay. It binds to localhost and keeps configuration changes
-            reversible.
-          </div>
-        </section>
-
-        <section id="agents" class="section reveal">
-          <div class="section-heading narrow">
-            <p class="eyebrow">Supported Agents</p>
-            <h2>Three agents, built in.</h2>
-          </div>
-          <div class="card-grid three-up">
-            <article class="agent-card">
-              <h3>Claude Code</h3>
-              <p>Canonical agent name: <code>claude-code</code></p>
-            </article>
-            <article class="agent-card">
-              <h3>Cline</h3>
-              <p>Canonical agent name: <code>cline</code></p>
-            </article>
-            <article class="agent-card">
-              <h3>Codex</h3>
-              <p>Canonical agent name: <code>codex</code></p>
-            </article>
-          </div>
-        </section>
-
-        <section id="demo" class="section reveal reveal-delay-1">
-          <div class="section-heading">
-            <p class="eyebrow">Terminal Interface</p>
-            <h2>Full visibility into your model routing.</h2>
-          </div>
-          <div class="demo-grid">
-            <div class="demo-frame">
-              <div class="terminal-card">
-                <div class="terminal-topline">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <pre
-                  class="demo-code"
-                >
-<span style="color:#ff00aa">$</span> modmux
-
-<span style="color:#00f0ff">┌─────────────────────────────────────┐</span>
-<span style="color:#00f0ff">│</span>  MODMUX v0.3.0                      <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">├─────────────────────────────────────┤</span>
-<span style="color:#00f0ff">│</span>  Status:    Running                 <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  Endpoint:  127.0.0.1:11435         <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  Auth:      Authenticated ✓         <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">├─────────────────────────────────────┤</span>
-<span style="color:#00f0ff">│</span>  Agents:                            <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  [ ] claude-code                    <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  [x] cline                          <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">│</span>  [ ] codex                          <span style="color:#00f0ff">│</span>
-<span style="color:#00f0ff">└─────────────────────────────────────┘</span></pre>
-              </div>
-            </div>
-            <div class="demo-copy">
-              <p>
-                The TUI shows daemon status, authentication, and agent
-                configuration in one terminal view.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section id="comparison" class="section reveal reveal-delay-2">
-          <div class="section-heading">
-            <p class="eyebrow">Positioning</p>
-            <h2>The problem is not setup. It is setup drift.</h2>
-          </div>
-          <div
-            class="comparison-table"
-            role="table"
-            aria-label="Comparison table"
-          >
-            <div class="comparison-row comparison-head" role="row">
-              <span role="columnheader">Approach</span>
-              <span role="columnheader">What you manage</span>
-              <span role="columnheader">What Modmux changes</span>
-            </div>
-            <div class="comparison-row" role="row">
-              <span role="cell">Per-agent manual setup</span>
-              <span role="cell"
-              >Separate provider wiring, local endpoints, and config details per
-                tool</span>
-              <span role="cell"
-              >Reliability depends on every local setup staying aligned over
-                time</span>
-            </div>
-            <div class="comparison-row" role="row">
-              <span role="cell">Modmux</span>
-              <span role="cell"
-              >One local gateway, one install flow, reversible agent
-                configuration</span>
-              <span role="cell"
-              >The integration becomes shared, visible, and easier to keep
-                stable</span>
-            </div>
-          </div>
-        </section>
-
-        <section id="faq" class="section reveal">
+        <section id="faq" class="section reveal reveal-delay-1">
           <div class="section-heading narrow">
             <p class="eyebrow">FAQ</p>
-            <h2>Common questions before you put it in the loop.</h2>
+            <h2>Questions that usually block adoption.</h2>
           </div>
           <div class="faq-list">
             <details>
@@ -433,87 +280,39 @@
             <details>
               <summary>Does Modmux expose an API on my network?</summary>
               <p>
-                No. The server binds to 127.0.0.1, which keeps the service local
-                to your machine.
-              </p>
-            </details>
-            <details>
-              <summary>What if port 11435 is already in use?</summary>
-              <p>
-                Modmux starts at 11435 and scans upward if that port is
-                occupied. Use <code>modmux status</code> to confirm the active
-                local endpoint.
+                No. The service binds to <code>127.0.0.1</code>, so it stays
+                local to your machine.
               </p>
             </details>
             <details>
               <summary>Can I undo a configuration change?</summary>
               <p>
-                Yes. Modmux supports unconfiguring supported agents and is
-                designed around reversible configuration management.
+                Yes. Supported agent configuration is reversible by design with
+                <code>modmux unconfigure</code>.
               </p>
             </details>
             <details>
               <summary>Which agents are supported right now?</summary>
               <p>
-                The current built-in registry includes Claude Code, Cline, and
+                The built-in registry currently includes Claude Code, Cline, and
                 Codex.
               </p>
             </details>
             <details>
               <summary>Do I need Deno to use Modmux?</summary>
               <p>
-                Deno is required for the recommended from-source installation.
-                If you don't want to install Deno, you can download a direct
-                binary from GitHub Releases instead.
+                Deno is only required for the recommended source install.
+                Downloading a direct binary from GitHub Releases does not
+                require it.
               </p>
             </details>
-          </div>
-        </section>
-
-        <section id="status" class="section reveal reveal-delay-1">
-          <div class="section-heading">
-            <p class="eyebrow">Status</p>
-            <h2>v0.3.0 — local gateway, narrow scope.</h2>
-          </div>
-          <div class="status-grid">
-            <article class="status-card">
-              <h3>Current release posture</h3>
-              <p>
-                Modmux is at v0.3.0 and focused on a tight local gateway loop:
-                authenticate, start the service, configure a supported agent,
-                and route requests through one visible control point.
-              </p>
-            </article>
-            <article class="status-card">
-              <h3>Operational model</h3>
-              <p>
-                The product stays local-first: localhost binding, explicit
-                status, health checks, and reversible configuration instead of
-                hidden background magic.
-              </p>
-              <div class="status-links">
-                <a href="https://github.com/modmux/modmux/blob/main/README.md"
-                >Read the README</a>
-                <a href="https://github.com/modmux/modmux/releases"
-                >Read releases</a>
-              </div>
-            </article>
-            <article class="status-card">
-              <h3>Product boundaries</h3>
-              <p>
-                Modmux is not a hosted relay, a chat app, or an agent runtime.
-                It is a stable local compatibility layer for supported agents on
-                GitHub Copilot, and it is better for staying narrow.
-              </p>
-            </article>
           </div>
         </section>
       </main>
 
       <footer class="site-footer">
         <p>
-          Modmux is a stable local gateway for supported coding agents on GitHub
-          Copilot.
+          Modmux is a local GitHub Copilot gateway for supported coding agents.
         </p>
         <div class="footer-links">
           <a href="https://github.com/modmux/modmux">Repository</a>
