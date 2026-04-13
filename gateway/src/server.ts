@@ -1,7 +1,45 @@
 import { stopClient } from "./copilot.ts";
+import {
+  ensureGitHubUsageSidecarStarted,
+  stopGitHubUsageSidecar,
+} from "./copilot-sidecar.ts";
 import { shutdownUsageMetrics } from "./usage-metrics.ts";
 import { loadConfig, saveConfig } from "./store.ts";
 import { log, setLogLevel } from "./log.ts";
+
+interface ServerRuntimeDeps {
+  loadConfig: typeof loadConfig;
+  saveConfig: typeof saveConfig;
+  setLogLevel: typeof setLogLevel;
+  ensureGitHubUsageSidecarStarted: typeof ensureGitHubUsageSidecarStarted;
+  shutdownUsageMetrics: typeof shutdownUsageMetrics;
+  stopGitHubUsageSidecar: typeof stopGitHubUsageSidecar;
+  stopClient: typeof stopClient;
+  log: typeof log;
+}
+
+const defaultServerRuntimeDeps: ServerRuntimeDeps = {
+  loadConfig,
+  saveConfig,
+  setLogLevel,
+  ensureGitHubUsageSidecarStarted,
+  shutdownUsageMetrics,
+  stopGitHubUsageSidecar,
+  stopClient,
+  log,
+};
+
+let serverRuntimeDeps: ServerRuntimeDeps = { ...defaultServerRuntimeDeps };
+
+export function __setServerTestDeps(
+  overrides: Partial<ServerRuntimeDeps>,
+): void {
+  serverRuntimeDeps = { ...serverRuntimeDeps, ...overrides };
+}
+
+export function __resetServerTestDeps(): void {
+  serverRuntimeDeps = { ...defaultServerRuntimeDeps };
+}
 
 export interface ServerConfig {
   port: number;
@@ -14,11 +52,8 @@ export interface ServerConfig {
 }
 
 export async function getConfig(): Promise<ServerConfig> {
-  const config = await loadConfig();
-  setLogLevel(config.logLevel);
-
-  // Persist lastStarted timestamp
-  await saveConfig({ ...config, lastStarted: new Date().toISOString() });
+  const config = await serverRuntimeDeps.loadConfig();
+  serverRuntimeDeps.setLogLevel(config.logLevel);
 
   return {
     port: config.port,
@@ -27,10 +62,22 @@ export async function getConfig(): Promise<ServerConfig> {
   };
 }
 
+export async function initializeServerRuntime(): Promise<void> {
+  const config = await serverRuntimeDeps.loadConfig();
+  serverRuntimeDeps.setLogLevel(config.logLevel);
+  await serverRuntimeDeps.ensureGitHubUsageSidecarStarted(config.githubUsage);
+
+  await serverRuntimeDeps.saveConfig({
+    ...config,
+    lastStarted: new Date().toISOString(),
+  });
+}
+
 export async function shutdown(): Promise<void> {
-  log("info", "Server shutting down");
-  await shutdownUsageMetrics();
-  await stopClient();
+  serverRuntimeDeps.log("info", "Server shutting down");
+  await serverRuntimeDeps.shutdownUsageMetrics();
+  await serverRuntimeDeps.stopGitHubUsageSidecar();
+  await serverRuntimeDeps.stopClient();
 }
 
 export function addShutdownHandler(): void {

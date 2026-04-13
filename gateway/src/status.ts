@@ -2,12 +2,57 @@ import { loadConfig } from "./store.ts";
 import { getStoredToken, isTokenValid } from "../../cli/src/auth.ts";
 import { getDaemonManager, getServiceManager } from "./managers/mod.ts";
 
+interface CopilotUsage {
+  used: number;
+  total: number;
+  remainingPercentage: number;
+  status: "authenticated" | "unauthenticated" | "error";
+}
+
+/**
+ * Fetch GitHub Copilot usage data from the local /v1/usage endpoint
+ */
+async function fetchCopilotUsage(port: number): Promise<CopilotUsage | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const response = await fetch(`http://127.0.0.1:${port}/v1/usage`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const github = data.github_copilot;
+
+    if (!github) return null;
+
+    // Show usage data if we have GitHub data, regardless of auth status
+    // This allows displaying "0/0" for unauthenticated state
+    return {
+      used: github.quota.usedRequests,
+      total: github.quota.entitlementRequests,
+      remainingPercentage: github.quota.remainingPercentage,
+      status: github.status,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export interface ServiceState {
   running: boolean;
   serviceInstalled: boolean;
   pid: number | null;
   port: number | null;
   authStatus: "authenticated" | "unauthenticated" | "unknown";
+  copilotUsage?: {
+    used: number;
+    total: number;
+    remainingPercentage: number;
+    status: "authenticated" | "unauthenticated" | "error";
+  };
 }
 
 /**
@@ -40,7 +85,23 @@ export async function getServiceState(): Promise<ServiceState> {
 
   if (serviceInstalled) {
     const running = await serviceManager.isRunning().catch(() => false);
-    return { running, serviceInstalled, pid: null, port, authStatus };
+    const result: ServiceState = {
+      running,
+      serviceInstalled,
+      pid: null,
+      port,
+      authStatus,
+    };
+
+    // Fetch copilot usage if service is running and we have a port
+    if (running && port !== null) {
+      const usage = await fetchCopilotUsage(port);
+      if (usage) {
+        result.copilotUsage = usage;
+      }
+    }
+
+    return result;
   }
 
   // Modmux-managed daemon: check PID + /health
@@ -70,7 +131,23 @@ export async function getServiceState(): Promise<ServiceState> {
     }
   }
 
-  return { running, serviceInstalled, pid, port, authStatus };
+  const result: ServiceState = {
+    running,
+    serviceInstalled,
+    pid,
+    port,
+    authStatus,
+  };
+
+  // Fetch copilot usage if service is running and we have a port
+  if (running && port !== null) {
+    const usage = await fetchCopilotUsage(port);
+    if (usage) {
+      result.copilotUsage = usage;
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -108,5 +185,22 @@ export function formatStatus(
 
   const versionLine = `Version:  v${version}`;
 
-  return `${serviceLine}\n${stateLine}\n${agentsLine}\n${authLine}\n${versionLine}`;
+  // Add usage line when available
+  let usageLine = "";
+  if (state.copilotUsage) {
+    const { used, total, remainingPercentage, status } = state.copilotUsage;
+    if (status === "authenticated") {
+      usageLine = `Usage:    ${used}/${total} requests (${
+        remainingPercentage.toFixed(0)
+      }% remaining)`;
+    } else {
+      usageLine = `Usage:    Not available (${status})`;
+    }
+  }
+
+  const lines = [serviceLine, stateLine, agentsLine, authLine];
+  if (usageLine) lines.push(usageLine);
+  lines.push(versionLine);
+
+  return lines.join("\n");
 }

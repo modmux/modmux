@@ -34,6 +34,19 @@ export interface UsageMetricsConfig {
   filePath: string | null;
 }
 
+export type GitHubUsageBackend = "disabled" | "external-cli";
+
+export interface GitHubUsageConfig {
+  /** Backend used to fetch real GitHub Copilot quota data. Default: "disabled". */
+  backend: GitHubUsageBackend;
+  /** External Copilot CLI server URL used when backend="external-cli". */
+  cliUrl: string | null;
+  /** Auto-start a managed Copilot CLI sidecar instead of using a fixed cliUrl. */
+  autoStart: boolean;
+  /** Preferred localhost port for the managed Copilot CLI sidecar. */
+  preferredPort: number;
+}
+
 export interface ModmuxConfig {
   /** TCP port the proxy listens on. Default: 11434. */
   port: number;
@@ -54,6 +67,8 @@ export interface ModmuxConfig {
   streaming: StreamingConfig;
   /** Usage metrics configuration for aggregation and optional persistence. */
   usageMetrics: UsageMetricsConfig;
+  /** GitHub Copilot quota backend configuration. */
+  githubUsage: GitHubUsageConfig;
 }
 
 export const DEFAULT_CONFIG: ModmuxConfig = {
@@ -74,6 +89,12 @@ export const DEFAULT_CONFIG: ModmuxConfig = {
     persist: false,
     snapshotIntervalMs: 60_000,
     filePath: null,
+  },
+  githubUsage: {
+    backend: "disabled",
+    cliUrl: null,
+    autoStart: false,
+    preferredPort: 4321,
   },
 };
 
@@ -120,6 +141,12 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
   const portRaw = envValue("MODMUX_PORT");
   const logLevelRaw = envValue("MODMUX_LOG_LEVEL");
   const policyRaw = envValue("MODMUX_MODEL_MAPPING_POLICY");
+  const githubUsageBackendRaw = envValue("MODMUX_GITHUB_USAGE_BACKEND");
+  const githubUsageCliUrlRaw = envValue("MODMUX_GITHUB_USAGE_CLI_URL");
+  const githubUsageAutoStartRaw = envValue("MODMUX_GITHUB_USAGE_AUTO_START");
+  const githubUsagePreferredPortRaw = envValue(
+    "MODMUX_GITHUB_USAGE_PREFERRED_PORT",
+  );
 
   const next: ModmuxConfig = { ...config };
 
@@ -137,6 +164,42 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
 
   if (policyRaw !== undefined) {
     next.modelMappingPolicy = policyRaw as ModelMappingPolicy;
+  }
+
+  if (
+    githubUsageBackendRaw !== undefined ||
+    githubUsageCliUrlRaw !== undefined ||
+    githubUsageAutoStartRaw !== undefined ||
+    githubUsagePreferredPortRaw !== undefined
+  ) {
+    next.githubUsage = { ...config.githubUsage };
+  }
+  if (githubUsageBackendRaw !== undefined) {
+    next.githubUsage.backend = githubUsageBackendRaw as GitHubUsageBackend;
+  }
+  if (githubUsageCliUrlRaw !== undefined) {
+    next.githubUsage.cliUrl = githubUsageCliUrlRaw.trim()
+      ? githubUsageCliUrlRaw
+      : null;
+  }
+  if (githubUsageAutoStartRaw !== undefined) {
+    if (
+      githubUsageAutoStartRaw !== "true" && githubUsageAutoStartRaw !== "false"
+    ) {
+      throw new Error(
+        `Invalid MODMUX_GITHUB_USAGE_AUTO_START value: ${githubUsageAutoStartRaw}`,
+      );
+    }
+    next.githubUsage.autoStart = githubUsageAutoStartRaw === "true";
+  }
+  if (githubUsagePreferredPortRaw !== undefined) {
+    const parsed = parseInt(githubUsagePreferredPortRaw, 10);
+    if (Number.isNaN(parsed)) {
+      throw new Error(
+        `Invalid MODMUX_GITHUB_USAGE_PREFERRED_PORT value: ${githubUsagePreferredPortRaw}`,
+      );
+    }
+    next.githubUsage.preferredPort = parsed;
   }
 
   return next;
@@ -214,6 +277,46 @@ function validate(config: ModmuxConfig): void {
       throw new Error("Invalid usageMetrics.filePath: cannot be empty string");
     }
   }
+
+  if (config.githubUsage) {
+    const validBackends: GitHubUsageBackend[] = ["disabled", "external-cli"];
+    if (!validBackends.includes(config.githubUsage.backend)) {
+      throw new Error(
+        `Invalid githubUsage.backend: ${config.githubUsage.backend}`,
+      );
+    }
+    if (
+      config.githubUsage.cliUrl !== null &&
+      !config.githubUsage.cliUrl.trim()
+    ) {
+      throw new Error("Invalid githubUsage.cliUrl: cannot be empty string");
+    }
+    if (
+      config.githubUsage.autoStart &&
+      config.githubUsage.backend !== "external-cli"
+    ) {
+      throw new Error(
+        "Invalid githubUsage configuration: autoStart requires backend external-cli",
+      );
+    }
+    if (
+      config.githubUsage.preferredPort < 1024 ||
+      config.githubUsage.preferredPort > 65535
+    ) {
+      throw new Error(
+        `Invalid githubUsage.preferredPort: ${config.githubUsage.preferredPort}. Must be 1024–65535.`,
+      );
+    }
+    if (
+      config.githubUsage.backend === "external-cli" &&
+      !config.githubUsage.autoStart &&
+      config.githubUsage.cliUrl === null
+    ) {
+      throw new Error(
+        "Invalid githubUsage configuration: cliUrl is required when backend is external-cli and autoStart is false",
+      );
+    }
+  }
 }
 
 export async function loadConfig(): Promise<ModmuxConfig> {
@@ -233,6 +336,10 @@ export async function loadConfig(): Promise<ModmuxConfig> {
       usageMetrics: {
         ...DEFAULT_CONFIG.usageMetrics,
         ...(parsed.usageMetrics || {}),
+      },
+      githubUsage: {
+        ...DEFAULT_CONFIG.githubUsage,
+        ...(parsed.githubUsage || {}),
       },
     });
     validate(config);

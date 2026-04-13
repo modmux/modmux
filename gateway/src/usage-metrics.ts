@@ -4,8 +4,7 @@ import { log } from "./log.ts";
 import type { GitHubCopilotUsageData } from "./github-usage.ts";
 import {
   fetchGitHubCopilotQuota,
-  initializeGitHubUsageTracking,
-  shutdownGitHubUsageTracking
+  shutdownGitHubUsageTracking,
 } from "./github-usage.ts";
 
 interface StatusBuckets {
@@ -171,7 +170,7 @@ async function readPersistedSnapshot(
   } catch (err) {
     if (err instanceof Deno.errors.NotFound) return null;
 
-    log("warn", "Failed to read persisted usage metrics", {
+    await log("warn", "Failed to read persisted usage metrics", {
       error: err instanceof Error ? err.message : String(err),
       path,
     });
@@ -189,7 +188,7 @@ async function persistSnapshot(): Promise<void> {
       JSON.stringify(getUsageMetricsSnapshot(), null, 2) + "\n",
     );
   } catch (err) {
-    log("warn", "Failed to persist usage metrics", {
+    await log("warn", "Failed to persist usage metrics", {
       error: err instanceof Error ? err.message : String(err),
       path: options.filePath,
     });
@@ -223,9 +222,6 @@ export async function initializeUsageMetrics(
       void persistSnapshot();
     }, options.snapshotIntervalMs);
   }
-
-  // Initialize GitHub usage tracking
-  await initializeGitHubUsageTracking();
 }
 
 export async function shutdownUsageMetrics(): Promise<void> {
@@ -296,26 +292,42 @@ export function getUsageMetricsSnapshot(): UsageMetricsSnapshot {
   };
 }
 
-export async function getUsageMetricsSnapshotWithGitHub(): Promise<UsageMetricsSnapshot> {
+export async function getUsageMetricsSnapshotWithGitHub(): Promise<
+  UsageMetricsSnapshot
+> {
   const snapshot = getUsageMetricsSnapshot();
 
   try {
-    log("info", "Attempting to fetch GitHub Copilot data for usage snapshot");
+    await log(
+      "info",
+      "Attempting to fetch GitHub Copilot data for usage snapshot",
+    );
     const githubData = await fetchGitHubCopilotQuota();
     if (githubData) {
       snapshot.github_copilot = githubData;
-      log("info", "Successfully included GitHub Copilot data in usage snapshot", {
-        status: githubData.status,
-        usedRequests: githubData.quota.usedRequests,
-      });
+      await log(
+        "info",
+        "Successfully included GitHub Copilot data in usage snapshot",
+        {
+          status: githubData.status,
+          usedRequests: githubData.quota.usedRequests,
+        },
+      );
     } else {
-      log("warn", "GitHub Copilot data was null, not including in snapshot");
+      await log(
+        "warn",
+        "GitHub Copilot data was null, not including in snapshot",
+      );
     }
   } catch (error) {
-    log("error", "Failed to fetch GitHub Copilot data for usage snapshot", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    await log(
+      "error",
+      "Failed to fetch GitHub Copilot data for usage snapshot",
+      {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    );
   }
 
   return snapshot;

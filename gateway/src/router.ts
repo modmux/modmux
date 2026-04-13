@@ -3,9 +3,13 @@ import { handleCountTokens, handleMessages } from "./messages-handler.ts";
 import { handleModels } from "./models-handler.ts";
 import { errorResponse, jsonResponse } from "./response-utils.ts";
 import { handleResponses } from "./responses-handler.ts";
-import { addShutdownHandler, getConfig } from "./server.ts";
 import {
-  getUsageMetricsSnapshot,
+  addShutdownHandler,
+  getConfig,
+  initializeServerRuntime,
+  shutdown,
+} from "./server.ts";
+import {
   getUsageMetricsSnapshotWithGitHub,
   initializeUsageMetrics,
   recordUsage,
@@ -162,6 +166,7 @@ export async function handleRequest(req: Request): Promise<Response> {
 export async function startServer(): Promise<
   { port: number; stop: () => Promise<void> }
 > {
+  await initializeServerRuntime();
   const config = await getConfig();
   await initializeUsageMetrics(config.usageMetrics);
   addShutdownHandler();
@@ -179,6 +184,9 @@ export async function startServer(): Promise<
 
   return {
     port,
-    stop: () => httpServer.shutdown(),
+    stop: async () => {
+      await httpServer.shutdown();
+      await shutdown();
+    },
   };
 }

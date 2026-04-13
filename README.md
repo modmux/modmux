@@ -19,7 +19,6 @@ Website: https://modmux.dev/
 <details>
 <summary>📖 Recommended: from source</summary>
 
-
 ```bash
 git clone https://github.com/modmux/modmux.git && cd modmux
 deno task install
@@ -31,7 +30,6 @@ If the install location is not already in your `PATH`, add it first.
 
 <details>
 <summary>📖 Direct binary</summary>
-
 
 Download a platform build from
 [GitHub Releases](https://github.com/modmux/modmux/releases).

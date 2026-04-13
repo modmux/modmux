@@ -32,6 +32,10 @@ Deno.test("loadConfig — returns DEFAULT_CONFIG on first run", async () => {
     assertEquals(config.usageMetrics.persist, false);
     assertEquals(config.usageMetrics.snapshotIntervalMs, 60_000);
     assertEquals(config.usageMetrics.filePath, null);
+    assertEquals(config.githubUsage.backend, "disabled");
+    assertEquals(config.githubUsage.cliUrl, null);
+    assertEquals(config.githubUsage.autoStart, false);
+    assertEquals(config.githubUsage.preferredPort, 4321);
   });
 });
 
@@ -119,6 +123,12 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
         snapshotIntervalMs: 120_000,
         filePath: "/tmp/coco-usage.json",
       },
+      githubUsage: {
+        backend: "external-cli",
+        cliUrl: "127.0.0.1:4321",
+        autoStart: false,
+        preferredPort: 5001,
+      },
     };
     await saveConfig(config);
     const loaded = await loadConfig();
@@ -132,6 +142,85 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.usageMetrics.persist, true);
     assertEquals(loaded.usageMetrics.snapshotIntervalMs, 120_000);
     assertEquals(loaded.usageMetrics.filePath, "/tmp/coco-usage.json");
+    assertEquals(loaded.githubUsage.backend, "external-cli");
+    assertEquals(loaded.githubUsage.cliUrl, "127.0.0.1:4321");
+    assertEquals(loaded.githubUsage.autoStart, false);
+    assertEquals(loaded.githubUsage.preferredPort, 5001);
+  });
+});
+
+Deno.test("saveConfig — rejects invalid githubUsage.backend", async () => {
+  await withTempHome(async () => {
+    await assertRejects(
+      () =>
+        saveConfig({
+          ...DEFAULT_CONFIG,
+          githubUsage: {
+            backend:
+              "socket" as unknown as ModmuxConfig["githubUsage"]["backend"],
+            cliUrl: null,
+            autoStart: false,
+            preferredPort: 4321,
+          },
+        }),
+      Error,
+      "Invalid githubUsage.backend",
+    );
+  });
+});
+
+Deno.test("saveConfig — external-cli backend requires cliUrl", async () => {
+  await withTempHome(async () => {
+    await assertRejects(
+      () =>
+        saveConfig({
+          ...DEFAULT_CONFIG,
+          githubUsage: {
+            backend: "external-cli",
+            cliUrl: null,
+            autoStart: false,
+            preferredPort: 4321,
+          },
+        }),
+      Error,
+      "cliUrl is required",
+    );
+  });
+});
+
+Deno.test("saveConfig — autoStart requires external-cli backend", async () => {
+  await withTempHome(async () => {
+    await assertRejects(
+      () =>
+        saveConfig({
+          ...DEFAULT_CONFIG,
+          githubUsage: {
+            backend: "disabled",
+            cliUrl: null,
+            autoStart: true,
+            preferredPort: 4321,
+          },
+        }),
+      Error,
+      "autoStart requires backend external-cli",
+    );
+  });
+});
+
+Deno.test("saveConfig — rejects invalid githubUsage.preferredPort", async () => {
+  await withTempHome(async () => {
+    await assertRejects(
+      () =>
+        saveConfig({
+          ...DEFAULT_CONFIG,
+          githubUsage: {
+            ...DEFAULT_CONFIG.githubUsage,
+            preferredPort: 80,
+          },
+        }),
+      Error,
+      "Invalid githubUsage.preferredPort",
+    );
   });
 });
 
@@ -220,6 +309,27 @@ Deno.test("loadConfig — throws on invalid MODMUX_PORT", async () => {
       );
     } finally {
       Deno.env.delete("MODMUX_PORT");
+    }
+  });
+});
+
+Deno.test("loadConfig — GitHub usage env overrides file/default", async () => {
+  await withTempHome(async () => {
+    Deno.env.set("MODMUX_GITHUB_USAGE_BACKEND", "external-cli");
+    Deno.env.set("MODMUX_GITHUB_USAGE_CLI_URL", "127.0.0.1:4555");
+    Deno.env.set("MODMUX_GITHUB_USAGE_AUTO_START", "true");
+    Deno.env.set("MODMUX_GITHUB_USAGE_PREFERRED_PORT", "4555");
+    try {
+      const loaded = await loadConfig();
+      assertEquals(loaded.githubUsage.backend, "external-cli");
+      assertEquals(loaded.githubUsage.cliUrl, "127.0.0.1:4555");
+      assertEquals(loaded.githubUsage.autoStart, true);
+      assertEquals(loaded.githubUsage.preferredPort, 4555);
+    } finally {
+      Deno.env.delete("MODMUX_GITHUB_USAGE_BACKEND");
+      Deno.env.delete("MODMUX_GITHUB_USAGE_CLI_URL");
+      Deno.env.delete("MODMUX_GITHUB_USAGE_AUTO_START");
+      Deno.env.delete("MODMUX_GITHUB_USAGE_PREFERRED_PORT");
     }
   });
 });

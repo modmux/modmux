@@ -1,7 +1,37 @@
 import { assert, assertEquals } from "@std/assert";
-import { getConfig, handleRequest } from "@modmux/gateway";
+import { join } from "@std/path";
+import {
+  DEFAULT_CONFIG,
+  getConfig,
+  handleRequest,
+  loadConfig,
+  saveConfig,
+} from "@modmux/gateway";
+import {
+  __resetServerTestDeps,
+  __setServerTestDeps,
+  initializeServerRuntime,
+  shutdown,
+} from "../../gateway/src/server.ts";
 
 // Tests that start a real Deno HTTP server to verify the server lifecycle.
+
+async function withTempHome<T>(fn: (dir: string) => Promise<T>): Promise<T> {
+  const tmp = await Deno.makeTempDir({ prefix: "modmux_server_" });
+  const origHome = Deno.env.get("HOME");
+  Deno.env.set("HOME", tmp);
+  try {
+    return await fn(tmp);
+  } finally {
+    __resetServerTestDeps();
+    if (origHome !== undefined) {
+      Deno.env.set("HOME", origHome);
+    } else {
+      Deno.env.delete("HOME");
+    }
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+}
 
 Deno.test("Server - starts on configured port and accepts connections", async () => {
   const server = Deno.serve({
@@ -135,4 +165,56 @@ Deno.test("Server - graceful shutdown stops accepting new connections", async ()
     refused = true;
   }
   assert(refused, "Expected connection to be refused after shutdown");
+});
+
+Deno.test("Server runtime initializes sidecar config and shuts it down", async () => {
+  await withTempHome(async () => {
+    await saveConfig({
+      ...DEFAULT_CONFIG,
+      githubUsage: {
+        backend: "external-cli",
+        cliUrl: null,
+        autoStart: true,
+        preferredPort: 4321,
+      },
+    });
+
+    const started: string[] = [];
+    const stopped: string[] = [];
+
+    __setServerTestDeps({
+      ensureGitHubUsageSidecarStarted: (githubUsage) => {
+        started.push(`${githubUsage.backend}:${githubUsage.autoStart}`);
+        return Promise.resolve({ cliUrl: "127.0.0.1:4321", statusHint: null });
+      },
+      stopGitHubUsageSidecar: () => {
+        stopped.push("sidecar");
+        return Promise.resolve();
+      },
+      shutdownUsageMetrics: () => {
+        stopped.push("metrics");
+        return Promise.resolve();
+      },
+      stopClient: () => {
+        stopped.push("client");
+        return Promise.resolve();
+      },
+      log: () => Promise.resolve(),
+    });
+
+    await initializeServerRuntime();
+    const config = await loadConfig();
+
+    assertEquals(started, ["external-cli:true"]);
+    assert(config.lastStarted !== null);
+    assertEquals(typeof config.lastStarted, "string");
+
+    const configFile = await Deno.readTextFile(
+      join(Deno.env.get("HOME")!, ".modmux", "config.json"),
+    );
+    assert(configFile.includes('"lastStarted"'));
+
+    await shutdown();
+    assertEquals(stopped, ["metrics", "sidecar", "client"]);
+  });
 });

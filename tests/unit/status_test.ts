@@ -113,6 +113,44 @@ Deno.test("formatStatus — unknown auth shows Unknown", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Usage line
+// ---------------------------------------------------------------------------
+
+Deno.test("formatStatus — authenticated usage shows request counts", () => {
+  const out = formatStatus(
+    baseState({
+      copilotUsage: {
+        used: 12,
+        total: 100,
+        remainingPercentage: 88,
+        status: "authenticated",
+      },
+    }),
+    [],
+    "0.3.0",
+  );
+  assertStringIncludes(out, "Usage:    12/100 requests (88% remaining)");
+});
+
+Deno.test("formatStatus — usage error stays distinct from auth status", () => {
+  const out = formatStatus(
+    baseState({
+      authStatus: "authenticated",
+      copilotUsage: {
+        used: 0,
+        total: 0,
+        remainingPercentage: 0,
+        status: "error",
+      },
+    }),
+    [],
+    "0.3.0",
+  );
+  assertStringIncludes(out, "Copilot:  Authenticated");
+  assertStringIncludes(out, "Usage:    Not available (error)");
+});
+
+// ---------------------------------------------------------------------------
 // Version line
 // ---------------------------------------------------------------------------
 
@@ -140,4 +178,27 @@ Deno.test("formatStatus — output contains all five label lines", () => {
   assertStringIncludes(lines[2], "Agents:");
   assertStringIncludes(lines[3], "Copilot:");
   assertStringIncludes(lines[4], "Version:");
+});
+
+Deno.test("formatStatus — output includes usage line when quota data is available", () => {
+  const out = formatStatus(
+    baseState({
+      serviceInstalled: true,
+      running: true,
+      port: 11434,
+      authStatus: "authenticated",
+      copilotUsage: {
+        used: 8,
+        total: 50,
+        remainingPercentage: 84,
+        status: "authenticated",
+      },
+    }),
+    ["claude-code"],
+    "0.3.0",
+  );
+  const lines = out.split("\n");
+  assertEquals(lines.length, 6);
+  assertStringIncludes(lines[4], "Usage:");
+  assertStringIncludes(lines[5], "Version:");
 });
