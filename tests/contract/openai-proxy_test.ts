@@ -112,6 +112,46 @@ function makeSSEUsageChunk(
   return `data: ${JSON.stringify(chunk)}\n\n`;
 }
 
+function makeSSEToolStartChunk(callId: string, name: string): string {
+  const chunk = {
+    id: "chatcmpl-test",
+    object: "chat.completion.chunk",
+    choices: [{
+      index: 0,
+      delta: {
+        tool_calls: [{
+          index: 0,
+          id: callId,
+          type: "function",
+          function: { name, arguments: "" },
+        }],
+      },
+      finish_reason: null,
+    }],
+    created: Date.now(),
+  };
+  return `data: ${JSON.stringify(chunk)}\n\n`;
+}
+
+function makeSSEToolArgsChunk(argumentsDelta: string): string {
+  const chunk = {
+    id: "chatcmpl-test",
+    object: "chat.completion.chunk",
+    choices: [{
+      index: 0,
+      delta: {
+        tool_calls: [{
+          index: 0,
+          function: { arguments: argumentsDelta },
+        }],
+      },
+      finish_reason: null,
+    }],
+    created: Date.now(),
+  };
+  return `data: ${JSON.stringify(chunk)}\n\n`;
+}
+
 function post(
   port: number,
   path: string,
@@ -431,6 +471,53 @@ Deno.test({
       assertStringIncludes(text, "event: response.completed");
       assertStringIncludes(text, '"input_tokens":7');
       assertStringIncludes(text, '"output_tokens":2');
+      assertStringIncludes(text, "data: [DONE]");
+    } finally {
+      restore();
+      await s.shutdown();
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "OpenAI /v1/responses — streaming includes function call argument events",
+  async fn() {
+    const s = server();
+    const { port } = s.addr as Deno.NetAddr;
+    const chunks = [
+      makeSSEToolStartChunk("call_apply_patch", "apply_patch"),
+      makeSSEToolArgsChunk('{"input":"*** Begin Patch"}'),
+      makeSSEChatChunk("", "tool_calls"),
+      makeSSEUsageChunk(9, 3),
+    ];
+    const body = chunks.join("") + "data: [DONE]\n\n";
+    const restore = stubFetch(
+      new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    );
+    try {
+      const res = await post(port, "/v1/responses", {
+        model: "gpt-4o",
+        input: "ping",
+        stream: true,
+      });
+
+      assertEquals(res.status, 200);
+      const text = await res.text();
+      assertStringIncludes(text, "event: response.output_item.added");
+      assertStringIncludes(text, '"type":"function_call"');
+      assertStringIncludes(
+        text,
+        "event: response.function_call_arguments.delta",
+      );
+      assertStringIncludes(
+        text,
+        "event: response.function_call_arguments.done",
+      );
+      assertStringIncludes(text, '"name":"apply_patch"');
       assertStringIncludes(text, "data: [DONE]");
     } finally {
       restore();

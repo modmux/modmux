@@ -7,6 +7,8 @@ import type {
   OpenAIChatRequest,
   OpenAIChatResponse,
   OpenAIStreamChunk,
+  OpenAITool,
+  OpenAIToolCall,
 } from "./types.ts";
 import type {
   ContentBlock,
@@ -14,6 +16,9 @@ import type {
   ProxyRequest,
   ProxyResponse,
   StreamEvent,
+  Tool,
+  ToolChoice,
+  ToolInputSchema,
 } from "./types.ts";
 import { generateMessageId } from "./types.ts";
 
@@ -33,10 +38,23 @@ export function openAIToAnthropic(req: OpenAIChatRequest): ProxyRequest {
   for (const msg of req.messages) {
     if (msg.role === "system") {
       if (msg.content) systemParts.push(msg.content);
-    } else if (msg.role === "user" || msg.role === "assistant") {
-      messages.push({ role: msg.role, content: msg.content ?? "" });
+    } else if (msg.role === "user") {
+      messages.push({ role: "user", content: msg.content ?? "" });
+    } else if (msg.role === "assistant") {
+      messages.push({
+        role: "assistant",
+        content: toAnthropicAssistantContent(msg),
+      });
+    } else if (msg.role === "tool" && msg.tool_call_id) {
+      messages.push({
+        role: "user",
+        content: [{
+          type: "tool_result",
+          tool_use_id: msg.tool_call_id,
+          content: msg.content ?? "",
+        }],
+      });
     }
-    // tool/function role messages are skipped for now
   }
 
   return {
@@ -47,6 +65,8 @@ export function openAIToAnthropic(req: OpenAIChatRequest): ProxyRequest {
     stream: req.stream ?? false,
     temperature: req.temperature,
     top_p: req.top_p,
+    tools: toAnthropicTools(req.tools),
+    tool_choice: toAnthropicToolChoice(req.tool_choice),
   };
 }
 
@@ -69,10 +89,23 @@ export function anthropicToOpenAI(
     .join("");
 
   const finishReason = stopReasonToFinishReason(res.stop_reason);
+  const toolCalls = res.content
+    .filter((b): b is Extract<ContentBlock, { type: "tool_use" }> =>
+      b.type === "tool_use"
+    )
+    .map((b): OpenAIToolCall => ({
+      id: b.id,
+      type: "function",
+      function: {
+        name: b.name,
+        arguments: JSON.stringify(b.input ?? {}),
+      },
+    }));
 
   const message: OpenAIChatMessage = {
     role: "assistant",
     content: text || null,
+    ...(toolCalls.length > 0 && { tool_calls: toolCalls }),
   };
 
   return {
@@ -103,6 +136,8 @@ const STREAM_CHUNK_ID = () => `chatcmpl-${generateMessageId()}`;
 export interface StreamState {
   id: string;
   model: string;
+  nextToolCallIndex: number;
+  toolCallIndexByBlockIndex: Map<number, number>;
   usage?: {
     prompt_tokens: number;
     completion_tokens: number;
@@ -111,7 +146,12 @@ export interface StreamState {
 }
 
 export function makeStreamState(model: string): StreamState {
-  return { id: STREAM_CHUNK_ID(), model };
+  return {
+    id: STREAM_CHUNK_ID(),
+    model,
+    nextToolCallIndex: 0,
+    toolCallIndexByBlockIndex: new Map(),
+  };
 }
 
 /**
@@ -142,8 +182,67 @@ export function anthropicStreamEventToOpenAI(
       return `data: ${JSON.stringify(chunk)}\n\n`;
     }
 
+    case "content_block_start": {
+      if (
+        !event.content_block || typeof event.index !== "number" ||
+        event.content_block.type !== "tool_use"
+      ) {
+        return null;
+      }
+
+      const toolCallIndex = state.nextToolCallIndex++;
+      state.toolCallIndexByBlockIndex.set(event.index, toolCallIndex);
+
+      const chunk: OpenAIStreamChunk = {
+        id: state.id,
+        object: "chat.completion.chunk",
+        created,
+        model: state.model,
+        choices: [{
+          index: 0,
+          delta: {
+            tool_calls: [{
+              index: toolCallIndex,
+              id: event.content_block.id,
+              type: "function",
+              function: {
+                name: event.content_block.name,
+                arguments: "",
+              },
+            }],
+          },
+          finish_reason: null,
+        }],
+      };
+      return `data: ${JSON.stringify(chunk)}\n\n`;
+    }
+
     case "content_block_delta": {
       if (!event.delta) return null;
+      if (event.delta.type === "input_json_delta") {
+        if (typeof event.index !== "number") return null;
+        const toolCallIndex = state.toolCallIndexByBlockIndex.get(event.index);
+        if (toolCallIndex === undefined) return null;
+
+        const chunk: OpenAIStreamChunk = {
+          id: state.id,
+          object: "chat.completion.chunk",
+          created,
+          model: state.model,
+          choices: [{
+            index: 0,
+            delta: {
+              tool_calls: [{
+                index: toolCallIndex,
+                function: { arguments: event.delta.partial_json },
+              }],
+            },
+            finish_reason: null,
+          }],
+        };
+        return `data: ${JSON.stringify(chunk)}\n\n`;
+      }
+
       if (event.delta.type !== "text_delta") return null;
       const chunk: OpenAIStreamChunk = {
         id: state.id,
@@ -210,6 +309,75 @@ export function anthropicStreamEventToOpenAI(
     default:
       return null;
   }
+}
+
+function toAnthropicAssistantContent(
+  msg: OpenAIChatMessage,
+): string | ContentBlock[] {
+  const blocks: ContentBlock[] = [];
+
+  if (typeof msg.content === "string" && msg.content.length > 0) {
+    blocks.push({ type: "text", text: msg.content });
+  }
+
+  if (Array.isArray(msg.tool_calls)) {
+    for (const toolCall of msg.tool_calls) {
+      blocks.push({
+        type: "tool_use",
+        id: toolCall.id,
+        name: toolCall.function.name,
+        input: parseToolArguments(toolCall.function.arguments),
+      });
+    }
+  }
+
+  if (blocks.length === 0) return "";
+  if (blocks.length === 1 && blocks[0].type === "text") return blocks[0].text;
+  return blocks;
+}
+
+function parseToolArguments(argumentsText: string): Record<string, unknown> {
+  try {
+    return JSON.parse(argumentsText) as Record<string, unknown>;
+  } catch {
+    return { _raw: argumentsText };
+  }
+}
+
+function toAnthropicTools(tools?: OpenAITool[]): Tool[] | undefined {
+  if (!tools || tools.length === 0) return undefined;
+
+  return tools.map((tool) => ({
+    name: tool.function.name,
+    ...(tool.function.description &&
+      { description: tool.function.description }),
+    input_schema: toToolInputSchema(tool.function.parameters),
+  }));
+}
+
+function toToolInputSchema(
+  parameters?: Record<string, unknown>,
+): ToolInputSchema {
+  if (!parameters) return { type: "object", properties: {} };
+
+  const typeValue = parameters.type;
+  if (typeValue === "object") {
+    return parameters as ToolInputSchema;
+  }
+
+  return {
+    type: "object",
+    properties: parameters,
+  };
+}
+
+function toAnthropicToolChoice(
+  choice: OpenAIChatRequest["tool_choice"],
+): ToolChoice | undefined {
+  if (!choice || choice === "none") return undefined;
+  if (choice === "auto") return { type: "auto" };
+  if (choice === "required") return { type: "any" };
+  return { type: "tool", name: choice.function.name };
 }
 
 // ---------------------------------------------------------------------------

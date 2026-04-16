@@ -17,6 +17,7 @@ import type {
   OpenAIChatRequest,
   OpenAIResponsesInputMessage,
   OpenAIResponsesRequest,
+  OpenAIToolCall,
   ProxyRequest,
   StreamEvent,
 } from "./types.ts";
@@ -74,13 +75,35 @@ interface ResponsesBody {
   created_at: number;
   status: "completed";
   model: string;
-  output: Array<{
-    type: "message";
-    role: "assistant";
-    content: Array<{ type: "output_text"; text: string }>;
-  }>;
+  output: ResponsesOutputItem[];
   output_text: string;
   usage: ResponsesUsage;
+}
+
+interface ResponsesMessageOutputItem {
+  type: "message";
+  role: "assistant";
+  content: Array<{ type: "output_text"; text: string }>;
+}
+
+interface ResponsesFunctionCallOutputItem {
+  type: "function_call";
+  id: string;
+  call_id: string;
+  name: string;
+  arguments: string;
+  status: "completed";
+}
+
+type ResponsesOutputItem =
+  | ResponsesMessageOutputItem
+  | ResponsesFunctionCallOutputItem;
+
+interface StreamFunctionCallState {
+  itemId: string;
+  callId: string;
+  name: string;
+  arguments: string;
 }
 
 interface ResponsesStreamState {
@@ -92,6 +115,8 @@ interface ResponsesStreamState {
   usage: ResponsesUsage | null;
   textBlockIndex: number | null;
   contentDone: boolean;
+  functionCalls: Map<number, StreamFunctionCallState>;
+  completed: boolean;
 }
 
 function usageFromCounts(
@@ -113,6 +138,7 @@ function buildResponsesBody(
   model: string,
   text: string,
   usage: ResponsesUsage,
+  output: ResponsesOutputItem[],
 ): ResponsesBody {
   return {
     id: responseId,
@@ -120,18 +146,45 @@ function buildResponsesBody(
     created_at: createdAt,
     status: "completed",
     model,
-    output: [{
-      type: "message",
-      role: "assistant",
-      content: [{ type: "output_text", text }],
-    }],
+    output,
     output_text: text,
     usage,
   };
 }
 
+function messageOutput(text: string): ResponsesMessageOutputItem {
+  return {
+    type: "message",
+    role: "assistant",
+    content: [{ type: "output_text", text }],
+  };
+}
+
+function functionCallOutput(
+  toolCall: OpenAIToolCall,
+): ResponsesFunctionCallOutputItem {
+  return {
+    type: "function_call",
+    id: `fc_${toolCall.id}`,
+    call_id: toolCall.id,
+    name: toolCall.function.name,
+    arguments: toolCall.function.arguments,
+    status: "completed",
+  };
+}
+
 function toResponsesBody(openAIResp: ReturnType<typeof anthropicToOpenAI>) {
-  const text = openAIResp.choices[0]?.message?.content ?? "";
+  const message = openAIResp.choices[0]?.message;
+  const text = message?.content ?? "";
+  const output: ResponsesOutputItem[] = [];
+
+  output.push(messageOutput(text));
+  if (message?.tool_calls) {
+    for (const toolCall of message.tool_calls) {
+      output.push(functionCallOutput(toolCall));
+    }
+  }
+
   return buildResponsesBody(
     `resp_${openAIResp.id}`,
     openAIResp.created,
@@ -141,6 +194,7 @@ function toResponsesBody(openAIResp: ReturnType<typeof anthropicToOpenAI>) {
       openAIResp.usage.prompt_tokens,
       openAIResp.usage.completion_tokens,
     ),
+    output,
   );
 }
 
@@ -170,7 +224,22 @@ function createResponsesStreamState(
     usage: null,
     textBlockIndex: null,
     contentDone: false,
+    functionCalls: new Map(),
+    completed: false,
   };
+}
+
+function toFunctionCallOutputItems(
+  state: ResponsesStreamState,
+): ResponsesFunctionCallOutputItem[] {
+  return Array.from(state.functionCalls.values()).map((call) => ({
+    type: "function_call",
+    id: call.itemId,
+    call_id: call.callId,
+    name: call.name,
+    arguments: call.arguments,
+    status: "completed",
+  }));
 }
 
 function ensureResponseIds(
@@ -279,12 +348,69 @@ function mapStreamEventToResponses(
         typeof event.index === "number"
       ) {
         state.textBlockIndex = event.index;
+        return [];
       }
+
+      if (
+        contentBlock && typeof contentBlock === "object" &&
+        "type" in contentBlock && contentBlock.type === "tool_use" &&
+        typeof event.index === "number"
+      ) {
+        ensureResponseIds(state);
+
+        const functionCall: StreamFunctionCallState = {
+          itemId: `fc_${contentBlock.id}`,
+          callId: contentBlock.id,
+          name: contentBlock.name,
+          arguments: "",
+        };
+
+        state.functionCalls.set(event.index, functionCall);
+
+        return [{
+          event: "response.output_item.added",
+          data: {
+            type: "response.output_item.added",
+            response_id: state.responseId,
+            output_index: 1,
+            item: {
+              id: functionCall.itemId,
+              type: "function_call",
+              call_id: functionCall.callId,
+              name: functionCall.name,
+              arguments: functionCall.arguments,
+              status: "in_progress",
+            },
+          },
+        }];
+      }
+
       return [];
     }
 
     case "content_block_delta": {
       const delta = event.delta;
+      if (
+        delta && typeof delta === "object" && "type" in delta &&
+        delta.type === "input_json_delta" && typeof event.index === "number"
+      ) {
+        const functionCall = state.functionCalls.get(event.index);
+        if (!functionCall) return [];
+
+        functionCall.arguments += delta.partial_json;
+
+        return [{
+          event: "response.function_call_arguments.delta",
+          data: {
+            type: "response.function_call_arguments.delta",
+            response_id: state.responseId,
+            item_id: functionCall.itemId,
+            output_index: 1,
+            delta: delta.partial_json,
+          },
+        }];
+      }
+
       if (
         !delta || typeof delta !== "object" || !("type" in delta) ||
         delta.type !== "text_delta" || !("text" in delta) ||
@@ -309,6 +435,40 @@ function mapStreamEventToResponses(
     }
 
     case "content_block_stop": {
+      if (typeof event.index === "number") {
+        const functionCall = state.functionCalls.get(event.index);
+        if (functionCall) {
+          return [
+            {
+              event: "response.function_call_arguments.done",
+              data: {
+                type: "response.function_call_arguments.done",
+                response_id: state.responseId,
+                item_id: functionCall.itemId,
+                output_index: 1,
+                arguments: functionCall.arguments,
+              },
+            },
+            {
+              event: "response.output_item.done",
+              data: {
+                type: "response.output_item.done",
+                response_id: state.responseId,
+                output_index: 1,
+                item: {
+                  id: functionCall.itemId,
+                  type: "function_call",
+                  call_id: functionCall.callId,
+                  name: functionCall.name,
+                  arguments: functionCall.arguments,
+                  status: "completed",
+                },
+              },
+            },
+          ];
+        }
+      }
+
       if (
         state.textBlockIndex !== null && typeof event.index === "number" &&
         event.index === state.textBlockIndex
@@ -334,12 +494,17 @@ function mapStreamEventToResponses(
       ensureResponseIds(state);
       const events = finalizeContent(state);
       const usage = state.usage ?? usageFromCounts(0, 0);
+      const output = [
+        messageOutput(state.text),
+        ...toFunctionCallOutputItems(state),
+      ];
       const responseBody = buildResponsesBody(
         state.responseId!,
         state.createdAt,
         state.requestedModel,
         state.text,
         usage,
+        output,
       );
 
       events.push(
@@ -366,6 +531,8 @@ function mapStreamEventToResponses(
           },
         },
       );
+
+      state.completed = true;
 
       return events;
     }
@@ -412,6 +579,8 @@ export async function handleResponses(req: Request): Promise<Response> {
       stream: false,
       temperature: responsesReq.temperature,
       top_p: responsesReq.top_p,
+      tools: responsesReq.tools,
+      tool_choice: responsesReq.tool_choice,
     }),
     model: resolvedModel,
     stream: false,
@@ -467,6 +636,45 @@ export async function handleResponses(req: Request): Promise<Response> {
               await write(responseEvent.event, responseEvent.data);
             }
           });
+
+          if (!state.completed && state.responseId && state.outputItemId) {
+            for (const event of finalizeContent(state)) {
+              await write(event.event, event.data);
+            }
+
+            const usage = state.usage ?? usageFromCounts(0, 0);
+            const output = [
+              messageOutput(state.text),
+              ...toFunctionCallOutputItems(state),
+            ];
+            const responseBody = buildResponsesBody(
+              state.responseId,
+              state.createdAt,
+              state.requestedModel,
+              state.text,
+              usage,
+              output,
+            );
+
+            await write("response.output_item.done", {
+              type: "response.output_item.done",
+              response_id: state.responseId,
+              output_index: 0,
+              item: {
+                id: state.outputItemId,
+                type: "message",
+                role: "assistant",
+                status: "completed",
+                content: [{ type: "output_text", text: state.text }],
+              },
+            });
+
+            await write("response.completed", {
+              type: "response.completed",
+              response: responseBody,
+            });
+            state.completed = true;
+          }
 
           if (!isClosed) {
             await queueChunk("data: [DONE]\n\n");

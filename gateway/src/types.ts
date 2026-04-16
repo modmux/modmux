@@ -282,8 +282,24 @@ export interface OpenAIChatResponse {
 
 export interface OpenAIStreamChoice {
   index: number;
-  delta: Partial<OpenAIChatMessage>;
+  delta: OpenAIStreamDelta;
   finish_reason: "stop" | "length" | "tool_calls" | "content_filter" | null;
+}
+
+export interface OpenAIStreamToolCallDelta {
+  index: number;
+  id?: string;
+  type?: "function";
+  function?: {
+    name?: string;
+    arguments?: string;
+  };
+}
+
+export interface OpenAIStreamDelta {
+  role?: "assistant";
+  content?: string;
+  tool_calls?: OpenAIStreamToolCallDelta[];
 }
 
 export interface OpenAIStreamChunk {
@@ -328,4 +344,6 @@ export interface OpenAIResponsesRequest {
   temperature?: number;
   top_p?: number;
   stream?: boolean;
+  tools?: OpenAITool[];
+  tool_choice?: OpenAIChatRequest["tool_choice"];
 }

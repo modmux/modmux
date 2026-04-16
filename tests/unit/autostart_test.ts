@@ -351,7 +351,7 @@ Deno.test({
     const result = await getServiceManager().install({ dryRun: true });
     assertEquals(result.installed, true);
     assertStringIncludes(result.configPath, "Windows SCM registry");
-    assertStringIncludes(result.configContent, "coco");
+    assertStringIncludes(result.configContent, "modmux");
     assertStringIncludes(result.configContent, "--daemon");
   },
 });
