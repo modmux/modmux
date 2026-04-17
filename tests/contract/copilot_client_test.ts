@@ -315,6 +315,66 @@ Deno.test("chat() - 503 response → overloaded_error content", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Test: chat() does not cross vendor families when retrying GPT models
+// ---------------------------------------------------------------------------
+
+Deno.test(
+  "chat() - gpt model 503 does not retry into Claude fallback",
+  async () => {
+    clearTokenCache();
+
+    const attemptedModels: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(makeModelsResponse(TEST_MODEL_IDS));
+      }
+
+      const body = JSON.parse(init?.body as string ?? "{}");
+      attemptedModels.push(body.model);
+      return Promise.resolve(
+        new Response("We're currently experiencing high demand", {
+          status: 503,
+        }),
+      );
+    }) as typeof globalThis.fetch;
+
+    try {
+      const result = await chat(
+        makeProxyRequest({ model: "gpt-4.1" }),
+        getTestOptions(),
+      );
+
+      assertEquals(attemptedModels, ["gpt-4.1"]);
+      assertEquals(result.content[0].type, "text");
+      assertEquals(
+        (result.content[0] as TextContentBlock).text.toLowerCase().includes(
+          "overloaded",
+        ) ||
+          (result.content[0] as TextContentBlock).text.includes("503"),
+        true,
+      );
+    } finally {
+      globalThis.fetch = original;
+      clearTokenCache();
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Test: chat() falls back to next model when first model returns 503
 // ---------------------------------------------------------------------------
 

@@ -12,6 +12,7 @@ export interface ModelResolution {
   requestedModel: string;
   resolvedModel: string;
   strategy: string;
+  candidateModels?: string[];
   rejected?: boolean;
   rejectReason?: string;
 }
@@ -61,6 +62,41 @@ function isCodexLike(model: string): boolean {
   return lower.includes("codex");
 }
 
+type ModelFamily = "claude" | "openai" | "unknown";
+
+function modelFamily(model: string): ModelFamily {
+  const lower = model.toLowerCase();
+  if (lower.includes("claude")) return "claude";
+  if (
+    lower.includes("codex") || lower.startsWith("gpt") ||
+    /^o[134]\b/.test(lower)
+  ) {
+    return "openai";
+  }
+  return "unknown";
+}
+
+function subfamilyRank(requestedModel: string, candidateModel: string): number {
+  const requested = requestedModel.toLowerCase();
+  const candidate = candidateModel.toLowerCase();
+
+  if (requested.includes("sonnet")) return candidate.includes("sonnet") ? 2 : 0;
+  if (requested.includes("opus")) return candidate.includes("opus") ? 2 : 0;
+  if (requested.includes("haiku")) return candidate.includes("haiku") ? 2 : 0;
+  if (requested.includes("codex")) return candidate.includes("codex") ? 2 : 0;
+  if (requested.includes("gpt-4o")) return candidate.includes("gpt-4o") ? 2 : 0;
+  if (
+    requested.includes("gpt-4.1") || requested.includes("gpt-41")
+  ) {
+    return candidate.includes("gpt-4.1") || candidate.includes("gpt-41")
+      ? 2
+      : 0;
+  }
+  if (requested.includes("gpt-5")) return candidate.includes("gpt-5") ? 2 : 0;
+
+  return 0;
+}
+
 async function getModelEndpointSets(): Promise<ModelEndpointSets> {
   if (cachedSets && Date.now() < cacheExpiresAt) return cachedSets;
 
@@ -88,14 +124,20 @@ function buildFallbackOrder(
 ): string[] {
   if (endpointSet.size === 0) return [];
 
+  const family = modelFamily(requestedModel);
+  if (family === "unknown") return [];
+
   const codex = isCodexLike(requestedModel);
 
   const sorted = sets.all
-    .filter((m) => endpointSet.has(m.id))
+    .filter((m) => endpointSet.has(m.id) && modelFamily(m.id) === family)
     .sort((a, b) => {
       const rankDiff = categoryRank(b.model_picker_category) -
         categoryRank(a.model_picker_category);
       if (rankDiff !== 0) return rankDiff;
+      const subfamilyDiff = subfamilyRank(requestedModel, b.id) -
+        subfamilyRank(requestedModel, a.id);
+      if (subfamilyDiff !== 0) return subfamilyDiff;
       const aCodex = isCodexLike(a.id);
       const bCodex = isCodexLike(b.id);
       if (aCodex !== bCodex) {
@@ -105,6 +147,40 @@ function buildFallbackOrder(
     });
 
   return uniq(sorted.map((m) => m.id));
+}
+
+function withFallbackCandidates(
+  primaryCandidates: string[],
+  requestedModel: string,
+  endpointSet: Set<string>,
+  sets: ModelEndpointSets,
+): string[] {
+  return uniq([
+    ...primaryCandidates,
+    ...buildFallbackOrder(requestedModel, endpointSet, sets),
+  ]);
+}
+
+function staticFallbackCandidates(
+  endpoint: ModelEndpoint,
+  requestedModel: string,
+  sets: ModelEndpointSets,
+): string[] {
+  const family = modelFamily(requestedModel);
+  const staticList = endpoint === "responses"
+    ? RESPONSES_COMPAT_FALLBACKS
+    : CHAT_COMPAT_FALLBACKS;
+  const allLive = new Set([...sets.chat, ...sets.responses]);
+
+  return staticList.filter((candidate) => {
+    if (modelFamily(candidate) !== family) return false;
+    return allLive.has(candidate) || allLive.size === 0;
+  });
+}
+
+export function clearModelResolverCache(): void {
+  cachedSets = null;
+  cacheExpiresAt = 0;
 }
 
 export async function resolveModelForEndpoint(
@@ -122,6 +198,7 @@ export async function resolveModelForEndpoint(
         requestedModel,
         resolvedModel: requestedModel,
         strategy: "exact",
+        candidateModels: [requestedModel],
       };
     }
     return {
@@ -141,12 +218,24 @@ export async function resolveModelForEndpoint(
       requestedModel,
       resolvedModel: userAlias,
       strategy: "alias-or-normalized",
+      candidateModels: [userAlias],
     };
   }
 
   // 2. Exact match in endpoint set.
   if (endpointSet.has(requestedModel)) {
-    return { requestedModel, resolvedModel: requestedModel, strategy: "exact" };
+    const candidateModels = withFallbackCandidates(
+      [requestedModel],
+      requestedModel,
+      endpointSet,
+      sets,
+    );
+    return {
+      requestedModel,
+      resolvedModel: candidateModels[0],
+      strategy: "exact",
+      candidateModels,
+    };
   }
 
   // 3. Normalized form (dots → dashes) in endpoint set.
@@ -154,10 +243,17 @@ export async function resolveModelForEndpoint(
   if (
     normalizedDashed !== requestedModel && endpointSet.has(normalizedDashed)
   ) {
+    const candidateModels = withFallbackCandidates(
+      [normalizedDashed],
+      requestedModel,
+      endpointSet,
+      sets,
+    );
     return {
       requestedModel,
-      resolvedModel: normalizedDashed,
+      resolvedModel: candidateModels[0],
       strategy: "alias-or-normalized",
+      candidateModels,
     };
   }
 
@@ -165,10 +261,17 @@ export async function resolveModelForEndpoint(
   //    Skipped when alias target is chat-only and we need responses (and vice versa).
   const builtInAlias = DEFAULT_MODEL_MAP[requestedModel];
   if (builtInAlias !== undefined && endpointSet.has(builtInAlias)) {
+    const candidateModels = withFallbackCandidates(
+      [builtInAlias],
+      requestedModel,
+      endpointSet,
+      sets,
+    );
     return {
       requestedModel,
-      resolvedModel: builtInAlias,
+      resolvedModel: candidateModels[0],
       strategy: "alias-or-normalized",
+      candidateModels,
     };
   }
 
@@ -184,18 +287,23 @@ export async function resolveModelForEndpoint(
       requestedModel,
       resolvedModel: dynamicFallbacks[0],
       strategy: "family-fallback",
+      candidateModels: dynamicFallbacks,
     };
   }
 
   // 6. Emergency static fallback (API unavailable / empty endpoint set).
-  const staticList = endpoint === "responses"
-    ? RESPONSES_COMPAT_FALLBACKS
-    : CHAT_COMPAT_FALLBACKS;
-  const allLive = new Set([...sets.chat, ...sets.responses]);
-  for (const m of staticList) {
-    if (allLive.has(m) || allLive.size === 0) {
-      return { requestedModel, resolvedModel: m, strategy: "family-fallback" };
-    }
+  const staticCandidates = staticFallbackCandidates(
+    endpoint,
+    requestedModel,
+    sets,
+  );
+  if (staticCandidates.length > 0) {
+    return {
+      requestedModel,
+      resolvedModel: staticCandidates[0],
+      strategy: "family-fallback",
+      candidateModels: staticCandidates,
+    };
   }
 
   // 7. Passthrough — let Copilot accept or reject the model name directly.
@@ -203,5 +311,6 @@ export async function resolveModelForEndpoint(
     requestedModel,
     resolvedModel: requestedModel,
     strategy: "passthrough",
+    candidateModels: [requestedModel],
   };
 }

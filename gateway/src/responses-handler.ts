@@ -2,7 +2,7 @@ import { proxyResponses } from "@modmux/providers";
 import {
   openAIServiceUnavailable,
   parseOpenAIRequestBody,
-  resolveOpenAIModel,
+  resolveOpenAIModelCandidates,
   validateOpenAIModelField,
 } from "./openai-handler-utils.ts";
 import { openAIErrorResponse } from "./response-utils.ts";
@@ -69,6 +69,54 @@ function hasValidInput(
   });
 }
 
+function statusToOpenAIError(
+  status: number,
+): { type: string; code: string } {
+  if (status === 400) {
+    return { type: "invalid_request_error", code: "invalid_value" };
+  }
+  if (status === 401) {
+    return { type: "authentication_error", code: "invalid_api_key" };
+  }
+  if (status === 403) {
+    return { type: "permission_error", code: "permission_denied" };
+  }
+  if (status === 429) {
+    return { type: "rate_limit_error", code: "rate_limit_exceeded" };
+  }
+  if (status === 503) {
+    return { type: "api_error", code: "service_unavailable" };
+  }
+  return { type: "api_error", code: "upstream_error" };
+}
+
+async function normalizeUpstreamError(upstream: Response): Promise<Response> {
+  const errorText = await upstream.text().catch(() => "");
+  const headers = new Headers(upstream.headers);
+  const trimmed = errorText.trim();
+
+  if (trimmed.length > 0) {
+    try {
+      JSON.parse(trimmed);
+      headers.set("Content-Type", "application/json");
+      return new Response(trimmed, {
+        status: upstream.status,
+        headers,
+      });
+    } catch {
+      // Fall through to normalize plain-text errors into OpenAI JSON.
+    }
+  }
+
+  const errorShape = statusToOpenAIError(upstream.status);
+  return openAIErrorResponse(
+    upstream.status,
+    trimmed || "Service unavailable",
+    errorShape.type,
+    errorShape.code,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Handler
 // ---------------------------------------------------------------------------
@@ -110,28 +158,33 @@ export async function handleResponses(req: Request): Promise<Response> {
     ? (body as Record<string, unknown>)
     : { ...(body as Record<string, unknown>), input: normalizedInput };
 
-  const resolvedModelOrResponse = await resolveOpenAIModel(
+  const resolutionOrResponse = await resolveOpenAIModelCandidates(
     responsesReq.model,
     "responses",
     "/v1/responses",
   );
-  if (resolvedModelOrResponse instanceof Response) {
+  if (resolutionOrResponse instanceof Response) {
     await log("debug", "responses: model resolution rejected", {
       model: responsesReq.model,
     });
-    return resolvedModelOrResponse;
+    return resolutionOrResponse;
   }
-  const resolvedModel = resolvedModelOrResponse;
+  const resolvedModel = resolutionOrResponse.resolvedModel;
+  const candidateModels = resolutionOrResponse.candidateModels ??
+    [resolvedModel];
 
   await log("debug", "responses: model resolved", {
     requested: responsesReq.model,
     resolved: resolvedModel,
+    candidates: candidateModels,
   });
 
   try {
     const upstream = await proxyResponses({
       ...proxiedBody,
       model: resolvedModel,
+    }, {
+      candidateModels,
     });
 
     await log("debug", "responses: upstream response", {
@@ -140,15 +193,11 @@ export async function handleResponses(req: Request): Promise<Response> {
     });
 
     if (!upstream.ok) {
-      const errorText = await upstream.text().catch(() => "");
       await log("warn", "responses: upstream error", {
         status: upstream.status,
-        body: errorText.slice(0, 200),
+        body: await upstream.clone().text().catch(() => ""),
       });
-      return new Response(errorText, {
-        status: upstream.status,
-        headers: { "Content-Type": "application/json" },
-      });
+      return await normalizeUpstreamError(upstream);
     }
 
     // Pass Copilot's response through directly — headers, body, status.

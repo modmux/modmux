@@ -44,6 +44,20 @@ function uniq(values: string[]): string[] {
   return values.filter((value, index, array) => array.indexOf(value) === index);
 }
 
+type ModelFamily = "claude" | "openai" | "unknown";
+
+function modelFamily(model: string): ModelFamily {
+  const lower = model.toLowerCase();
+  if (lower.includes("claude")) return "claude";
+  if (
+    lower.includes("codex") || lower.startsWith("gpt") ||
+    /^o[134]\b/.test(lower)
+  ) {
+    return "openai";
+  }
+  return "unknown";
+}
+
 // ---------------------------------------------------------------------------
 // Fetch
 // ---------------------------------------------------------------------------
@@ -170,7 +184,7 @@ async function getAvailableModelIds(opts?: {
  * Ordered list of Copilot model IDs to try as fallbacks, from most to least capable.
  * Used when the requested model isn't in Copilot's catalog.
  */
-const FALLBACK_PREFERENCE: string[] = [
+const CLAUDE_FALLBACK_PREFERENCE: string[] = [
   "claude-sonnet-4-6",
   "claude-sonnet-4-5",
   "claude-sonnet-4",
@@ -179,12 +193,20 @@ const FALLBACK_PREFERENCE: string[] = [
   "claude-haiku-4-5",
 ];
 
+const OPENAI_FALLBACK_PREFERENCE: string[] = [
+  "gpt-41-copilot",
+  "gpt-4.1",
+  "gpt-4o",
+  "gpt-4o-mini",
+];
+
 export async function resolveModelCandidates(
   anthropicModel: string,
   opts?: { token?: string },
 ): Promise<string[]> {
   const available = await getAvailableModelIds({ token: opts?.token });
   const candidates: string[] = [];
+  const family = modelFamily(anthropicModel);
 
   if (available.has(anthropicModel)) {
     candidates.push(anthropicModel);
@@ -217,7 +239,13 @@ export async function resolveModelCandidates(
     }
   }
 
-  for (const preferred of FALLBACK_PREFERENCE) {
+  const fallbackPreference = family === "openai"
+    ? OPENAI_FALLBACK_PREFERENCE
+    : family === "claude"
+    ? CLAUDE_FALLBACK_PREFERENCE
+    : [];
+
+  for (const preferred of fallbackPreference) {
     if (available.has(preferred)) {
       candidates.push(preferred);
     }

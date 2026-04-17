@@ -225,6 +225,10 @@ interface ModelAttemptResult {
   errorBody: string;
 }
 
+function shouldRetryCandidate(status: number, errorBody: string): boolean {
+  return isModelAccessDenied(status, errorBody) || status === 503;
+}
+
 async function postWithModelFallback(
   request: ProxyRequest,
   body: OpenAIChatRequest,
@@ -257,8 +261,7 @@ async function postWithModelFallback(
 
     const errorBody = await response.text().catch(() => "");
     const canRetry = index < candidates.length - 1 &&
-      (isModelAccessDenied(response.status, errorBody) ||
-        response.status === 503);
+      shouldRetryCandidate(response.status, errorBody);
     if (canRetry) {
       continue;
     }
@@ -886,14 +889,43 @@ export async function chatStream(
  */
 export async function proxyResponses(
   body: Record<string, unknown>,
-  opts?: ChatOptions,
+  opts?: ChatOptions & { candidateModels?: string[]; isAgentCall?: boolean },
 ): Promise<Response> {
   const tokenData = await getToken({ getGitHubToken: opts?.getGitHubToken });
-  const headers = buildHeaders(tokenData.token, false);
+  const headers = buildHeaders(tokenData.token, opts?.isAgentCall ?? false);
+  const requestedModel = typeof body.model === "string" ? body.model : "";
+  const candidates = opts?.candidateModels?.length
+    ? opts.candidateModels
+    : [requestedModel];
 
-  return await fetchWithRetry(COPILOT_RESPONSES_URL, {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+  for (let index = 0; index < candidates.length; index++) {
+    const candidate = candidates[index];
+    const response = await fetchWithRetry(COPILOT_RESPONSES_URL, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...body,
+        model: candidate,
+      }),
+    });
+
+    if (response.ok) {
+      return response;
+    }
+
+    const errorBody = await response.clone().text().catch(() => "");
+    const canRetry = index < candidates.length - 1 &&
+      shouldRetryCandidate(response.status, errorBody);
+    if (canRetry) {
+      await response.body?.cancel();
+      continue;
+    }
+
+    return response;
+  }
+
+  return new Response("No compatible Copilot model available", {
+    status: 503,
+    headers: { "Content-Type": "text/plain" },
   });
 }

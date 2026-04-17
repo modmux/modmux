@@ -5,7 +5,7 @@
  * GET  /health (already covered in server_test.ts, included here for completeness)
  */
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { handleRequest } from "@modmux/gateway";
+import { clearModelResolverCache, handleRequest } from "@modmux/gateway";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,13 +31,15 @@ function makeTokenResponse(): Response {
   );
 }
 
-function makeModelsResponse(): Response {
+function makeModelsResponse(
+  models: Array<Record<string, unknown>> = [
+    { id: "gpt-4o", name: "gpt-4o", vendor: "GitHub" },
+    { id: "gpt-4o-mini", name: "gpt-4o-mini", vendor: "GitHub" },
+  ],
+): Response {
   return new Response(
     JSON.stringify({
-      data: [
-        { id: "gpt-4o", name: "gpt-4o", vendor: "GitHub" },
-        { id: "gpt-4o-mini", name: "gpt-4o-mini", vendor: "GitHub" },
-      ],
+      data: models,
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
@@ -45,6 +47,7 @@ function makeModelsResponse(): Response {
 
 function stubFetch(chatResponse: Response): () => void {
   const original = globalThis.fetch;
+  clearModelResolverCache();
   globalThis.fetch = ((
     input: string | URL | Request,
     init?: RequestInit,
@@ -74,6 +77,7 @@ function stubFetch(chatResponse: Response): () => void {
 
   return () => {
     globalThis.fetch = original;
+    clearModelResolverCache();
   };
 }
 
@@ -701,6 +705,263 @@ Deno.test({
     }
   },
 });
+
+Deno.test(
+  "OpenAI /v1/responses — retries same-family fallback model on 503",
+  async () => {
+    clearModelResolverCache();
+    const s = server();
+    const { port } = s.addr as Deno.NetAddr;
+    const attemptedModels: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (
+        url.startsWith("http://127.0.0.1:") ||
+        url.startsWith("http://localhost:")
+      ) {
+        return original(input, init);
+      }
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(makeModelsResponse([
+          {
+            id: "gpt-4o",
+            name: "gpt-4o",
+            vendor: "GitHub",
+            supported_endpoints: ["/responses"],
+            model_picker_category: "versatile",
+          },
+          {
+            id: "gpt-4o-mini",
+            name: "gpt-4o-mini",
+            vendor: "GitHub",
+            supported_endpoints: ["/responses"],
+            model_picker_category: "lightweight",
+          },
+          {
+            id: "claude-sonnet-4-6",
+            name: "claude-sonnet-4-6",
+            vendor: "GitHub",
+            supported_endpoints: ["/responses"],
+            model_picker_category: "powerful",
+          },
+        ]));
+      }
+
+      const body = JSON.parse(init?.body as string ?? "{}");
+      attemptedModels.push(body.model);
+
+      if (attemptedModels.length === 1) {
+        return Promise.resolve(
+          new Response("We're currently experiencing high demand", {
+            status: 503,
+            headers: { "Content-Type": "text/plain" },
+          }),
+        );
+      }
+
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: "resp_fallback",
+            object: "response",
+            created_at: Math.floor(Date.now() / 1000),
+            status: "completed",
+            model: body.model,
+            output: [],
+            output_text: "fallback worked",
+            usage: {
+              input_tokens: 5,
+              output_tokens: 2,
+              total_tokens: 7,
+              input_tokens_details: { cached_tokens: 0 },
+              output_tokens_details: { reasoning_tokens: 0 },
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      );
+    }) as typeof globalThis.fetch;
+
+    try {
+      const res = await post(port, "/v1/responses", {
+        model: "gpt-5.1",
+        input: "ping",
+        stream: false,
+      });
+
+      assertEquals(res.status, 200);
+      const body = await res.json() as Record<string, unknown>;
+      assertEquals(body.output_text, "fallback worked");
+      assertEquals(attemptedModels, ["gpt-4o", "gpt-4o-mini"]);
+    } finally {
+      globalThis.fetch = original;
+      clearModelResolverCache();
+      await s.shutdown();
+    }
+  },
+);
+
+Deno.test(
+  "OpenAI /v1/responses — plain-text upstream error becomes OpenAI JSON",
+  async () => {
+    clearModelResolverCache();
+    const s = server();
+    const { port } = s.addr as Deno.NetAddr;
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (
+        url.startsWith("http://127.0.0.1:") ||
+        url.startsWith("http://localhost:")
+      ) {
+        return original(input, init);
+      }
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(makeModelsResponse([{
+          id: "gpt-4o",
+          name: "gpt-4o",
+          vendor: "GitHub",
+          supported_endpoints: ["/responses"],
+          model_picker_category: "versatile",
+        }]));
+      }
+
+      return Promise.resolve(
+        new Response("We're currently experiencing high demand", {
+          status: 503,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      );
+    }) as typeof globalThis.fetch;
+
+    try {
+      const res = await post(port, "/v1/responses", {
+        model: "gpt-4o",
+        input: "ping",
+        stream: false,
+      });
+
+      assertEquals(res.status, 503);
+      assertEquals(res.headers.get("content-type"), "application/json");
+      const body = await res.json() as Record<string, unknown>;
+      const error = body.error as Record<string, unknown>;
+      assertEquals(error.type, "api_error");
+      assertEquals(error.code, "service_unavailable");
+      assertStringIncludes(String(error.message), "high demand");
+    } finally {
+      globalThis.fetch = original;
+      clearModelResolverCache();
+      await s.shutdown();
+    }
+  },
+);
+
+Deno.test(
+  "OpenAI /v1/responses — upstream JSON error is passed through",
+  async () => {
+    clearModelResolverCache();
+    const s = server();
+    const { port } = s.addr as Deno.NetAddr;
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (
+        url.startsWith("http://127.0.0.1:") ||
+        url.startsWith("http://localhost:")
+      ) {
+        return original(input, init);
+      }
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(makeModelsResponse([{
+          id: "gpt-4o",
+          name: "gpt-4o",
+          vendor: "GitHub",
+          supported_endpoints: ["/responses"],
+          model_picker_category: "versatile",
+        }]));
+      }
+
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "copilot said no",
+              type: "invalid_request_error",
+              code: "invalid_value",
+            },
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      );
+    }) as typeof globalThis.fetch;
+
+    try {
+      const res = await post(port, "/v1/responses", {
+        model: "gpt-4o",
+        input: "ping",
+        stream: false,
+      });
+
+      assertEquals(res.status, 400);
+      assertEquals(res.headers.get("content-type"), "application/json");
+      const body = await res.json() as Record<string, unknown>;
+      const error = body.error as Record<string, unknown>;
+      assertEquals(error.message, "copilot said no");
+      assertEquals(error.type, "invalid_request_error");
+      assertEquals(error.code, "invalid_value");
+    } finally {
+      globalThis.fetch = original;
+      clearModelResolverCache();
+      await s.shutdown();
+    }
+  },
+);
 
 // ---------------------------------------------------------------------------
 // /v1/responses — Responses API flat tool format

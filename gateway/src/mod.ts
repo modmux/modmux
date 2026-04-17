@@ -46,7 +46,10 @@ export type {
 export type { StreamEvent } from "./types.ts";
 export { UnsupportedPlatformError } from "./managers/mod.ts";
 export type { ServiceState } from "./status.ts";
-export { resolveModelForEndpoint } from "./model-resolver.ts";
+export {
+  clearModelResolverCache,
+  resolveModelForEndpoint,
+} from "./model-resolver.ts";
 export { AGENT_REGISTRY } from "./registry.ts";
 export { getConfig } from "./server.ts";
 export { startServer } from "./router.ts";

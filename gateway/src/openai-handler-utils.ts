@@ -2,6 +2,7 @@ import { loadConfig } from "./store.ts";
 import { log } from "./log.ts";
 import {
   type ModelEndpoint,
+  type ModelResolution,
   resolveModelForEndpoint,
 } from "./model-resolver.ts";
 import { isNonEmptyString, isRecord, readJsonBody } from "./request-utils.ts";
@@ -52,6 +53,22 @@ export async function resolveOpenAIModel(
   endpoint: ModelEndpoint,
   requestPath: string,
 ): Promise<string | Response> {
+  const resolutionOrResponse = await resolveOpenAIModelCandidates(
+    requestedModel,
+    endpoint,
+    requestPath,
+  );
+  if (resolutionOrResponse instanceof Response) {
+    return resolutionOrResponse;
+  }
+  return resolutionOrResponse.resolvedModel;
+}
+
+export async function resolveOpenAIModelCandidates(
+  requestedModel: string,
+  endpoint: ModelEndpoint,
+  requestPath: string,
+): Promise<ModelResolution | Response> {
   const config = await loadConfig().catch(() => null);
   const modelResolution = await resolveModelForEndpoint(
     requestedModel,
@@ -79,7 +96,7 @@ export async function resolveOpenAIModel(
     });
   }
 
-  return modelResolution.resolvedModel;
+  return modelResolution;
 }
 
 export function openAIServiceUnavailable(err: unknown): Response {
