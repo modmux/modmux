@@ -254,7 +254,8 @@ async function postWithModelFallback(
 
     const errorBody = await response.text().catch(() => "");
     const canRetry = index < candidates.length - 1 &&
-      isModelAccessDenied(response.status, errorBody);
+      (isModelAccessDenied(response.status, errorBody) ||
+        response.status === 503);
     if (canRetry) {
       continue;
     }

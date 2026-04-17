@@ -315,6 +315,76 @@ Deno.test("chat() - 503 response → overloaded_error content", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Test: chat() falls back to next model when first model returns 503
+// ---------------------------------------------------------------------------
+
+Deno.test(
+  "chat() - falls back to next model when first returns 503",
+  async () => {
+    clearTokenCache();
+
+    const attemptedModels: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(makeModelsResponse(TEST_MODEL_IDS));
+      }
+
+      const body = JSON.parse(init?.body as string ?? "{}");
+      attemptedModels.push(body.model);
+
+      if (attemptedModels.length === 1) {
+        // First model overloaded — triggers fallback to next candidate
+        return Promise.resolve(
+          new Response("We're currently experiencing high demand", {
+            status: 503,
+          }),
+        );
+      }
+
+      const resp = makeChatResponse("fallback worked", "stop");
+      return Promise.resolve(
+        new Response(JSON.stringify(resp), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }) as typeof globalThis.fetch;
+
+    try {
+      const result = await chat(
+        makeProxyRequest({ model: "claude-sonnet-4-6" }),
+        getTestOptions(),
+      );
+
+      assertEquals(attemptedModels[0], "claude-sonnet-4-6");
+      assertEquals(attemptedModels.length >= 2, true);
+      assertEquals(result.content[0].type, "text");
+      assertEquals(
+        (result.content[0] as TextContentBlock).text,
+        "fallback worked",
+      );
+    } finally {
+      globalThis.fetch = original;
+      clearTokenCache();
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Test: chat() retries with lower Claude model when Copilot denies access
 // ---------------------------------------------------------------------------
 
