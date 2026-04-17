@@ -12,6 +12,7 @@ import {
   openAIErrorBody,
   openAIErrorResponse,
 } from "./response-utils.ts";
+import { log } from "./log.ts";
 import { loadConfig } from "./store.ts";
 import type {
   OpenAIChatRequest,
@@ -552,7 +553,15 @@ export async function handleResponses(req: Request): Promise<Response> {
 
   const responsesReq = body as unknown as OpenAIResponsesRequest;
   const messages = responsesInputToMessages(responsesReq.input);
+
+  await log("debug", "responses: request received", {
+    model: responsesReq.model,
+    stream: responsesReq.stream ?? false,
+    messageCount: messages.length,
+  });
+
   if (messages.length === 0) {
+    await log("debug", "responses: rejected — empty input");
     return openAIErrorResponse(
       400,
       "input is required and must contain text content",
@@ -567,9 +576,17 @@ export async function handleResponses(req: Request): Promise<Response> {
     "/v1/responses",
   );
   if (resolvedModelOrResponse instanceof Response) {
+    await log("debug", "responses: model resolution rejected", {
+      model: responsesReq.model,
+    });
     return resolvedModelOrResponse;
   }
   const resolvedModel = resolvedModelOrResponse;
+
+  await log("debug", "responses: model resolved", {
+    requested: responsesReq.model,
+    resolved: resolvedModel,
+  });
 
   const anthropicReq: ProxyRequest = {
     ...openAIToAnthropic({
@@ -629,23 +646,58 @@ export async function handleResponses(req: Request): Promise<Response> {
         };
 
         try {
+          await log("debug", "responses: stream started", {
+            model: resolvedModel,
+          });
           // Accumulate write Promises in a chain so every SSE event is fully
           // enqueued before the next one starts. chatStream calls onChunk
           // synchronously, so without chaining the awaited writes inside the
           // loop would be deferred to microtasks — causing events like
           // response.completed to arrive after data: [DONE].
+          let eventCount = 0;
           let pendingWrites: Promise<void> = Promise.resolve();
           await chatStream({ ...anthropicReq, stream: true }, (event) => {
+            eventCount++;
             const mapped = mapStreamEventToResponses(event, state);
             pendingWrites = pendingWrites.then(async () => {
+              await log("debug", "responses: upstream event", {
+                type: event.type,
+                sseCount: mapped.length,
+                ...(event.type === "content_block_delta" &&
+                    event.delta &&
+                    typeof event.delta === "object" &&
+                    "type" in event.delta &&
+                    event.delta.type === "text_delta" &&
+                    "text" in event.delta &&
+                    typeof (event.delta as Record<string, unknown>).text ===
+                      "string"
+                  ? {
+                    textSnippet: String(
+                      (event.delta as Record<string, unknown>).text,
+                    ).slice(0, 80),
+                  }
+                  : {}),
+              });
               for (const responseEvent of mapped) {
+                await log("debug", "responses: SSE event emitted", {
+                  event: responseEvent.event,
+                });
                 await write(responseEvent.event, responseEvent.data);
               }
             });
           });
           await pendingWrites;
+          await log("debug", "responses: upstream stream done", {
+            eventCount,
+            completed: state.completed,
+            textLength: state.text.length,
+          });
 
           if (!state.completed && state.responseId && state.outputItemId) {
+            await log(
+              "debug",
+              "responses: fallback finalize — state.completed was false",
+            );
             for (const event of finalizeContent(state)) {
               await write(event.event, event.data);
             }
@@ -685,14 +737,24 @@ export async function handleResponses(req: Request): Promise<Response> {
           }
 
           if (!isClosed) {
+            await log("debug", "responses: sending [DONE]");
             await queueChunk("data: [DONE]\n\n");
           }
         } catch (err) {
+          const message = err instanceof Error
+            ? err.message
+            : "Service unavailable";
+          await log("warn", "responses: stream error caught", {
+            message,
+            stack: err instanceof Error
+              ? err.stack?.split("\n").slice(0, 4).join(" | ")
+              : undefined,
+          });
           if (!isClosed) {
             await write("error", {
               type: "error",
               error: openAIErrorBody(
-                err instanceof Error ? err.message : "Service unavailable",
+                message,
                 "api_error",
                 "service_unavailable",
               ).error,
@@ -717,6 +779,9 @@ export async function handleResponses(req: Request): Promise<Response> {
   }
 
   try {
+    await log("debug", "responses: non-stream request", {
+      model: resolvedModel,
+    });
     const responseBody = await getResponsesBody(
       anthropicReq,
       responsesReq.model,
@@ -724,6 +789,9 @@ export async function handleResponses(req: Request): Promise<Response> {
 
     return jsonResponse(responseBody);
   } catch (err) {
+    await log("warn", "responses: non-stream error", {
+      message: err instanceof Error ? err.message : String(err),
+    });
     return openAIServiceUnavailable(err);
   }
 }
