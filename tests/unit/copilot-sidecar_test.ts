@@ -2,15 +2,15 @@ import { assertEquals } from "@std/assert";
 import {
   __resetCopilotSidecarTestDeps,
   __setCopilotSidecarTestDeps,
-  buildManagedGitHubUsageCliUrl,
-  ensureGitHubUsageSidecarStarted,
+  buildManagedCopilotSdkCliUrl,
+  ensureCopilotSdkSidecarStarted,
   findAvailableCopilotSidecarPort,
   readCopilotSidecarState,
   removeCopilotSidecarState,
-  resolveConfiguredGitHubUsageCliUrl,
+  resolveConfiguredCopilotSdkCliUrl,
   writeCopilotSidecarState,
 } from "../../gateway/src/copilot-sidecar.ts";
-import type { GitHubUsageConfig } from "../../gateway/src/store.ts";
+import type { CopilotSdkConfig } from "../../gateway/src/store.ts";
 import type { AuthToken, TokenStore } from "../../gateway/src/token.ts";
 
 async function withTempHome<T>(fn: (dir: string) => Promise<T>): Promise<T> {
@@ -38,7 +38,7 @@ function fakeTokenStore(token: AuthToken | null): TokenStore {
   };
 }
 
-function autoStartConfig(): GitHubUsageConfig {
+function autoStartConfig(): CopilotSdkConfig {
   return {
     backend: "external-cli",
     cliUrl: null,
@@ -51,8 +51,8 @@ Deno.test.afterEach(() => {
   __resetCopilotSidecarTestDeps();
 });
 
-Deno.test("buildManagedGitHubUsageCliUrl formats localhost target", () => {
-  assertEquals(buildManagedGitHubUsageCliUrl(4321), "127.0.0.1:4321");
+Deno.test("buildManagedCopilotSdkCliUrl formats localhost target", () => {
+  assertEquals(buildManagedCopilotSdkCliUrl(4321), "127.0.0.1:4321");
 });
 
 Deno.test("findAvailableCopilotSidecarPort skips occupied preferred port", () => {
@@ -84,20 +84,20 @@ Deno.test("copilot sidecar state round-trips and can be removed", async () => {
   });
 });
 
-Deno.test("resolveConfiguredGitHubUsageCliUrl returns manual cliUrl when autoStart is disabled", async () => {
-  const config: GitHubUsageConfig = {
+Deno.test("resolveConfiguredCopilotSdkCliUrl returns manual cliUrl when autoStart is disabled", async () => {
+  const config: CopilotSdkConfig = {
     backend: "external-cli",
     cliUrl: "127.0.0.1:5000",
     autoStart: false,
     preferredPort: 4321,
   };
   assertEquals(
-    await resolveConfiguredGitHubUsageCliUrl(config),
+    await resolveConfiguredCopilotSdkCliUrl(config),
     "127.0.0.1:5000",
   );
 });
 
-Deno.test("resolveConfiguredGitHubUsageCliUrl returns managed cliUrl from live state", async () => {
+Deno.test("resolveConfiguredCopilotSdkCliUrl returns managed cliUrl from live state", async () => {
   await withTempHome(async () => {
     const listener = Deno.listen({ hostname: "127.0.0.1", port: 0 });
     const port = (listener.addr as Deno.NetAddr).port;
@@ -107,14 +107,14 @@ Deno.test("resolveConfiguredGitHubUsageCliUrl returns managed cliUrl from live s
         port,
         startedAt: new Date().toISOString(),
       });
-      const config: GitHubUsageConfig = {
+      const config: CopilotSdkConfig = {
         backend: "external-cli",
         cliUrl: null,
         autoStart: true,
         preferredPort: 4321,
       };
       assertEquals(
-        await resolveConfiguredGitHubUsageCliUrl(config),
+        await resolveConfiguredCopilotSdkCliUrl(config),
         `127.0.0.1:${port}`,
       );
     } finally {
@@ -123,13 +123,13 @@ Deno.test("resolveConfiguredGitHubUsageCliUrl returns managed cliUrl from live s
   });
 });
 
-Deno.test("ensureGitHubUsageSidecarStarted returns unauthenticated when no stored token exists", async () => {
+Deno.test("ensureCopilotSdkSidecarStarted returns unauthenticated when no stored token exists", async () => {
   await withTempHome(async () => {
     __setCopilotSidecarTestDeps({
       createTokenStore: () => fakeTokenStore(null),
     });
 
-    const runtimeTarget = await ensureGitHubUsageSidecarStarted(
+    const runtimeTarget = await ensureCopilotSdkSidecarStarted(
       autoStartConfig(),
     );
     assertEquals(runtimeTarget, {
@@ -140,7 +140,7 @@ Deno.test("ensureGitHubUsageSidecarStarted returns unauthenticated when no store
   });
 });
 
-Deno.test("ensureGitHubUsageSidecarStarted returns error when copilot binary is missing", async () => {
+Deno.test("ensureCopilotSdkSidecarStarted returns error when copilot binary is missing", async () => {
   await withTempHome(async () => {
     __setCopilotSidecarTestDeps({
       createTokenStore: () =>
@@ -152,7 +152,7 @@ Deno.test("ensureGitHubUsageSidecarStarted returns error when copilot binary is 
       findFirstBinary: () => Promise.resolve(null),
     });
 
-    const runtimeTarget = await ensureGitHubUsageSidecarStarted(
+    const runtimeTarget = await ensureCopilotSdkSidecarStarted(
       autoStartConfig(),
     );
     assertEquals(runtimeTarget, { cliUrl: null, statusHint: "error" });
@@ -160,7 +160,7 @@ Deno.test("ensureGitHubUsageSidecarStarted returns error when copilot binary is 
   });
 });
 
-Deno.test("ensureGitHubUsageSidecarStarted reuses a live existing sidecar without spawning", async () => {
+Deno.test("ensureCopilotSdkSidecarStarted reuses a live existing sidecar without spawning", async () => {
   await withTempHome(async () => {
     const listener = Deno.listen({ hostname: "127.0.0.1", port: 0 });
     const port = (listener.addr as Deno.NetAddr).port;
@@ -178,7 +178,7 @@ Deno.test("ensureGitHubUsageSidecarStarted reuses a live existing sidecar withou
         },
       });
 
-      const runtimeTarget = await ensureGitHubUsageSidecarStarted(
+      const runtimeTarget = await ensureCopilotSdkSidecarStarted(
         autoStartConfig(),
       );
       assertEquals(runtimeTarget, {
@@ -192,7 +192,7 @@ Deno.test("ensureGitHubUsageSidecarStarted reuses a live existing sidecar withou
   });
 });
 
-Deno.test("ensureGitHubUsageSidecarStarted cleans up stale state and startup timeout", async () => {
+Deno.test("ensureCopilotSdkSidecarStarted cleans up stale state and startup timeout", async () => {
   await withTempHome(async () => {
     let processAlive = false;
     let killedPid: number | null = null;
@@ -230,7 +230,7 @@ Deno.test("ensureGitHubUsageSidecarStarted cleans up stale state and startup tim
       sleep: async () => {},
     });
 
-    const runtimeTarget = await ensureGitHubUsageSidecarStarted(
+    const runtimeTarget = await ensureCopilotSdkSidecarStarted(
       autoStartConfig(),
     );
     assertEquals(runtimeTarget, { cliUrl: null, statusHint: "error" });

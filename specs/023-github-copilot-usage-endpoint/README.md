@@ -94,7 +94,7 @@ Enhanced `/v1/usage` endpoint response:
 
 ### Technical Implementation
 
-**New Module**: `gateway/src/github-usage.ts`
+**New Module**: `gateway/src/copilot-sdk.ts`
 
 - Initialize GitHub Copilot SDK client
 - Fetch quota data via `client.rpc.account.getQuota()`
@@ -118,7 +118,7 @@ Enhanced `/v1/usage` endpoint response:
 ### Phase 1: SDK Integration Setup
 
 - [ ] Add `@github/copilot-sdk` dependency to package.json
-- [ ] Create `gateway/src/github-usage.ts` module
+- [ ] Create `gateway/src/copilot-sdk.ts` module
 - [ ] Implement `initializeGitHubUsageTracking()` function
 - [ ] Implement `fetchGitHubCopilotQuota()` function with RPC call
 
@@ -232,7 +232,7 @@ field:
 **Files Modified**:
 
 - ✅ `gateway/deno.json` - Added @github/copilot-sdk dependency
-- ✅ `gateway/src/github-usage.ts` - New GitHub usage tracking module
+- ✅ `gateway/src/copilot-sdk.ts` - New GitHub usage tracking module
 - ✅ `gateway/src/usage-metrics.ts` - Enhanced with GitHub integration
 - ✅ `gateway/src/router.ts` - Updated usage endpoint
 

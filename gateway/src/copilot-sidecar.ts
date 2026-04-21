@@ -2,7 +2,7 @@ import { join } from "@std/path";
 import { findFreePort, spawnDetached } from "./background-process.ts";
 import { log } from "./log.ts";
 import { findFirstBinary, isProcessAlive } from "./process.ts";
-import type { GitHubUsageConfig } from "./store.ts";
+import type { CopilotSdkConfig } from "./store.ts";
 import { configDir } from "./store.ts";
 import { createTokenStore } from "./token.ts";
 
@@ -12,7 +12,7 @@ export interface CopilotSidecarState {
   startedAt: string;
 }
 
-export interface GitHubUsageRuntimeTarget {
+export interface CopilotSdkRuntimeTarget {
   cliUrl: string | null;
   statusHint: "unauthenticated" | "error" | null;
 }
@@ -59,7 +59,7 @@ function sidecarStatePath(): string {
   return join(configDir(), "copilot-sidecar.json");
 }
 
-export function buildManagedGitHubUsageCliUrl(port: number): string {
+export function buildManagedCopilotSdkCliUrl(port: number): string {
   return `127.0.0.1:${port}`;
 }
 
@@ -156,14 +156,14 @@ async function stopSidecarPid(pid: number): Promise<void> {
   }
 }
 
-export async function resolveConfiguredGitHubUsageCliUrl(
-  githubUsage: GitHubUsageConfig,
+export async function resolveConfiguredCopilotSdkCliUrl(
+  copilotSdk: CopilotSdkConfig,
 ): Promise<string | null> {
-  if (githubUsage.backend !== "external-cli") {
+  if (copilotSdk.backend !== "external-cli") {
     return null;
   }
-  if (!githubUsage.autoStart) {
-    return githubUsage.cliUrl;
+  if (!copilotSdk.autoStart) {
+    return copilotSdk.cliUrl;
   }
   const state = await readCopilotSidecarState();
   if (state === null) return null;
@@ -175,19 +175,19 @@ export async function resolveConfiguredGitHubUsageCliUrl(
     await removeCopilotSidecarState();
     return null;
   }
-  return buildManagedGitHubUsageCliUrl(state.port);
+  return buildManagedCopilotSdkCliUrl(state.port);
 }
 
-export async function ensureGitHubUsageSidecarStarted(
-  githubUsage: GitHubUsageConfig,
-): Promise<GitHubUsageRuntimeTarget> {
-  if (githubUsage.backend !== "external-cli") {
+export async function ensureCopilotSdkSidecarStarted(
+  copilotSdk: CopilotSdkConfig,
+): Promise<CopilotSdkRuntimeTarget> {
+  if (copilotSdk.backend !== "external-cli") {
     return { cliUrl: null, statusHint: "error" };
   }
-  if (!githubUsage.autoStart) {
+  if (!copilotSdk.autoStart) {
     return {
-      cliUrl: githubUsage.cliUrl,
-      statusHint: githubUsage.cliUrl === null ? "error" : null,
+      cliUrl: copilotSdk.cliUrl,
+      statusHint: copilotSdk.cliUrl === null ? "error" : null,
     };
   }
 
@@ -197,7 +197,7 @@ export async function ensureGitHubUsageSidecarStarted(
     const reachable = alive && await isPortReachable(existingState.port);
     if (reachable) {
       return {
-        cliUrl: buildManagedGitHubUsageCliUrl(existingState.port),
+        cliUrl: buildManagedCopilotSdkCliUrl(existingState.port),
         statusHint: null,
       };
     }
@@ -225,7 +225,7 @@ export async function ensureGitHubUsageSidecarStarted(
     return { cliUrl: null, statusHint: "error" };
   }
 
-  const port = findAvailableCopilotSidecarPort(githubUsage.preferredPort);
+  const port = findAvailableCopilotSidecarPort(copilotSdk.preferredPort);
   const args = [
     "--port",
     String(port),
@@ -258,7 +258,7 @@ export async function ensureGitHubUsageSidecarStarted(
     });
 
     return {
-      cliUrl: buildManagedGitHubUsageCliUrl(port),
+      cliUrl: buildManagedCopilotSdkCliUrl(port),
       statusHint: null,
     };
   } catch (error) {
@@ -269,13 +269,13 @@ export async function ensureGitHubUsageSidecarStarted(
     await sidecarRuntimeDeps.log("warn", "Failed to start Copilot sidecar", {
       error: error instanceof Error ? error.message : String(error),
       binaryPath,
-      preferredPort: githubUsage.preferredPort,
+      preferredPort: copilotSdk.preferredPort,
     });
     return { cliUrl: null, statusHint: "error" };
   }
 }
 
-export async function stopGitHubUsageSidecar(): Promise<void> {
+export async function stopCopilotSdkSidecar(): Promise<void> {
   const state = await readCopilotSidecarState();
   if (state === null) return;
   await stopSidecarPid(state.pid);

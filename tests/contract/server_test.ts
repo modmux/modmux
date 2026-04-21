@@ -171,7 +171,7 @@ Deno.test("Server runtime initializes sidecar config and shuts it down", async (
   await withTempHome(async () => {
     await saveConfig({
       ...DEFAULT_CONFIG,
-      githubUsage: {
+      copilotSdk: {
         backend: "external-cli",
         cliUrl: null,
         autoStart: true,
@@ -183,11 +183,11 @@ Deno.test("Server runtime initializes sidecar config and shuts it down", async (
     const stopped: string[] = [];
 
     __setServerTestDeps({
-      ensureGitHubUsageSidecarStarted: (githubUsage) => {
-        started.push(`${githubUsage.backend}:${githubUsage.autoStart}`);
+      ensureCopilotSdkSidecarStarted: (copilotSdk) => {
+        started.push(`${copilotSdk.backend}:${copilotSdk.autoStart}`);
         return Promise.resolve({ cliUrl: "127.0.0.1:4321", statusHint: null });
       },
-      stopGitHubUsageSidecar: () => {
+      stopCopilotSdkSidecar: () => {
         stopped.push("sidecar");
         return Promise.resolve();
       },

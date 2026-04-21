@@ -1,7 +1,7 @@
 import { stopClient } from "./copilot.ts";
 import {
-  ensureGitHubUsageSidecarStarted,
-  stopGitHubUsageSidecar,
+  ensureCopilotSdkSidecarStarted,
+  stopCopilotSdkSidecar,
 } from "./copilot-sidecar.ts";
 import { shutdownUsageMetrics } from "./usage-metrics.ts";
 import { loadConfig, saveConfig } from "./store.ts";
@@ -11,9 +11,9 @@ interface ServerRuntimeDeps {
   loadConfig: typeof loadConfig;
   saveConfig: typeof saveConfig;
   setLogLevel: typeof setLogLevel;
-  ensureGitHubUsageSidecarStarted: typeof ensureGitHubUsageSidecarStarted;
+  ensureCopilotSdkSidecarStarted: typeof ensureCopilotSdkSidecarStarted;
   shutdownUsageMetrics: typeof shutdownUsageMetrics;
-  stopGitHubUsageSidecar: typeof stopGitHubUsageSidecar;
+  stopCopilotSdkSidecar: typeof stopCopilotSdkSidecar;
   stopClient: typeof stopClient;
   log: typeof log;
 }
@@ -22,9 +22,9 @@ const defaultServerRuntimeDeps: ServerRuntimeDeps = {
   loadConfig,
   saveConfig,
   setLogLevel,
-  ensureGitHubUsageSidecarStarted,
+  ensureCopilotSdkSidecarStarted,
   shutdownUsageMetrics,
-  stopGitHubUsageSidecar,
+  stopCopilotSdkSidecar,
   stopClient,
   log,
 };
@@ -65,7 +65,7 @@ export async function getConfig(): Promise<ServerConfig> {
 export async function initializeServerRuntime(): Promise<void> {
   const config = await serverRuntimeDeps.loadConfig();
   serverRuntimeDeps.setLogLevel(config.logLevel);
-  await serverRuntimeDeps.ensureGitHubUsageSidecarStarted(config.githubUsage);
+  await serverRuntimeDeps.ensureCopilotSdkSidecarStarted(config.copilotSdk);
 
   await serverRuntimeDeps.saveConfig({
     ...config,
@@ -76,7 +76,7 @@ export async function initializeServerRuntime(): Promise<void> {
 export async function shutdown(): Promise<void> {
   serverRuntimeDeps.log("info", "Server shutting down");
   await serverRuntimeDeps.shutdownUsageMetrics();
-  await serverRuntimeDeps.stopGitHubUsageSidecar();
+  await serverRuntimeDeps.stopCopilotSdkSidecar();
   await serverRuntimeDeps.stopClient();
 }
 

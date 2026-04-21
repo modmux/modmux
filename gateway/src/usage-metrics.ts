@@ -1,11 +1,11 @@
 import { dirname, join } from "@std/path";
 import { configDir } from "./store.ts";
 import { log } from "./log.ts";
-import type { GitHubCopilotUsageData } from "./github-usage.ts";
+import type { GitHubCopilotUsageData } from "./copilot-sdk.ts";
 import {
   fetchGitHubCopilotQuota,
-  shutdownGitHubUsageTracking,
-} from "./github-usage.ts";
+  shutdownCopilotSdkTracking,
+} from "./copilot-sdk.ts";
 
 interface StatusBuckets {
   "2xx": number;
@@ -233,7 +233,7 @@ export async function shutdownUsageMetrics(): Promise<void> {
   await persistSnapshot();
 
   // Shutdown GitHub usage tracking
-  await shutdownGitHubUsageTracking();
+  await shutdownCopilotSdkTracking();
 }
 
 export function recordUsage(

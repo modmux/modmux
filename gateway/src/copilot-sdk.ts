@@ -1,11 +1,11 @@
 import { CopilotClient } from "@github/copilot-sdk";
 import {
-  ensureGitHubUsageSidecarStarted,
-  resolveConfiguredGitHubUsageCliUrl,
+  ensureCopilotSdkSidecarStarted,
+  resolveConfiguredCopilotSdkCliUrl,
 } from "./copilot-sidecar.ts";
 import { log } from "./log.ts";
 import { loadConfig } from "./store.ts";
-import type { GitHubUsageConfig } from "./store.ts";
+import type { CopilotSdkConfig } from "./store.ts";
 
 // Types for GitHub Copilot quota information
 export interface GitHubCopilotQuota {
@@ -43,37 +43,37 @@ interface CopilotClientInstance {
   };
 }
 
-interface GitHubUsageRuntimeDeps {
+interface CopilotSdkRuntimeDeps {
   loadConfig: typeof loadConfig;
-  ensureGitHubUsageSidecarStarted: typeof ensureGitHubUsageSidecarStarted;
-  resolveConfiguredGitHubUsageCliUrl: typeof resolveConfiguredGitHubUsageCliUrl;
+  ensureCopilotSdkSidecarStarted: typeof ensureCopilotSdkSidecarStarted;
+  resolveConfiguredCopilotSdkCliUrl: typeof resolveConfiguredCopilotSdkCliUrl;
   log: typeof log;
   now: () => number;
   createClient: (options: { cliUrl: string }) => CopilotClientInstance;
 }
 
-const defaultGitHubUsageRuntimeDeps: GitHubUsageRuntimeDeps = {
+const defaultCopilotSdkRuntimeDeps: CopilotSdkRuntimeDeps = {
   loadConfig,
-  ensureGitHubUsageSidecarStarted,
-  resolveConfiguredGitHubUsageCliUrl,
+  ensureCopilotSdkSidecarStarted,
+  resolveConfiguredCopilotSdkCliUrl,
   log,
   now: () => Date.now(),
   createClient: (options) =>
     new CopilotClient(options) as unknown as CopilotClientInstance,
 };
 
-let githubUsageRuntimeDeps: GitHubUsageRuntimeDeps = {
-  ...defaultGitHubUsageRuntimeDeps,
+let copilotSdkRuntimeDeps: CopilotSdkRuntimeDeps = {
+  ...defaultCopilotSdkRuntimeDeps,
 };
 
-export function __setGitHubUsageTestDeps(
-  overrides: Partial<GitHubUsageRuntimeDeps>,
+export function __setCopilotSdkTestDeps(
+  overrides: Partial<CopilotSdkRuntimeDeps>,
 ): void {
-  githubUsageRuntimeDeps = { ...githubUsageRuntimeDeps, ...overrides };
+  copilotSdkRuntimeDeps = { ...copilotSdkRuntimeDeps, ...overrides };
 }
 
-export function __resetGitHubUsageTestDeps(): void {
-  githubUsageRuntimeDeps = { ...defaultGitHubUsageRuntimeDeps };
+export function __resetCopilotSdkTestDeps(): void {
+  copilotSdkRuntimeDeps = { ...defaultCopilotSdkRuntimeDeps };
 }
 
 // Cache for quota data
@@ -160,7 +160,7 @@ async function resetCopilotClient(): Promise<void> {
   try {
     await copilotClient.stop();
   } catch (error) {
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "warn",
       "Error resetting GitHub Copilot usage client",
       {
@@ -177,19 +177,40 @@ function getClientConfigKey(cliUrl: string): string {
   return `external-cli:${cliUrl}`;
 }
 
-async function getGitHubUsageConfig(): Promise<{
-  backend: GitHubUsageConfig["backend"];
+async function getCopilotSdkConfig(): Promise<{
+  backend: CopilotSdkConfig["backend"];
   cliUrl: string | null;
   autoStart: boolean;
   preferredPort: number;
 }> {
-  const config = await githubUsageRuntimeDeps.loadConfig();
-  return config.githubUsage;
+  const config = await copilotSdkRuntimeDeps.loadConfig();
+  return config.copilotSdk;
 }
 
-export function buildGitHubUsageClientOptions(
+// Default URL/port for an external Copilot CLI server
+export const COPILOT_CLI_DEFAULT_URL = "127.0.0.1:4301";
+
+export function buildCopilotSdkClientOptions(
   cliUrl: string | null,
+  copilotSdk?: {
+    backend: string;
+    autoStart: boolean;
+  },
 ): { cliUrl: string } | null {
+  if (
+    cliUrl === null &&
+    copilotSdk &&
+    copilotSdk.backend === "external-cli" &&
+    !copilotSdk.autoStart
+  ) {
+    // Warn: defaulting to local Copilot CLI URL
+    copilotSdkRuntimeDeps.log(
+      "info",
+      `No cliUrl provided; defaulting to Copilot CLI at ${COPILOT_CLI_DEFAULT_URL}`,
+      { backend: copilotSdk.backend, autoStart: copilotSdk.autoStart },
+    );
+    return { cliUrl: COPILOT_CLI_DEFAULT_URL };
+  }
   if (cliUrl === null) {
     return null;
   }
@@ -200,24 +221,27 @@ export function buildGitHubUsageClientOptions(
 /**
  * Initialize the GitHub Copilot SDK client for usage tracking
  */
-export async function initializeGitHubUsageTracking(): Promise<
+export async function initializeCopilotSdkTracking(): Promise<
   GitHubCopilotUsageData["status"]
 > {
-  const githubUsage = await getGitHubUsageConfig();
-  const runtimeTarget = await githubUsageRuntimeDeps
-    .ensureGitHubUsageSidecarStarted(
-      githubUsage,
+  const copilotSdk = await getCopilotSdkConfig();
+  const runtimeTarget = await copilotSdkRuntimeDeps
+    .ensureCopilotSdkSidecarStarted(
+      copilotSdk,
     );
-  const clientOptions = buildGitHubUsageClientOptions(runtimeTarget.cliUrl);
+  const clientOptions = buildCopilotSdkClientOptions(
+    runtimeTarget.cliUrl,
+    copilotSdk,
+  );
   if (clientOptions === null) {
     await resetCopilotClient();
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "info",
       "GitHub Copilot usage tracking backend unavailable",
       {
-        backend: githubUsage.backend,
-        autoStart: githubUsage.autoStart,
-        cliUrl: githubUsage.cliUrl,
+        backend: copilotSdk.backend,
+        autoStart: copilotSdk.autoStart,
+        cliUrl: copilotSdk.cliUrl,
         status: runtimeTarget.statusHint ?? "error",
       },
     );
@@ -233,23 +257,23 @@ export async function initializeGitHubUsageTracking(): Promise<
   }
 
   try {
-    copilotClient = githubUsageRuntimeDeps.createClient(
+    copilotClient = copilotSdkRuntimeDeps.createClient(
       clientOptions,
     ) as unknown as CopilotClient;
     await copilotClient.start();
     copilotClientConfigKey = configKey;
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "info",
       "GitHub Copilot usage tracking initialized",
     );
     return "authenticated";
   } catch (error) {
     const status = isAuthenticationError(error) ? "unauthenticated" : "error";
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "warn",
       "Failed to initialize GitHub Copilot usage tracking",
       {
-        backend: githubUsage.backend,
+        backend: copilotSdk.backend,
         cliUrl: clientOptions.cliUrl,
         status,
         error: error instanceof Error ? error.message : String(error),
@@ -264,7 +288,7 @@ export async function initializeGitHubUsageTracking(): Promise<
 /**
  * Shutdown the GitHub Copilot SDK client
  */
-export async function shutdownGitHubUsageTracking(): Promise<void> {
+export async function shutdownCopilotSdkTracking(): Promise<void> {
   if (!copilotClient) {
     return;
   }
@@ -272,12 +296,12 @@ export async function shutdownGitHubUsageTracking(): Promise<void> {
   try {
     await copilotClient.stop();
     copilotClient = null;
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "info",
       "GitHub Copilot usage tracking shutdown",
     );
   } catch (error) {
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "warn",
       "Error shutting down GitHub Copilot usage tracking",
       {
@@ -294,13 +318,13 @@ export async function shutdownGitHubUsageTracking(): Promise<void> {
 export async function fetchGitHubCopilotQuota(): Promise<
   GitHubCopilotUsageData | null
 > {
-  const now = githubUsageRuntimeDeps.now();
-  const githubUsage = await getGitHubUsageConfig();
-  const resolvedCliUrl = await githubUsageRuntimeDeps
-    .resolveConfiguredGitHubUsageCliUrl(githubUsage);
+  const now = copilotSdkRuntimeDeps.now();
+  const copilotSdk = await getCopilotSdkConfig();
+  const resolvedCliUrl = await copilotSdkRuntimeDeps
+    .resolveConfiguredCopilotSdkCliUrl(copilotSdk);
   const configKey = resolvedCliUrl !== null
     ? getClientConfigKey(resolvedCliUrl)
-    : `${githubUsage.backend}:${githubUsage.autoStart ? "auto" : "manual"}`;
+    : `${copilotSdk.backend}:${copilotSdk.autoStart ? "auto" : "manual"}`;
 
   // Return cached data if still fresh
   if (
@@ -317,7 +341,7 @@ export async function fetchGitHubCopilotQuota(): Promise<
   }
 
   if (!copilotClient) {
-    const status = await initializeGitHubUsageTracking();
+    const status = await initializeCopilotSdkTracking();
     if (!copilotClient) {
       const usageData = buildUsageData(
         status === "authenticated" ? "error" : status,
@@ -330,14 +354,14 @@ export async function fetchGitHubCopilotQuota(): Promise<
   }
 
   try {
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "info",
       "Attempting to fetch GitHub Copilot quota data",
     );
 
     // Call the RPC method to get quota information
     const result = await copilotClient.rpc.account.getQuota();
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "info",
       "Successfully received quota result",
       {
@@ -355,7 +379,7 @@ export async function fetchGitHubCopilotQuota(): Promise<
     }
 
     const [quotaId, snapshot] = selectedQuotaSnapshot;
-    await githubUsageRuntimeDeps.log("info", "Using quota snapshot", {
+    await copilotSdkRuntimeDeps.log("info", "Using quota snapshot", {
       quotaId,
       snapshot,
     });
@@ -386,7 +410,7 @@ export async function fetchGitHubCopilotQuota(): Promise<
     copilotClientConfigKey = configKey;
     lastFetchTime = now;
 
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "info",
       "Successfully fetched GitHub Copilot quota",
       {
@@ -400,7 +424,7 @@ export async function fetchGitHubCopilotQuota(): Promise<
     return usageData;
   } catch (error) {
     const status = isAuthenticationError(error) ? "unauthenticated" : "error";
-    await githubUsageRuntimeDeps.log(
+    await copilotSdkRuntimeDeps.log(
       "error",
       "Failed to fetch GitHub Copilot quota",
       {
@@ -432,7 +456,7 @@ export function clearQuotaCache(): void {
   copilotClientConfigKey = null;
 }
 
-export async function __resetGitHubUsageTestState(): Promise<void> {
+export async function __resetCopilotSdkTestState(): Promise<void> {
   await resetCopilotClient();
   clearQuotaCache();
 }

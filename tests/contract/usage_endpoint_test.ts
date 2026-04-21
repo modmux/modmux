@@ -34,7 +34,15 @@ function postJSON(path: string, body: unknown): Request {
 
 Deno.test("GET /v1/usage returns expected top-level contract", async () => {
   await withTempHome(async () => {
-    await saveConfig(DEFAULT_CONFIG);
+    await saveConfig({
+      ...DEFAULT_CONFIG,
+      copilotSdk: {
+        ...DEFAULT_CONFIG.copilotSdk,
+        backend: "disabled",
+        autoStart: false,
+        cliUrl: null,
+      },
+    });
     const response = await handleRequest(new Request(`${BASE}/v1/usage`));
     assertEquals(response.status, 200);
     assertEquals(response.headers.get("Content-Type"), "application/json");
@@ -57,11 +65,16 @@ Deno.test("GET /v1/usage returns expected top-level contract", async () => {
   });
 });
 
-Deno.test("GET /v1/usage reports error when GitHub usage backend is not configured", async () => {
+Deno.test("GET /v1/usage reports error when Copilot SDK backend is disabled", async () => {
   await withTempHome(async () => {
     await saveConfig({
       ...DEFAULT_CONFIG,
-      githubUsage: DEFAULT_CONFIG.githubUsage,
+      copilotSdk: {
+        ...DEFAULT_CONFIG.copilotSdk,
+        backend: "disabled",
+        autoStart: false,
+        cliUrl: null,
+      },
     });
     const response = await handleRequest(new Request(`${BASE}/v1/usage`));
     assertEquals(response.status, 200);
@@ -113,7 +126,15 @@ Deno.test("usage metrics counters track endpoint calls, status buckets, and late
 
 Deno.test("usage endpoint reflects live updates on a real server", async () => {
   await withTempHome(async () => {
-    await saveConfig(DEFAULT_CONFIG);
+    await saveConfig({
+      ...DEFAULT_CONFIG,
+      copilotSdk: {
+        ...DEFAULT_CONFIG.copilotSdk,
+        backend: "disabled",
+        autoStart: false,
+        cliUrl: null,
+      },
+    });
     const initial = getUsageMetricsSnapshot();
     const initialCountTokensCalls =
       initial.endpoints["/v1/messages/count_tokens"]?.calls ?? 0;

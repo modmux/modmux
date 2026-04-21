@@ -78,6 +78,8 @@ export interface TUIState {
   updateVersion: string | null;
   settings: SettingsRow[];
   settingsCursorIndex: number;
+  /** Result of Copilot CLI detection: true = found, false = missing, null = not yet checked */
+  copilotCliDetected: boolean | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -123,6 +125,7 @@ export function buildTUIState(
     updateVersion,
     settings,
     settingsCursorIndex: 0,
+    copilotCliDetected: null,
   };
 }
 
@@ -136,24 +139,33 @@ export function buildSettingsRows(
     updates: { checkEnabled: true },
     modelMappingPolicy: "compatible",
     logLevel: "info",
+    copilotSdk: { backend: "external-cli" },
   };
   return [
     {
       id: "checkEnabled",
       label: "Version check",
-      value: c.updates.checkEnabled ? "enabled" : "disabled",
+      value: c.updates?.checkEnabled !== false ? "enabled" : "disabled",
       options: ["enabled", "disabled"],
+    },
+    {
+      id: "copilot-sdk",
+      label: "Copilot SDK",
+      value: c.copilotSdk?.backend !== "disabled"
+        ? "connected"
+        : "disconnected",
+      options: ["connected", "disconnected"],
     },
     {
       id: "modelMappingPolicy",
       label: "Model policy",
-      value: c.modelMappingPolicy,
+      value: c.modelMappingPolicy ?? "compatible",
       options: ["compatible", "strict"],
     },
     {
       id: "logLevel",
       label: "Log level",
-      value: c.logLevel,
+      value: c.logLevel ?? "info",
       options: ["debug", "info", "warn", "error"],
     },
   ];
@@ -287,6 +299,21 @@ function renderSettings(state: TUIState): void {
     const valueStr = isCursor ? colors.brightCyan.bold(row.value) : row.value;
     const line = `${cursor} ${label} ${valueStr}`;
     lines.push(isCursor ? colors.bold(line) : line);
+
+    // Extra logic: show warning/message if Copilot SDK is enabled but CLI is missing or being detected
+    if (
+      row.id === "copilot-sdk" && row.value === "connected"
+    ) {
+      if (state.copilotCliDetected === false) {
+        lines.push(
+          colors.bold.yellow(
+            "⚠ Copilot CLI not found. Download from https://docs.github.com/copilot/cli, and ensure it is in your PATH. Copilot integration will not work until the CLI is available.",
+          ),
+        );
+      } else if (state.copilotCliDetected === null) {
+        lines.push(colors.dim("Detecting Copilot CLI binary..."));
+      }
+    }
   }
 
   lines.push("");

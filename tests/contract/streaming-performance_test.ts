@@ -1,5 +1,10 @@
 import { assert, assertEquals } from "@std/assert";
-import { DEFAULT_CONFIG, handleRequest, stopClient } from "@modmux/gateway";
+import {
+  DEFAULT_CONFIG,
+  handleRequest,
+  saveConfig,
+  stopClient,
+} from "@modmux/gateway";
 import { getGlobalDiagnostics, resetGlobalDiagnostics } from "@modmux/gateway";
 
 const BASE = "http://localhost";
@@ -21,6 +26,34 @@ const VALID_STREAMING_BODY = {
   max_tokens: 50,
   stream: true,
 };
+
+async function withTempHome<T>(fn: () => Promise<T>): Promise<T> {
+  const tmp = await Deno.makeTempDir({ prefix: "modmux_streaming_" });
+  const origHome = Deno.env.get("HOME");
+  Deno.env.set("HOME", tmp);
+  try {
+    return await fn();
+  } finally {
+    if (origHome !== undefined) {
+      Deno.env.set("HOME", origHome);
+    } else {
+      Deno.env.delete("HOME");
+    }
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+}
+
+async function saveStreamingTestConfig(): Promise<void> {
+  await saveConfig({
+    ...DEFAULT_CONFIG,
+    copilotSdk: {
+      ...DEFAULT_CONFIG.copilotSdk,
+      backend: "disabled",
+      autoStart: false,
+      cliUrl: null,
+    },
+  });
+}
 
 // Test helper to measure streaming latency
 async function measureStreamingLatency(response: Response): Promise<{
@@ -69,32 +102,34 @@ Deno.test(
   "POST /v1/messages - streaming includes enhanced anti-buffering headers",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
-    const req = postJSON("/v1/messages", VALID_STREAMING_BODY);
-    const res = await handleRequest(req);
+    await withTempHome(async () => {
+      await saveStreamingTestConfig();
+      const req = postJSON("/v1/messages", VALID_STREAMING_BODY);
+      const res = await handleRequest(req);
 
-    assertEquals(res.status, 200);
-    assertEquals(res.headers.get("Content-Type"), "text/event-stream");
-    assertEquals(
-      res.headers.get("Cache-Control"),
-      "no-cache, no-store, must-revalidate",
-    );
-    assertEquals(res.headers.get("Connection"), "keep-alive");
-    assertEquals(res.headers.get("X-Accel-Buffering"), "no");
-    assertEquals(res.headers.get("X-Content-Type-Options"), "nosniff");
-    assertEquals(res.headers.get("Access-Control-Allow-Origin"), "*");
+      assertEquals(res.status, 200);
+      assertEquals(res.headers.get("Content-Type"), "text/event-stream");
+      assertEquals(
+        res.headers.get("Cache-Control"),
+        "no-cache, no-store, must-revalidate",
+      );
+      assertEquals(res.headers.get("Connection"), "keep-alive");
+      assertEquals(res.headers.get("X-Accel-Buffering"), "no");
+      assertEquals(res.headers.get("X-Content-Type-Options"), "nosniff");
+      assertEquals(res.headers.get("Access-Control-Allow-Origin"), "*");
 
-    // Clean up properly
-    try {
-      await res.body?.cancel();
-    } catch {
-      // Ignore cleanup errors
-    }
+      try {
+        await res.body?.cancel();
+      } catch {
+        // Ignore cleanup errors
+      }
 
-    try {
-      await stopClient();
-    } catch {
-      // Ignore cleanup errors
-    }
+      try {
+        await stopClient();
+      } catch {
+        // Ignore cleanup errors
+      }
+    });
   },
 );
 
@@ -102,40 +137,42 @@ Deno.test(
   "POST /v1/messages - streaming diagnostics collection",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
-    // Reset diagnostics before test
-    resetGlobalDiagnostics();
+    await withTempHome(async () => {
+      await saveStreamingTestConfig();
+      resetGlobalDiagnostics();
 
-    try {
-      const req = postJSON("/v1/messages", VALID_STREAMING_BODY);
-      const res = await handleRequest(req);
+      try {
+        const req = postJSON("/v1/messages", VALID_STREAMING_BODY);
+        const res = await handleRequest(req);
 
-      if (res.status === 200) {
-        // Consume some of the stream to trigger diagnostics
-        const reader = res.body?.getReader();
-        if (reader) {
-          for (let i = 0; i < 5; i++) {
-            const { done } = await reader.read();
-            if (done) break;
+        if (res.status === 200) {
+          const reader = res.body?.getReader();
+          if (reader) {
+            for (let i = 0; i < 5; i++) {
+              const { done } = await reader.read();
+              if (done) break;
+            }
+            reader.releaseLock();
           }
-          reader.releaseLock();
+
+          const diagnostics = getGlobalDiagnostics();
+          const metrics = diagnostics.getMetrics();
+
+          assert(
+            metrics.totalChunks >= 0,
+            "Should have recorded chunk metrics",
+          );
+          assert(
+            metrics.sessionStart > 0,
+            "Should have valid session start time",
+          );
         }
 
-        // Check that diagnostics were collected
-        const diagnostics = getGlobalDiagnostics();
-        const metrics = diagnostics.getMetrics();
-
-        // Should have recorded some chunks
-        assert(metrics.totalChunks >= 0, "Should have recorded chunk metrics");
-        assert(
-          metrics.sessionStart > 0,
-          "Should have valid session start time",
-        );
+        await res.body?.cancel();
+      } finally {
+        await stopClient();
       }
-
-      await res.body?.cancel();
-    } finally {
-      await stopClient();
-    }
+    });
   },
 );
 
@@ -143,35 +180,37 @@ Deno.test(
   "POST /v1/messages - streaming performance baseline",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
-    try {
-      const req = postJSON("/v1/messages", VALID_STREAMING_BODY);
-      const res = await handleRequest(req);
+    await withTempHome(async () => {
+      await saveStreamingTestConfig();
+      try {
+        const req = postJSON("/v1/messages", VALID_STREAMING_BODY);
+        const res = await handleRequest(req);
 
-      if (res.status === 200) {
-        const metrics = await measureStreamingLatency(res);
+        if (res.status === 200) {
+          const metrics = await measureStreamingLatency(res);
 
-        // Performance expectations:
-        // - First chunk should arrive quickly (< 5 seconds for test environment)
-        // - Should have multiple chunks for a counting response
-        assert(
-          metrics.firstChunkTime < 5000,
-          `First chunk took too long: ${metrics.firstChunkTime}ms`,
-        );
+          assert(
+            metrics.firstChunkTime < 5000,
+            `First chunk took too long: ${metrics.firstChunkTime}ms`,
+          );
 
-        assert(metrics.chunks.length >= 1, "Should receive at least one chunk");
+          assert(
+            metrics.chunks.length >= 1,
+            "Should receive at least one chunk",
+          );
 
-        console.log(`Streaming performance:
+          console.log(`Streaming performance:
   - First chunk: ${metrics.firstChunkTime}ms
   - Total chunks: ${metrics.chunks.length}
   - Total time: ${metrics.totalTime}ms`);
-      } else {
-        // Service unavailable is acceptable for testing
-        assertEquals(res.status, 503);
-        await res.body?.cancel();
+        } else {
+          assertEquals(res.status, 503);
+          await res.body?.cancel();
+        }
+      } finally {
+        await stopClient();
       }
-    } finally {
-      await stopClient();
-    }
+    });
   },
 );
 
@@ -179,30 +218,32 @@ Deno.test(
   "POST /v1/chat/completions - OpenAI endpoint streaming headers",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
-    try {
-      const req = postJSON("/v1/chat/completions", {
-        model: "gpt-4o",
-        messages: [{ role: "user", content: "Hello" }],
-        stream: true,
-        max_tokens: 10,
-      });
+    await withTempHome(async () => {
+      await saveStreamingTestConfig();
+      try {
+        const req = postJSON("/v1/chat/completions", {
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hello" }],
+          stream: true,
+          max_tokens: 10,
+        });
 
-      const res = await handleRequest(req);
+        const res = await handleRequest(req);
 
-      // Should return streaming headers regardless of backend availability
-      if (res.status === 200) {
-        assertEquals(res.headers.get("Content-Type"), "text/event-stream");
-        assertEquals(
-          res.headers.get("Cache-Control"),
-          "no-cache, no-store, must-revalidate",
-        );
-        assertEquals(res.headers.get("X-Accel-Buffering"), "no");
+        if (res.status === 200) {
+          assertEquals(res.headers.get("Content-Type"), "text/event-stream");
+          assertEquals(
+            res.headers.get("Cache-Control"),
+            "no-cache, no-store, must-revalidate",
+          );
+          assertEquals(res.headers.get("X-Accel-Buffering"), "no");
+        }
+
+        await res.body?.cancel();
+      } finally {
+        await stopClient();
       }
-
-      await res.body?.cancel();
-    } finally {
-      await stopClient();
-    }
+    });
   },
 );
 

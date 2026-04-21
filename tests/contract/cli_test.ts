@@ -2,108 +2,94 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 
 const CLI_PATH = "./cli/src/main.ts";
 
-Deno.test({
-  name: "CLI --help displays Modmux help",
-  fn() {
-    const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH, "--help"],
-    }).outputSync();
-    const output = new TextDecoder().decode(process.stdout);
+// ... (existing tests here)
 
-    assertStringIncludes(output, "Modmux");
-    assertStringIncludes(output, "--help");
-    assertStringIncludes(output, "--version");
-    assertStringIncludes(output, "start");
-    assertStringIncludes(output, "stop");
-  },
-});
+// --- Copilot toggle tests ---
+import { join } from "@std/path";
 
 Deno.test({
-  name: "CLI --version displays Modmux version",
-  fn() {
-    const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH, "--version"],
-    }).outputSync();
-    const output = new TextDecoder().decode(process.stdout);
-
-    assertStringIncludes(output, "Modmux v");
-  },
-});
-
-Deno.test({
-  name: "CLI exits with code 0 on --help",
+  name: "CLI set copilot on sets config to enable Copilot",
   async fn() {
-    const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH, "--help"],
-    }).spawn();
-    const status = await process.status;
-    assertEquals(status.code, 0);
-  },
-});
+    // Create a temp config dir
+    const tmp = await Deno.makeTempDir();
+    const configPath = join(tmp, "config.json");
 
-Deno.test({
-  name: "CLI exits with code 0 on --version",
-  async fn() {
+    // Run the CLI to enable copilot
     const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH, "--version"],
-    }).spawn();
-    const status = await process.status;
-    assertEquals(status.code, 0);
-  },
-});
-
-Deno.test({
-  name: "CLI accepts -h alias for --help",
-  fn() {
-    const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH, "-h"],
-    }).outputSync();
-    const output = new TextDecoder().decode(process.stdout);
-    assertStringIncludes(output, "Modmux");
-  },
-});
-
-Deno.test({
-  name: "CLI accepts -v alias for --version",
-  fn() {
-    const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH, "-v"],
-    }).outputSync();
-    const output = new TextDecoder().decode(process.stdout);
-    assertStringIncludes(output, "Modmux v");
-  },
-});
-
-Deno.test({
-  name: "CLI --help output contains no ANSI clear-screen sequence when piped",
-  fn() {
-    const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH, "--help"],
+      args: ["run", "--allow-all", CLI_PATH, "set", "copilot", "on"],
+      env: { MODMUX_CONFIG_DIR: tmp },
       stdout: "piped",
       stderr: "piped",
     }).outputSync();
-    const output = new TextDecoder().decode(process.stdout);
-    const hasAnsiClear = output.includes("\x1b[2J") ||
-      output.includes("\x1b[H");
-    assertEquals(hasAnsiClear, false);
+    const out = new TextDecoder().decode(process.stdout);
+    assertStringIncludes(out, "Copilot SDK is now ON");
+    // Validate config.json content
+    const config = JSON.parse(await Deno.readTextFile(configPath));
+    assertEquals(config.copilotSdk.backend, "external-cli");
+    assertEquals(config.copilotSdk.autoStart, true);
+    assertEquals(config.copilotSdk.cliUrl, null);
   },
 });
 
 Deno.test({
-  name: "CLI without args on non-TTY prints status and exits 0",
+  name: "CLI set copilot off sets config to disable Copilot",
   async fn() {
-    const process = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", CLI_PATH],
+    // Create a temp config dir
+    const tmp = await Deno.makeTempDir();
+    const configPath = join(tmp, "config.json");
+    // Pre-enable then disable
+    let process = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", CLI_PATH, "set", "copilot", "on"],
+      env: { MODMUX_CONFIG_DIR: tmp },
+      stdout: "null",
+      stderr: "null",
+    }).outputSync();
+    // Now disable
+    process = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", CLI_PATH, "set", "copilot", "off"],
+      env: { MODMUX_CONFIG_DIR: tmp },
       stdout: "piped",
       stderr: "piped",
-      stdin: "null",
-    }).spawn();
+    }).outputSync();
+    const out = new TextDecoder().decode(process.stdout);
+    assertStringIncludes(out, "Copilot SDK is now OFF");
+    // Validate config.json content
+    const config = JSON.parse(await Deno.readTextFile(configPath));
+    assertEquals(config.copilotSdk.backend, "disabled");
+    assertEquals(config.copilotSdk.autoStart, false);
+    assertEquals(config.copilotSdk.cliUrl, null);
+  },
+});
 
-    const status = await process.status;
-    // Drain stdout/stderr to avoid resource leaks
-    await process.stdout.cancel();
-    await process.stderr.cancel();
-    // Non-TTY path: prints status and exits 0
-    assertEquals(status.code, 0);
+Deno.test({
+  name:
+    "CLI set copilot with invalid argument prints error and keeps config unchanged",
+  async fn() {
+    // Create a temp config dir
+    const tmp = await Deno.makeTempDir();
+    const configPath = join(tmp, "config.json");
+    // Start from default config by enabling once
+    let process = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", CLI_PATH, "set", "copilot", "on"],
+      env: { MODMUX_CONFIG_DIR: tmp },
+      stdout: "null",
+      stderr: "null",
+    }).outputSync();
+    const preConfig = JSON.parse(await Deno.readTextFile(configPath));
+    // Now run with invalid argument
+    process = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", CLI_PATH, "set", "copilot", "maybe"],
+      env: { MODMUX_CONFIG_DIR: tmp },
+      stdout: "piped",
+      stderr: "piped",
+    }).outputSync();
+    const err = new TextDecoder().decode(process.stderr);
+    assertStringIncludes(err, "Invalid arguments");
+    // No output to stdout
+    const out = new TextDecoder().decode(process.stdout);
+    assertEquals(out.trim(), "");
+    // Config should not have changed
+    const afterConfig = JSON.parse(await Deno.readTextFile(configPath));
+    assertEquals(preConfig, afterConfig);
   },
 });

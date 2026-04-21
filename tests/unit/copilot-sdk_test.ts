@@ -1,13 +1,14 @@
 import { assertEquals } from "@std/assert";
 import {
-  __resetGitHubUsageTestDeps,
-  __resetGitHubUsageTestState,
-  __setGitHubUsageTestDeps,
-  buildGitHubUsageClientOptions,
+  __resetCopilotSdkTestDeps,
+  __resetCopilotSdkTestState,
+  __setCopilotSdkTestDeps,
+  buildCopilotSdkClientOptions,
+  COPILOT_CLI_DEFAULT_URL,
   fetchGitHubCopilotQuota,
   selectGitHubQuotaSnapshot,
-  shutdownGitHubUsageTracking,
-} from "../../gateway/src/github-usage.ts";
+  shutdownCopilotSdkTracking,
+} from "../../gateway/src/copilot-sdk.ts";
 import { DEFAULT_CONFIG } from "@modmux/gateway";
 
 class MockCopilotClient {
@@ -51,10 +52,10 @@ class MockCopilotClient {
   };
 }
 
-function githubUsageConfig() {
+function copilotSdkConfig() {
   return {
     ...DEFAULT_CONFIG,
-    githubUsage: {
+    copilotSdk: {
       backend: "external-cli" as const,
       cliUrl: null,
       autoStart: true,
@@ -64,20 +65,86 @@ function githubUsageConfig() {
 }
 
 Deno.test.afterEach(async () => {
-  await shutdownGitHubUsageTracking();
-  await __resetGitHubUsageTestState();
-  __resetGitHubUsageTestDeps();
+  await shutdownCopilotSdkTracking();
+  await __resetCopilotSdkTestState();
+  __resetCopilotSdkTestDeps();
 });
 
-Deno.test("buildGitHubUsageClientOptions returns null for missing cliUrl", () => {
-  const options = buildGitHubUsageClientOptions(null);
+Deno.test("buildCopilotSdkClientOptions returns null for missing cliUrl", () => {
+  const options = buildCopilotSdkClientOptions(null);
   assertEquals(options, null);
 });
 
-Deno.test("buildGitHubUsageClientOptions returns external cliUrl only", () => {
-  const options = buildGitHubUsageClientOptions("127.0.0.1:4321");
+Deno.test("buildCopilotSdkClientOptions returns external cliUrl only", () => {
+  const options = buildCopilotSdkClientOptions("127.0.0.1:4321");
 
   assertEquals(options, { cliUrl: "127.0.0.1:4321" });
+});
+
+Deno.test("buildCopilotSdkClientOptions defaults to local Copilot CLI URL if cliUrl is null, external-cli backend, and autoStart false", () => {
+  let logCalled = false;
+  let logLevel = "";
+  let logMsg = "";
+  let logMeta: { backend?: string; autoStart?: boolean } | undefined;
+
+  __setCopilotSdkTestDeps({
+    log: (level, message, meta) => {
+      logCalled = true;
+      logLevel = level;
+      logMsg = message;
+      logMeta = meta as { backend?: string; autoStart?: boolean } | undefined;
+      return Promise.resolve();
+    },
+  });
+
+  const options = buildCopilotSdkClientOptions(null, {
+    backend: "external-cli",
+    autoStart: false,
+  });
+
+  assertEquals(options, { cliUrl: COPILOT_CLI_DEFAULT_URL });
+  assertEquals(logCalled, true);
+  assertEquals(logLevel, "info");
+  assertEquals(logMsg.includes(COPILOT_CLI_DEFAULT_URL), true);
+  assertEquals(logMeta, { backend: "external-cli", autoStart: false });
+});
+
+Deno.test("buildCopilotSdkClientOptions does not default when autoStart is true", () => {
+  let logCalled = false;
+
+  __setCopilotSdkTestDeps({
+    log: () => {
+      logCalled = true;
+      return Promise.resolve();
+    },
+  });
+
+  const options = buildCopilotSdkClientOptions(null, {
+    backend: "external-cli",
+    autoStart: true,
+  });
+
+  assertEquals(options, null);
+  assertEquals(logCalled, false);
+});
+
+Deno.test("buildCopilotSdkClientOptions does not default for disabled backend", () => {
+  let logCalled = false;
+
+  __setCopilotSdkTestDeps({
+    log: () => {
+      logCalled = true;
+      return Promise.resolve();
+    },
+  });
+
+  const options = buildCopilotSdkClientOptions(null, {
+    backend: "disabled",
+    autoStart: false,
+  });
+
+  assertEquals(options, null);
+  assertEquals(logCalled, false);
 });
 
 Deno.test("selectGitHubQuotaSnapshot ignores repeated placeholder quotas", () => {
@@ -148,14 +215,14 @@ Deno.test("fetchGitHubCopilotQuota returns error when all snapshots are placehol
     },
   }));
 
-  __setGitHubUsageTestDeps({
-    loadConfig: () => Promise.resolve(githubUsageConfig()),
-    ensureGitHubUsageSidecarStarted: () =>
+  __setCopilotSdkTestDeps({
+    loadConfig: () => Promise.resolve(copilotSdkConfig()),
+    ensureCopilotSdkSidecarStarted: () =>
       Promise.resolve({
         cliUrl: "127.0.0.1:4321",
         statusHint: null,
       }),
-    resolveConfiguredGitHubUsageCliUrl: () => Promise.resolve("127.0.0.1:4321"),
+    resolveConfiguredCopilotSdkCliUrl: () => Promise.resolve("127.0.0.1:4321"),
     createClient: () => client,
     log: () => Promise.resolve(),
   });
@@ -176,14 +243,14 @@ Deno.test("fetchGitHubCopilotQuota reuses cached data for the same cliUrl", asyn
     },
   }));
 
-  __setGitHubUsageTestDeps({
-    loadConfig: () => Promise.resolve(githubUsageConfig()),
-    ensureGitHubUsageSidecarStarted: () =>
+  __setCopilotSdkTestDeps({
+    loadConfig: () => Promise.resolve(copilotSdkConfig()),
+    ensureCopilotSdkSidecarStarted: () =>
       Promise.resolve({
         cliUrl: "127.0.0.1:4321",
         statusHint: null,
       }),
-    resolveConfiguredGitHubUsageCliUrl: () => Promise.resolve("127.0.0.1:4321"),
+    resolveConfiguredCopilotSdkCliUrl: () => Promise.resolve("127.0.0.1:4321"),
     createClient: () => client,
     log: () => Promise.resolve(),
   });
@@ -201,14 +268,14 @@ Deno.test("fetchGitHubCopilotQuota resets the client when the resolved cliUrl ch
   let currentCliUrl = "127.0.0.1:4321";
   const createdClients: MockCopilotClient[] = [];
 
-  __setGitHubUsageTestDeps({
-    loadConfig: () => Promise.resolve(githubUsageConfig()),
-    ensureGitHubUsageSidecarStarted: () =>
+  __setCopilotSdkTestDeps({
+    loadConfig: () => Promise.resolve(copilotSdkConfig()),
+    ensureCopilotSdkSidecarStarted: () =>
       Promise.resolve({
         cliUrl: currentCliUrl,
         statusHint: null,
       }),
-    resolveConfiguredGitHubUsageCliUrl: () => Promise.resolve(currentCliUrl),
+    resolveConfiguredCopilotSdkCliUrl: () => Promise.resolve(currentCliUrl),
     createClient: () => {
       const client = new MockCopilotClient(() => ({
         completions: {

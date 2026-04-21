@@ -32,10 +32,10 @@ Deno.test("loadConfig — returns DEFAULT_CONFIG on first run", async () => {
     assertEquals(config.usageMetrics.persist, false);
     assertEquals(config.usageMetrics.snapshotIntervalMs, 60_000);
     assertEquals(config.usageMetrics.filePath, null);
-    assertEquals(config.githubUsage.backend, "disabled");
-    assertEquals(config.githubUsage.cliUrl, null);
-    assertEquals(config.githubUsage.autoStart, false);
-    assertEquals(config.githubUsage.preferredPort, 4321);
+    assertEquals(config.copilotSdk.backend, "external-cli");
+    assertEquals(config.copilotSdk.cliUrl, null);
+    assertEquals(config.copilotSdk.autoStart, true);
+    assertEquals(config.copilotSdk.preferredPort, 4321);
   });
 });
 
@@ -123,7 +123,7 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
         snapshotIntervalMs: 120_000,
         filePath: "/tmp/modmux-usage.json",
       },
-      githubUsage: {
+      copilotSdk: {
         backend: "external-cli",
         cliUrl: "127.0.0.1:4321",
         autoStart: false,
@@ -145,50 +145,53 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.usageMetrics.persist, true);
     assertEquals(loaded.usageMetrics.snapshotIntervalMs, 120_000);
     assertEquals(loaded.usageMetrics.filePath, "/tmp/modmux-usage.json");
-    assertEquals(loaded.githubUsage.backend, "external-cli");
-    assertEquals(loaded.githubUsage.cliUrl, "127.0.0.1:4321");
-    assertEquals(loaded.githubUsage.autoStart, false);
-    assertEquals(loaded.githubUsage.preferredPort, 5001);
+    assertEquals(loaded.copilotSdk.backend, "external-cli");
+    assertEquals(loaded.copilotSdk.cliUrl, "127.0.0.1:4321");
+    assertEquals(loaded.copilotSdk.autoStart, false);
+    assertEquals(loaded.copilotSdk.preferredPort, 5001);
     assertEquals(loaded.updates.checkEnabled, false);
   });
 });
 
-Deno.test("saveConfig — rejects invalid githubUsage.backend", async () => {
+Deno.test("saveConfig — rejects invalid copilotSdk.backend", async () => {
   await withTempHome(async () => {
     await assertRejects(
       () =>
         saveConfig({
           ...DEFAULT_CONFIG,
-          githubUsage: {
+          copilotSdk: {
             backend:
-              "socket" as unknown as ModmuxConfig["githubUsage"]["backend"],
+              "socket" as unknown as ModmuxConfig["copilotSdk"]["backend"],
             cliUrl: null,
             autoStart: false,
             preferredPort: 4321,
           },
         }),
       Error,
-      "Invalid githubUsage.backend",
+      "Invalid copilotSdk.backend",
     );
   });
 });
 
-Deno.test("saveConfig — external-cli backend requires cliUrl", async () => {
+Deno.test("saveConfig — external-cli backend allows null cliUrl for runtime defaulting", async () => {
   await withTempHome(async () => {
-    await assertRejects(
-      () =>
-        saveConfig({
-          ...DEFAULT_CONFIG,
-          githubUsage: {
-            backend: "external-cli",
-            cliUrl: null,
-            autoStart: false,
-            preferredPort: 4321,
-          },
-        }),
-      Error,
-      "cliUrl is required",
-    );
+    const config: ModmuxConfig = {
+      ...DEFAULT_CONFIG,
+      copilotSdk: {
+        backend: "external-cli",
+        cliUrl: null,
+        autoStart: false,
+        preferredPort: 4321,
+      },
+    };
+
+    await saveConfig(config);
+    const loaded = await loadConfig();
+
+    assertEquals(loaded.copilotSdk.backend, "external-cli");
+    assertEquals(loaded.copilotSdk.cliUrl, null);
+    assertEquals(loaded.copilotSdk.autoStart, false);
+    assertEquals(loaded.copilotSdk.preferredPort, 4321);
   });
 });
 
@@ -198,7 +201,7 @@ Deno.test("saveConfig — autoStart requires external-cli backend", async () => 
       () =>
         saveConfig({
           ...DEFAULT_CONFIG,
-          githubUsage: {
+          copilotSdk: {
             backend: "disabled",
             cliUrl: null,
             autoStart: true,
@@ -211,19 +214,19 @@ Deno.test("saveConfig — autoStart requires external-cli backend", async () => 
   });
 });
 
-Deno.test("saveConfig — rejects invalid githubUsage.preferredPort", async () => {
+Deno.test("saveConfig — rejects invalid copilotSdk.preferredPort", async () => {
   await withTempHome(async () => {
     await assertRejects(
       () =>
         saveConfig({
           ...DEFAULT_CONFIG,
-          githubUsage: {
-            ...DEFAULT_CONFIG.githubUsage,
+          copilotSdk: {
+            ...DEFAULT_CONFIG.copilotSdk,
             preferredPort: 80,
           },
         }),
       Error,
-      "Invalid githubUsage.preferredPort",
+      "Invalid copilotSdk.preferredPort",
     );
   });
 });
@@ -317,24 +320,53 @@ Deno.test("loadConfig — throws on invalid MODMUX_PORT", async () => {
   });
 });
 
-Deno.test("loadConfig — GitHub usage env overrides file/default", async () => {
+Deno.test("loadConfig — Copilot SDK env overrides file/default", async () => {
   await withTempHome(async () => {
-    Deno.env.set("MODMUX_GITHUB_USAGE_BACKEND", "external-cli");
-    Deno.env.set("MODMUX_GITHUB_USAGE_CLI_URL", "127.0.0.1:4555");
-    Deno.env.set("MODMUX_GITHUB_USAGE_AUTO_START", "true");
-    Deno.env.set("MODMUX_GITHUB_USAGE_PREFERRED_PORT", "4555");
+    Deno.env.set("MODMUX_COPILOT_SDK_BACKEND", "external-cli");
+    Deno.env.set("MODMUX_COPILOT_SDK_CLI_URL", "127.0.0.1:4555");
+    Deno.env.set("MODMUX_COPILOT_SDK_AUTO_START", "true");
+    Deno.env.set("MODMUX_COPILOT_SDK_PREFERRED_PORT", "4555");
     try {
       const loaded = await loadConfig();
-      assertEquals(loaded.githubUsage.backend, "external-cli");
-      assertEquals(loaded.githubUsage.cliUrl, "127.0.0.1:4555");
-      assertEquals(loaded.githubUsage.autoStart, true);
-      assertEquals(loaded.githubUsage.preferredPort, 4555);
+      assertEquals(loaded.copilotSdk.backend, "external-cli");
+      assertEquals(loaded.copilotSdk.cliUrl, "127.0.0.1:4555");
+      assertEquals(loaded.copilotSdk.autoStart, true);
+      assertEquals(loaded.copilotSdk.preferredPort, 4555);
     } finally {
-      Deno.env.delete("MODMUX_GITHUB_USAGE_BACKEND");
-      Deno.env.delete("MODMUX_GITHUB_USAGE_CLI_URL");
-      Deno.env.delete("MODMUX_GITHUB_USAGE_AUTO_START");
-      Deno.env.delete("MODMUX_GITHUB_USAGE_PREFERRED_PORT");
+      Deno.env.delete("MODMUX_COPILOT_SDK_BACKEND");
+      Deno.env.delete("MODMUX_COPILOT_SDK_CLI_URL");
+      Deno.env.delete("MODMUX_COPILOT_SDK_AUTO_START");
+      Deno.env.delete("MODMUX_COPILOT_SDK_PREFERRED_PORT");
     }
+  });
+});
+
+Deno.test("loadConfig — migrates legacy githubUsage config to copilotSdk", async () => {
+  await withTempHome(async (home) => {
+    const dir = join(home, ".modmux");
+    await Deno.mkdir(dir, { recursive: true });
+    await Deno.writeTextFile(
+      join(dir, "config.json"),
+      JSON.stringify(
+        {
+          githubUsage: {
+            backend: "external-cli",
+            cliUrl: "127.0.0.1:4999",
+            autoStart: false,
+            preferredPort: 4999,
+          },
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+
+    const loaded = await loadConfig();
+
+    assertEquals(loaded.copilotSdk.backend, "external-cli");
+    assertEquals(loaded.copilotSdk.cliUrl, "127.0.0.1:4999");
+    assertEquals(loaded.copilotSdk.autoStart, false);
+    assertEquals(loaded.copilotSdk.preferredPort, 4999);
   });
 });
 

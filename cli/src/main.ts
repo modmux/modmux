@@ -25,6 +25,7 @@ import {
   renderFull,
   showCursor,
 } from "../../gateway/src/render.ts";
+import { findFirstBinary } from "../../gateway/src/process.ts";
 import { keypress, mapKey } from "../../gateway/src/input.ts";
 import { fetchModelList } from "../../providers/src/models.ts";
 import { getLogPath } from "../../gateway/src/log.ts";
@@ -44,28 +45,52 @@ ${APP_NAME} - GitHub Copilot gateway
 Usage: ${CANONICAL_CLI_NAME} [COMMAND] [OPTIONS]
 
 Commands:
-  (none)              Open the interactive TUI
-  start               Start the background proxy service
-  stop                Stop the background proxy service
-  restart             Restart the background proxy service
-  status              Show service and auth status
-  configure <agent>   Configure an agent to use ${APP_NAME}
-  unconfigure <agent> Revert agent configuration
-  doctor              Scan and report all agent states
-  models              List available Copilot model IDs
-  model-policy [mode] Show or set model mapping policy (compatible|strict)
-  install-service     Register daemon with OS login service manager
-  uninstall-service   Remove daemon from OS login service manager
-  upgrade             Upgrade modmux to the latest release
+  (none)               Open the interactive TUI
+  start                Start the background proxy service
+  stop                 Stop the background proxy service
+  restart              Restart the background proxy service
+  status               Show service and auth status
+  configure <agent>    Configure an agent to use ${APP_NAME}
+  unconfigure <agent>  Revert agent configuration
+  doctor               Scan and report all agent states
+  models               List available Copilot model IDs
+  model-policy [mode]  Show or set model mapping policy (compatible|strict)
+  install-service      Register daemon with OS login service manager
+  uninstall-service    Remove daemon from OS login service manager
+  upgrade              Upgrade modmux to the latest release
+  set copilot [on|off] Enable or disable GitHub Copilot support (global)
 
 Options:
-  --help, -h          Show this help message
-  --version, -v       Show version
+  --help, -h           Show this help message
+  --version, -v        Show version
 `.trim());
 }
 
 function showVersion() {
   console.log(`${APP_NAME} v${VERSION}`);
+}
+
+async function cmdSetCopilot(
+  target: string | undefined,
+  state: string | undefined,
+): Promise<void> {
+  const usage = `Usage: ${CANONICAL_CLI_NAME} set copilot [on|off]`;
+  if (target !== "copilot" || (state !== "on" && state !== "off")) {
+    console.error("Error: Invalid arguments.\n" + usage);
+    Deno.exit(1);
+  }
+  const config = await loadConfig();
+  if (state === "on") {
+    config.copilotSdk.backend = "external-cli";
+    config.copilotSdk.autoStart = true;
+    config.copilotSdk.cliUrl = null;
+  } else {
+    config.copilotSdk.backend = "disabled";
+    config.copilotSdk.autoStart = false;
+    config.copilotSdk.cliUrl = null;
+  }
+  await saveConfig(config);
+  console.log(`Copilot SDK is now ${state.toUpperCase()}.`);
 }
 
 export async function ensureAuthenticated(): Promise<boolean> {
@@ -449,6 +474,39 @@ async function runTUI(updateVersion: string | null): Promise<void> {
         currentConfig = applySettingChange(row.id, newValue, currentConfig);
         await saveConfig(currentConfig).catch(() => {});
 
+        // If Copilot SDK was switched, restart detection as needed
+        if (row.id === "copilot-sdk") {
+          if (newValue === "connected") {
+            state = {
+              ...state,
+              settings: updatedSettings,
+              copilotCliDetected: null,
+            };
+            renderFull(state);
+            (async () => {
+              const found = !!(await findFirstBinary(["copilot"]));
+              // Only update if still on settings mode and Copilot SDK is still connected
+              const stillOn = state.settings[state.settingsCursorIndex]?.id ===
+                  "copilot-sdk" &&
+                state.settings.find((r) => r.id === "copilot-sdk")
+                    ?.value === "connected";
+              if (state.mode === "settings" && stillOn) {
+                state = { ...state, copilotCliDetected: found };
+                renderFull(state);
+              }
+            })();
+            continue;
+          } else {
+            state = {
+              ...state,
+              settings: updatedSettings,
+              copilotCliDetected: null,
+            };
+            renderFull(state);
+            continue;
+          }
+        }
+
         state = { ...state, settings: updatedSettings };
         renderFull(state);
         continue;
@@ -469,8 +527,16 @@ async function runTUI(updateVersion: string | null): Promise<void> {
         mode: "settings",
         settings: buildSettingsRows(currentConfig),
         settingsCursorIndex: 0,
+        copilotCliDetected: null,
       };
       renderFull(state);
+      (async () => {
+        const found = !!(await findFirstBinary(["copilot"]));
+        if (state.mode === "settings") {
+          state = { ...state, copilotCliDetected: found };
+          renderFull(state);
+        }
+      })();
       continue;
     }
 
@@ -575,6 +641,18 @@ function applySettingChange(
         ...config,
         logLevel: value as "debug" | "info" | "warn" | "error",
       };
+    case "copilot-sdk": {
+      const enabled = value === "connected";
+      return {
+        ...config,
+        copilotSdk: {
+          ...config.copilotSdk,
+          backend: enabled ? "external-cli" : "disabled",
+          autoStart: enabled,
+          cliUrl: null,
+        },
+      };
+    }
     default:
       return config;
   }
@@ -637,6 +715,9 @@ async function main() {
   }
 
   switch (subcommand) {
+    case "set":
+      await cmdSetCopilot(args[1], args[2]);
+      break;
     case "start":
       await cmdStart();
       break;
