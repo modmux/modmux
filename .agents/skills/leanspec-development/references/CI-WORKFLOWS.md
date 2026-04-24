@@ -6,8 +6,7 @@ Detailed documentation for each workflow in the LeanSpec repository.
 
 ### Overview
 
-The CI workflow runs on every push to main and all pull requests. It validates
-that the codebase builds correctly and all tests pass.
+The CI workflow runs on every push to main and all pull requests. It validates that the codebase builds correctly and all tests pass.
 
 ### Trigger Events
 
@@ -26,7 +25,6 @@ on:
 **Runs on**: `ubuntu-latest`
 
 **Steps**:
-
 1. Checkout code
 2. Setup Node.js 20
 3. Setup pnpm with caching
@@ -39,17 +37,16 @@ on:
 **Duration**: ~2-4 minutes
 
 **Common Failure Points**:
-
 - TypeScript compilation errors
 - Test failures
 - Missing dependencies
 
 #### 2. `rust` - Rust Build & Test
 
-**Runs on**: `ubuntu-latest` **Depends on**: `node` (needs UI dist artifact)
+**Runs on**: `ubuntu-latest`
+**Depends on**: `node` (needs UI dist artifact)
 
 **Steps**:
-
 1. Checkout code
 2. Install Rust stable toolchain
 3. Setup cargo caching
@@ -64,7 +61,6 @@ on:
 **Duration**: ~5-8 minutes
 
 **Common Failure Points**:
-
 - Clippy warnings (treated as errors)
 - Formatting issues
 - Test failures
@@ -76,9 +72,7 @@ on:
 
 ### Overview
 
-The publish workflow builds binaries for all platforms and publishes packages to
-npm. It supports both production releases (via GitHub Release) and development
-builds (via manual dispatch).
+The publish workflow builds binaries for all platforms and publishes packages to npm. It supports both production releases (via GitHub Release) and development builds (via manual dispatch).
 
 ### Trigger Events
 
@@ -87,11 +81,11 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Skip npm publish steps (build/validate only)"
+        description: 'Skip npm publish steps (build/validate only)'
         type: boolean
         default: false
       dev:
-        description: "Publish a dev prerelease version"
+        description: 'Publish a dev prerelease version'
         type: boolean
         default: false
   release:
@@ -112,19 +106,18 @@ on:
 
 #### 2. `rust-binaries` - Build Platform Binaries
 
-**Runs on**: Matrix of OS/target combinations **Depends on**: `build-ui`
+**Runs on**: Matrix of OS/target combinations
+**Depends on**: `build-ui`
 
 **Matrix**:
-
-| OS               | Target                     | Platform       |
-| ---------------- | -------------------------- | -------------- |
-| `macos-latest`   | `x86_64-apple-darwin`      | `darwin-x64`   |
-| `macos-latest`   | `aarch64-apple-darwin`     | `darwin-arm64` |
-| `ubuntu-latest`  | `x86_64-unknown-linux-gnu` | `linux-x64`    |
-| `windows-latest` | `x86_64-pc-windows-msvc`   | `windows-x64`  |
+| OS | Target | Platform |
+|----|--------|----------|
+| `macos-latest` | `x86_64-apple-darwin` | `darwin-x64` |
+| `macos-latest` | `aarch64-apple-darwin` | `darwin-arm64` |
+| `ubuntu-latest` | `x86_64-unknown-linux-gnu` | `linux-x64` |
+| `windows-latest` | `x86_64-pc-windows-msvc` | `windows-x64` |
 
 **Builds**:
-
 - `leanspec-cli` (lean-spec binary)
 - `leanspec-mcp` (MCP server binary)
 - `leanspec-http` (HTTP server binary)
@@ -135,12 +128,12 @@ on:
 
 #### 3. `publish-platform` - Publish Platform Packages
 
-**Runs on**: `ubuntu-latest` **Depends on**: `rust-binaries`
+**Runs on**: `ubuntu-latest`
+**Depends on**: `rust-binaries`
 
 **Purpose**: Publish platform-specific npm packages before main packages.
 
 **Packages Published**:
-
 - `@leanspec/cli-darwin-arm64`
 - `@leanspec/cli-darwin-x64`
 - `@leanspec/cli-linux-x64`
@@ -158,13 +151,12 @@ on:
 
 #### 4. `publish-main` - Publish Main Packages
 
-**Runs on**: `ubuntu-latest` **Depends on**: `publish-platform`
+**Runs on**: `ubuntu-latest`
+**Depends on**: `publish-platform`
 
-**Special Step**: Waits for platform packages to propagate on npm registry (up
-to 20 attempts with exponential backoff).
+**Special Step**: Waits for platform packages to propagate on npm registry (up to 20 attempts with exponential backoff).
 
 **Packages Published**:
-
 - `lean-spec` (CLI main package)
 - `@leanspec/mcp` (MCP server main package)
 - `@leanspec/ui` (UI bundle)
@@ -223,15 +215,15 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/desktop/**"
-      - "packages/ui/**"
-      - ".github/workflows/desktop-build.yml"
+      - 'packages/desktop/**'
+      - 'packages/ui/**'
+      - '.github/workflows/desktop-build.yml'
   pull_request:
     branches: [main]
     paths:
-      - "packages/desktop/**"
-      - "packages/ui/**"
-      - ".github/workflows/desktop-build.yml"
+      - 'packages/desktop/**'
+      - 'packages/ui/**'
+      - '.github/workflows/desktop-build.yml'
 ```
 
 ### Jobs
@@ -241,7 +233,6 @@ on:
 **Runs on**: Matrix of `macos-latest`, `ubuntu-latest`, `windows-latest`
 
 **Steps**:
-
 1. Checkout code
 2. Setup pnpm, Node.js 20, Rust
 3. Install dependencies
@@ -263,9 +254,7 @@ on:
 
 ### Overview
 
-Prepares the environment for GitHub Copilot coding agent. This workflow is
-automatically picked up by Copilot when it needs to set up the development
-environment.
+Prepares the environment for GitHub Copilot coding agent. This workflow is automatically picked up by Copilot when it needs to set up the development environment.
 
 ### Trigger Events
 
@@ -287,7 +276,6 @@ on:
 **Runs on**: `ubuntu-latest`
 
 **Steps**:
-
 1. Checkout code
 2. Setup Node.js 20
 3. Setup pnpm
@@ -299,5 +287,4 @@ on:
 9. Install lean-spec CLI globally
 10. Verify installation
 
-**Purpose**: Provides Copilot agent with a fully configured development
-environment including the lean-spec CLI available globally.
+**Purpose**: Provides Copilot agent with a fully configured development environment including the lean-spec CLI available globally.

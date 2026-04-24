@@ -24,7 +24,6 @@ worktree, pushing to its own branch, opening its own PR.
 ## When to Use This Skill
 
 Activate when:
-
 - User wants to run two or more AI agents on different features/bugs at once
 - User asks about `git worktree` for agent sessions
 - User wants parallel PRs from a single repo without multiple clones
@@ -63,17 +62,17 @@ Hit an error?
 
 ## Core Concepts
 
-**Worktree vs clone** — A worktree shares the same `.git` directory as the main
-checkout. No double-fetch, no disk waste. Each worktree checks out a _different_
-branch. Isolated at the filesystem level; same object store.
+**Worktree vs clone** — A worktree shares the same `.git` directory as the
+main checkout. No double-fetch, no disk waste. Each worktree checks out a
+*different* branch. Isolated at the filesystem level; same object store.
 
-**One agent, one worktree, one branch** — This is the cardinal rule. Two agents
-sharing a worktree will corrupt each other's index. Two agents on the same
-branch will produce conflicting history.
+**One agent, one worktree, one branch** — This is the cardinal rule. Two
+agents sharing a worktree will corrupt each other's index. Two agents on the
+same branch will produce conflicting history.
 
 **PRs as the coordination channel** — Agents communicate intent through PR
-titles, descriptions, and comments — not through shared files or direct worktree
-reads.
+titles, descriptions, and comments — not through shared files or direct
+worktree reads.
 
 ## Layout Convention
 
@@ -114,8 +113,8 @@ of other worktrees.
 
 ### 3. Work and commit
 
-Normal git flow inside the worktree — the agent uses `git add`, `git commit` as
-usual. The branch is isolated from main and all sibling worktrees.
+Normal git flow inside the worktree — the agent uses `git add`, `git commit`
+as usual. The branch is isolated from main and all sibling worktrees.
 
 ### 4. Push and open PR
 
@@ -151,7 +150,8 @@ git worktree prune          # removes stale metadata entries
 
 ## Branch Naming
 
-Use a consistent pattern so agents (and humans) can parse ownership at a glance:
+Use a consistent pattern so agents (and humans) can parse ownership at a
+glance:
 
 ```
 <type>/<scope>/<short-description>
@@ -164,25 +164,22 @@ agent/experiment/refactor-parser   ← for exploratory agent sessions
 
 ## Pitfalls
 
-| Symptom                                  | Cause                                     | Fix                                            |
-| ---------------------------------------- | ----------------------------------------- | ---------------------------------------------- |
-| `fatal: 'branch' is already checked out` | Branch open in another worktree           | Use a new branch name                          |
-| `.git/index.lock` errors                 | Two processes on same worktree            | One agent per worktree                         |
-| Detached HEAD                            | Created from a commit SHA, not a branch   | `git switch -c <new-branch>`                   |
-| Worktree path gone after reboot          | Dir deleted externally                    | `git worktree prune`, then recreate            |
-| `git worktree list` shows stale entries  | Dir removed without `git worktree remove` | `git worktree prune`                           |
-| Agent edits files in main checkout       | Agent not scoped to worktree path         | Re-brief agent with explicit working directory |
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `fatal: 'branch' is already checked out` | Branch open in another worktree | Use a new branch name |
+| `.git/index.lock` errors | Two processes on same worktree | One agent per worktree |
+| Detached HEAD | Created from a commit SHA, not a branch | `git switch -c <new-branch>` |
+| Worktree path gone after reboot | Dir deleted externally | `git worktree prune`, then recreate |
+| `git worktree list` shows stale entries | Dir removed without `git worktree remove` | `git worktree prune` |
+| Agent edits files in main checkout | Agent not scoped to worktree path | Re-brief agent with explicit working directory |
 
 ## References
 
 Read these when you need more depth:
 
-- `references/worktree-lifecycle.md` — Full command reference, flags, edge cases
-  (multiple worktrees, bare repos, moving worktrees)
-- `references/github-pr-sync.md` — PR creation, draft PRs, linking, status
-  checks, merge strategies via `gh` CLI
-- `references/agent-coordination.md` — Patterns for coordinating output across
-  parallel sessions: sequencing, handoffs, shared state via PRs
+- `references/worktree-lifecycle.md` — Full command reference, flags, edge cases (multiple worktrees, bare repos, moving worktrees)
+- `references/github-pr-sync.md` — PR creation, draft PRs, linking, status checks, merge strategies via `gh` CLI
+- `references/agent-coordination.md` — Patterns for coordinating output across parallel sessions: sequencing, handoffs, shared state via PRs
 
 ## Setup & Activation
 

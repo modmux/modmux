@@ -1,7 +1,6 @@
 # Command Reference
 
-Complete reference for all agent-browser commands. For quick start and common
-patterns, see SKILL.md.
+Complete reference for all agent-browser commands. For quick start and common patterns, see SKILL.md.
 
 ## Navigation
 
@@ -194,8 +193,7 @@ agent-browser eval -b "<base64>"             # Any JavaScript (base64 encoded)
 agent-browser eval --stdin                   # Read script from stdin
 ```
 
-Use `-b`/`--base64` or `--stdin` for reliable execution. Shell escaping with
-nested quotes and special characters is error-prone.
+Use `-b`/`--base64` or `--stdin` for reliable execution. Shell escaping with nested quotes and special characters is error-prone.
 
 ```bash
 # Base64 encode your script, then:

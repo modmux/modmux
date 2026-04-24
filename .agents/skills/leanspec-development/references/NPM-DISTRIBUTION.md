@@ -1,12 +1,10 @@
 # npm Distribution for Rust Binaries
 
-This document describes how LeanSpec distributes Rust CLI and MCP binaries via
-npm.
+This document describes how LeanSpec distributes Rust CLI and MCP binaries via npm.
 
 ## Overview
 
-LeanSpec uses the **optional dependencies pattern** (used by `esbuild`, `swc`,
-`@tauri-apps/cli`) to distribute platform-specific Rust binaries:
+LeanSpec uses the **optional dependencies pattern** (used by `esbuild`, `swc`, `@tauri-apps/cli`) to distribute platform-specific Rust binaries:
 
 ```
 Main Package (lean-spec)
@@ -94,7 +92,6 @@ pnpm sync-versions
 ```
 
 This updates:
-
 - All workspace package versions
 - All platform package versions
 
@@ -104,9 +101,7 @@ This updates:
 pnpm tsx scripts/generate-platform-manifests.ts
 ```
 
-This creates `package.json` and `postinstall.js` for all platform packages. The
-postinstall script sets executable permissions on Unix binaries (npm strips file
-permissions during packaging).
+This creates `package.json` and `postinstall.js` for all platform packages. The postinstall script sets executable permissions on Unix binaries (npm strips file permissions during packaging).
 
 ### Step 3: Publish Platform Packages
 
@@ -114,8 +109,7 @@ permissions during packaging).
 pnpm publish:platforms [--dry-run]
 ```
 
-This publishes all platform-specific binary packages. Platform packages **must**
-be published before main packages.
+This publishes all platform-specific binary packages. Platform packages **must** be published before main packages.
 
 ### Step 4: Publish Main Packages
 
@@ -148,9 +142,9 @@ Use `pnpm sync-versions` to synchronize all package versions.
 #!/usr/bin/env node
 // Platform detection
 const PLATFORM_MAP = {
-  darwin: { x64: "darwin-x64", arm64: "darwin-arm64" },
-  linux: { x64: "linux-x64", arm64: "linux-arm64" },
-  win32: { x64: "windows-x64" },
+  darwin: { x64: 'darwin-x64', arm64: 'darwin-arm64' },
+  linux: { x64: 'linux-x64', arm64: 'linux-arm64' },
+  win32: { x64: 'windows-x64' }
 };
 
 // Resolve binary from platform package
@@ -158,7 +152,7 @@ const packageName = `@leanspec/cli-${platformKey}`;
 const binaryPath = require.resolve(`${packageName}/lean-spec`);
 
 // Spawn binary with all args
-spawn(binaryPath, process.argv.slice(2), { stdio: "inherit" });
+spawn(binaryPath, process.argv.slice(2), { stdio: 'inherit' });
 ```
 
 ### MCP Wrapper (`packages/mcp/bin/leanspec-mcp-rust.js`)
@@ -173,17 +167,14 @@ Same pattern as CLI wrapper, but for MCP binary (`leanspec-mcp`).
 Error: spawn EACCES
 ```
 
-This means the binary doesn't have execute permissions. This should be
-automatically fixed by the postinstall script, but if it persists:
+This means the binary doesn't have execute permissions. This should be automatically fixed by the postinstall script, but if it persists:
 
 ```bash
 # Manual fix
 chmod +x /path/to/node_modules/@leanspec/cli-darwin-arm64/lean-spec
 ```
 
-**Root cause:** npm strips file permissions when creating tarballs. The
-`postinstall.js` script (included in platform packages) runs `chmod 0o755` on
-the binary after installation.
+**Root cause:** npm strips file permissions when creating tarballs. The `postinstall.js` script (included in platform packages) runs `chmod 0o755` on the binary after installation.
 
 ### Binary not found
 

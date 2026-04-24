@@ -4,7 +4,6 @@ Complete guide to `.github/copilot-setup-steps.yml` — the workflow that
 configures cloud coding sessions for Claude Code and GitHub Copilot agents.
 
 ## Table of Contents
-
 1. [What it is](#what-it-is)
 2. [File location](#file-location)
 3. [Minimal example](#minimal-example)
@@ -18,29 +17,29 @@ configures cloud coding sessions for Claude Code and GitHub Copilot agents.
 
 ## What It Is
 
-`copilot-setup-steps.yml` is a GitHub Actions workflow that runs when a cloud
-coding session starts. It prepares the environment so the AI agent can:
+`copilot-setup-steps.yml` is a GitHub Actions workflow that runs when a
+cloud coding session starts. It prepares the environment so the AI agent
+can:
 
 - Authenticate with `gh` CLI
 - Install project dependencies
 - Build the project
 - Run linters, formatters, and tests
 
-The workflow uses the `repository_dispatch` event and runs in the same container
-that the agent session uses.
+The workflow uses the `repository_dispatch` event and runs in the same
+container that the agent session uses.
 
 ---
 
 ## File Location
 
 Must be at exactly:
-
 ```
 .github/copilot-setup-steps.yml
 ```
 
-Not in `.github/workflows/` — this is intentional. It's a setup config, not a CI
-workflow.
+Not in `.github/workflows/` — this is intentional. It's a setup config,
+not a CI workflow.
 
 ---
 
@@ -95,8 +94,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -118,8 +117,8 @@ jobs:
 - uses: pnpm/action-setup@v4
 - uses: actions/setup-node@v4
   with:
-    node-version: "22"
-    cache: "pnpm"
+    node-version: '22'
+    cache: 'pnpm'
 - run: pnpm install --frozen-lockfile
 ```
 
@@ -128,8 +127,8 @@ jobs:
 ```yaml
 - uses: actions/setup-node@v4
   with:
-    node-version: "22"
-    cache: "npm"
+    node-version: '22'
+    cache: 'npm'
 - run: npm ci
 ```
 
@@ -146,8 +145,8 @@ jobs:
 ```yaml
 - uses: actions/setup-python@v5
   with:
-    python-version: "3.12"
-    cache: "pip"
+    python-version: '3.12'
+    cache: 'pip'
 - run: pip install -r requirements.txt
 ```
 
@@ -156,7 +155,7 @@ jobs:
 ```yaml
 - uses: actions/setup-go@v5
   with:
-    go-version: "1.22"
+    go-version: '1.22'
 - run: go mod download
 ```
 
@@ -164,9 +163,9 @@ jobs:
 
 ## Caching
 
-GitHub Actions caching works in copilot-setup-steps just like in CI. Use the
-`cache` parameter in setup actions (e.g., `actions/setup-node`) or
-`actions/cache` directly:
+GitHub Actions caching works in copilot-setup-steps just like in CI.
+Use the `cache` parameter in setup actions (e.g., `actions/setup-node`)
+or `actions/cache` directly:
 
 ```yaml
 - uses: actions/cache@v4
@@ -196,8 +195,8 @@ steps:
   - uses: pnpm/action-setup@v4
   - uses: actions/setup-node@v4
     with:
-      node-version: "22"
-      cache: "pnpm"
+      node-version: '22'
+      cache: 'pnpm'
   - run: pnpm install --frozen-lockfile
 
   # Rust
@@ -211,7 +210,8 @@ steps:
 
 ## Testing the Workflow
 
-You can't trigger `repository_dispatch` directly from the GitHub UI. To test:
+You can't trigger `repository_dispatch` directly from the GitHub UI.
+To test:
 
 ### 1. Trigger manually via gh CLI
 
@@ -230,5 +230,5 @@ gh run view <run-id> --log
 
 ### 3. Validate locally
 
-Run the same commands from the workflow steps in your local terminal to verify
-they work before committing.
+Run the same commands from the workflow steps in your local terminal to
+verify they work before committing.

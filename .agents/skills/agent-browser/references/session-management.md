@@ -1,10 +1,8 @@
 # Session Management
 
-Multiple isolated browser sessions with state persistence and concurrent
-browsing.
+Multiple isolated browser sessions with state persistence and concurrent browsing.
 
-**Related**: [authentication.md](authentication.md) for login patterns,
-[SKILL.md](../SKILL.md) for quick start.
+**Related**: [authentication.md](authentication.md) for login patterns, [SKILL.md](../SKILL.md) for quick start.
 
 ## Contents
 
@@ -35,7 +33,6 @@ agent-browser --session public get text body
 ## Session Isolation Properties
 
 Each session has independent:
-
 - Cookies
 - LocalStorage / SessionStorage
 - IndexedDB

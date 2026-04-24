@@ -1,10 +1,8 @@
 # Video Recording
 
-Capture browser automation as video for debugging, documentation, or
-verification.
+Capture browser automation as video for debugging, documentation, or verification.
 
-**Related**: [commands.md](commands.md) for full command reference,
-[SKILL.md](../SKILL.md) for quick start.
+**Related**: [commands.md](commands.md) for full command reference, [SKILL.md](../SKILL.md) for quick start.
 
 ## Contents
 
