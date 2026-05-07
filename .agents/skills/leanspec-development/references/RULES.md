@@ -1,6 +1,7 @@
 # Development Rules
 
-**Critical requirements** for all LeanSpec contributions. These enforce project quality and consistency.
+**Critical requirements** for all LeanSpec contributions. These enforce project
+quality and consistency.
 
 ## Mandatory Rules (Enforced by CI/Hooks)
 
@@ -27,13 +28,14 @@ yarn add dependency
 
 ```typescript
 // ✅ Good - Both themes
-className="text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60"
+className = "text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60";
 
 // ❌ Bad - Only dark theme
-className="text-blue-300 bg-blue-950/60"
+className = "text-blue-300 bg-blue-950/60";
 ```
 
 **Pattern for all UI elements:**
+
 - Text: `text-{color}-700 dark:text-{color}-300`
 - Background: `bg-{color}-100 dark:bg-{color}-950`
 - Borders: `border-{color}-400 dark:border-{color}-600`
@@ -42,9 +44,11 @@ className="text-blue-300 bg-blue-950/60"
 
 ### 3. Internationalization (i18n) ⚠️ CRITICAL
 
-**Update BOTH en and zh-CN locales** for ALL user-facing strings. This is the most commonly missed requirement.
+**Update BOTH en and zh-CN locales** for ALL user-facing strings. This is the
+most commonly missed requirement.
 
 **Files to update:**
+
 ```
 packages/ui/src/locales/
 ├── en/
@@ -65,12 +69,14 @@ docs-site/
 ```
 
 **Verification checklist:**
+
 - [ ] New UI strings added to BOTH `en/*.json` AND `zh-CN/*.json`
 - [ ] New doc pages created in BOTH `docs/` AND `i18n/zh-Hans/`
 - [ ] Keys match exactly between language files
 - [ ] No English text left in zh-CN files
 
 **Example:**
+
 ```json
 // en/common.json
 {"status": {"planned": "Planned", "in_progress": "In Progress"}}
@@ -79,26 +85,29 @@ docs-site/
 {"status": {"planned": "计划中", "in_progress": "进行中"}}
 ```
 
-**If unsure of translation:** Add the key with English text and a `TODO: translate` comment, then notify in PR.
+**If unsure of translation:** Add the key with English text and a
+`TODO: translate` comment, then notify in PR.
 
 **Why**: Incomplete translations break Chinese user experience (~30% of users).
 
 ### 4. Regression Tests Required
 
 **All bug fixes MUST include regression tests** that:
+
 1. Fail WITHOUT the fix
 2. Pass WITH the fix
 3. Use naming: `REGRESSION #ISSUE: description`
 
 ```typescript
-it('REGRESSION #123: should handle empty spec titles', async () => {
+it("REGRESSION #123: should handle empty spec titles", async () => {
   // This MUST fail on main branch before your fix
-  const result = await parseSpec({ title: '' });
-  expect(result.errors).toContain('Title cannot be empty');
+  const result = await parseSpec({ title: "" });
+  expect(result.errors).toContain("Title cannot be empty");
 });
 ```
 
 **Add to existing E2E files:**
+
 - Spec creation bugs → `__e2e__/spec-lifecycle.e2e.test.ts`
 - Validation bugs → `__e2e__/validation.e2e.test.ts`
 - Dependency bugs → `__e2e__/dependencies.e2e.test.ts`
@@ -136,7 +145,8 @@ related:
   - 047-feature-foundation
 ```
 
-**Why**: `related` was ambiguous. `depends_on` expresses clear blocking relationships.
+**Why**: `related` was ambiguous. `depends_on` expresses clear blocking
+relationships.
 
 ### 7. Use shadcn/ui Components (No Native HTML Form Elements)
 
@@ -165,6 +175,7 @@ import { Textarea } from '@/components/ui/textarea';
 ```
 
 **Components to use:**
+
 | Instead of                | Use                                               |
 | ------------------------- | ------------------------------------------------- |
 | `<input>`                 | `<Input>` from `@/components/ui/input`            |
@@ -175,38 +186,46 @@ import { Textarea } from '@/components/ui/textarea';
 | `<input type="radio">`    | `<RadioGroup>` from `@/components/ui/radio-group` |
 | `<dialog>`                | `<Dialog>` from `@/components/ui/dialog`          |
 
-**Why**: Ensures consistent styling, accessibility (ARIA), keyboard navigation, and theme support across the application.
+**Why**: Ensures consistent styling, accessibility (ARIA), keyboard navigation,
+and theme support across the application.
 
 ### 8. Interactive Items Must Use cursor-pointer
 
-**All interactive shadcn/ui items MUST use `cursor-pointer`**, not `cursor-default`.
+**All interactive shadcn/ui items MUST use `cursor-pointer`**, not
+`cursor-default`.
 
 ```typescript
 // ✅ Correct - cursor-pointer for interactive items
-className="... cursor-pointer ..."
+className = "... cursor-pointer ...";
 
 // ❌ Wrong - cursor-default on clickable elements
-className="... cursor-default ..."
+className = "... cursor-default ...";
 ```
 
 **Applies to:**
-- `DropdownMenuItem`, `DropdownMenuCheckboxItem`, `DropdownMenuRadioItem`, `DropdownMenuSubTrigger`
+
+- `DropdownMenuItem`, `DropdownMenuCheckboxItem`, `DropdownMenuRadioItem`,
+  `DropdownMenuSubTrigger`
 - `SelectItem`
 - `CommandItem`
 
 **Does NOT apply to:**
+
 - Labels (`DropdownMenuLabel`, `SelectLabel`)
 - Separators (`DropdownMenuSeparator`, `SelectSeparator`)
 - Non-interactive elements (shortcuts, icons)
 
-**Why**: Consistent visual feedback that elements are clickable improves UX. Users expect the pointer cursor on interactive items.
+**Why**: Consistent visual feedback that elements are clickable improves UX.
+Users expect the pointer cursor on interactive items.
 
 ## Testing Rules
 
 ### What to Test
 
-✅ **Test**: Business logic, algorithms, parsers, validators, file operations, data transformations  
-❌ **Don't test**: CSS classes, icons, trivial getters, third-party libraries, presentation
+✅ **Test**: Business logic, algorithms, parsers, validators, file operations,
+data transformations\
+❌ **Don't test**: CSS classes, icons, trivial getters, third-party libraries,
+presentation
 
 ### Test Types
 
@@ -221,16 +240,16 @@ className="... cursor-default ..."
 
 ```typescript
 // E2E test structure
-it('should create and link specs', async () => {
+it("should create and link specs", async () => {
   await withTempDir(async (dir) => {
     // 1. Setup
-    await execCLI(dir, 'init');
-    
+    await execCLI(dir, "init");
+
     // 2. Execute
-    await execCLI(dir, 'create my-feature');
-    
+    await execCLI(dir, "create my-feature");
+
     // 3. Assert
-    const spec = await readSpec(dir, '001-my-feature');
+    const spec = await readSpec(dir, "001-my-feature");
     expect(spec).toBeDefined();
   });
 });
@@ -253,12 +272,12 @@ it('should create and link specs', async () => {
 ```typescript
 // ✅ Good
 const className = cn(
-  'text-blue-700 dark:text-blue-300',
-  isActive && 'font-bold'
+  "text-blue-700 dark:text-blue-300",
+  isActive && "font-bold",
 );
 
 // ❌ Bad
-const className = `text-blue-300 ${isActive ? 'font-bold' : ''}`;
+const className = `text-blue-300 ${isActive ? "font-bold" : ""}`;
 ```
 
 ### Rust
@@ -266,7 +285,9 @@ const className = `text-blue-300 ${isActive ? 'font-bold' : ''}`;
 - **No `.unwrap()` in library code** - Use proper error handling
 - **Descriptive names** - No abbreviations
 - **Follow Rust conventions** - snake_case, etc.
-- **Params structs for complex functions** - Functions with more than 7 arguments must use a params struct instead of positional args (enforced by `rust/clippy.toml`)
+- **Params structs for complex functions** - Functions with more than 7
+  arguments must use a params struct instead of positional args (enforced by
+  `rust/clippy.toml`)
 
 ```rust
 // ✅ Good - params struct for many arguments
@@ -319,6 +340,7 @@ fn validate(s: &Spec) -> Result<()> {
 **Types**: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
 
 **Examples:**
+
 ```bash
 feat(cli): add spec validation command
 fix: handle empty spec titles (REGRESSION #456)
@@ -333,12 +355,14 @@ pnpm pre-release
 ```
 
 **This runs:**
+
 - Type checking
 - All tests
 - Build
 - Clippy checks
 
 **Pre-commit hooks also enforce:**
+
 - Rust formatting (`cargo fmt`)
 - Clippy validation
 - No warnings allowed
@@ -346,6 +370,7 @@ pnpm pre-release
 ## AI Tool Support
 
 **Supported:**
+
 - ✅ Claude Desktop (`.mcp.json`)
 - ✅ GitHub Copilot
 - ✅ Cursor
@@ -353,11 +378,13 @@ pnpm pre-release
 - ✅ OpenAI Codex (`AGENTS.md`)
 
 **Not supported:**
+
 - ❌ Cline
 
 ## Validation Checklist
 
-**⚠️ MANDATORY: Run these commands and verify zero errors before marking work complete:**
+**⚠️ MANDATORY: Run these commands and verify zero errors before marking work
+complete:**
 
 ```bash
 pnpm typecheck    # Must show no TypeScript errors
@@ -371,6 +398,7 @@ pnpm pre-release  # Full validation suite
 **DO NOT skip `pnpm typecheck`.** This is the most commonly forgotten check.
 
 **Manual checks:**
+
 - [ ] `pnpm typecheck` passes with zero errors
 - [ ] `pnpm test` passes all tests
 - [ ] `pnpm lint` passes

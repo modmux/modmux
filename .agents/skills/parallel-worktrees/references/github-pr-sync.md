@@ -1,9 +1,10 @@
 # GitHub PR Sync Reference
 
-How to push worktree branches to GitHub and manage pull requests via the
-`gh` CLI. Assumes `gh` is authenticated (`gh auth status`).
+How to push worktree branches to GitHub and manage pull requests via the `gh`
+CLI. Assumes `gh` is authenticated (`gh auth status`).
 
 ## Table of Contents
+
 1. [Push a branch](#push-a-branch)
 2. [Open a PR](#open-a-pr)
 3. [Draft PRs](#draft-prs)
@@ -49,13 +50,13 @@ EOF
 
 ### Flags
 
-| Flag | Use |
-|------|-----|
-| `--base <branch>` | Target branch (default: repo default branch) |
-| `--draft` | Open as draft (see below) |
-| `--assignee @me` | Assign to yourself |
-| `--label <label>` | Add label (create labels in repo settings first) |
-| `--no-maintainer-edit` | Prevent maintainers from pushing to the branch |
+| Flag                   | Use                                              |
+| ---------------------- | ------------------------------------------------ |
+| `--base <branch>`      | Target branch (default: repo default branch)     |
+| `--draft`              | Open as draft (see below)                        |
+| `--assignee @me`       | Assign to yourself                               |
+| `--label <label>`      | Add label (create labels in repo settings first) |
+| `--no-maintainer-edit` | Prevent maintainers from pushing to the branch   |
 
 ---
 
@@ -104,8 +105,8 @@ gh pr comment <pr-number> --body "Agent session complete. Ready for review."
 git push --force-with-lease
 ```
 
-`--force-with-lease` is safer than `--force`: it fails if the remote has
-commits you haven't fetched yet, preventing accidental overwrites.
+`--force-with-lease` is safer than `--force`: it fails if the remote has commits
+you haven't fetched yet, preventing accidental overwrites.
 
 ---
 
@@ -116,17 +117,16 @@ relationship in the PR body:
 
 ```markdown
 ## Related PRs
+
 - Depends on: #42 (must merge first — shared database schema)
 - Related: #43 (parallel feature, independent)
 - Supersedes: #38 (closing that one in favor of this approach)
 ```
 
-GitHub will auto-link PR numbers in the body. Use keywords to auto-close
-issues:
+GitHub will auto-link PR numbers in the body. Use keywords to auto-close issues:
 
 ```markdown
-Closes #99
-Fixes #100
+Closes #99 Fixes #100
 ```
 
 ---
@@ -183,8 +183,8 @@ boundary in history:
 gh pr merge <pr-number> --merge --delete-branch
 ```
 
-**`--delete-branch`** removes the remote branch after merge. Combine with
-local cleanup (see below).
+**`--delete-branch`** removes the remote branch after merge. Combine with local
+cleanup (see below).
 
 ---
 

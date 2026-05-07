@@ -5,6 +5,7 @@ keep them from stepping on each other, how to hand off work between them, and
 how to assemble their outputs.
 
 ## Table of Contents
+
 1. [Core principle](#core-principle)
 2. [Scoping sessions](#scoping-sessions)
 3. [Dependency ordering](#dependency-ordering)
@@ -17,12 +18,13 @@ how to assemble their outputs.
 
 ## Core Principle
 
-**Agents do not communicate with each other.** There is no message-passing,
-no shared memory, no live coordination channel between concurrent sessions.
-Each agent sees only its own worktree.
+**Agents do not communicate with each other.** There is no message-passing, no
+shared memory, no live coordination channel between concurrent sessions. Each
+agent sees only its own worktree.
 
 All coordination happens through artifacts visible to humans and to future
 agents:
+
 - **Branch names** — declare ownership and intent
 - **PR descriptions** — communicate scope, dependencies, related work
 - **PR comments** — status updates, blockers, completion signals
@@ -36,13 +38,16 @@ independent, sequence them — don't try to coordinate live.
 ## Scoping Sessions
 
 A session brief should answer:
+
 1. **What directory** — the worktree path (absolute)
 2. **What branch** — the agent's branch name
 3. **What to do** — a bounded task description
 4. **What not to touch** — explicit out-of-scope areas
-5. **What depends on what** — if this session depends on another PR merging first
+5. **What depends on what** — if this session depends on another PR merging
+   first
 
 Example brief:
+
 ```
 Working directory: /home/user/myrepo-wt/feat/auth
 Branch: feat/auth
@@ -58,8 +63,8 @@ and never need to look at another worktree.
 
 ## Dependency Ordering
 
-When sessions are not independent, make the dependency explicit and sequence
-the dependent work:
+When sessions are not independent, make the dependency explicit and sequence the
+dependent work:
 
 ### Pattern A: Sequential hand-off
 
@@ -69,8 +74,9 @@ Session 2: feat/auth         → starts after Session 1 merges
 ```
 
 Workflow:
+
 1. Start Session 1.
-2. While Session 1 is running, *plan* Session 2 but don't start it yet.
+2. While Session 1 is running, _plan_ Session 2 but don't start it yet.
 3. When Session 1's PR merges, pull main, then start Session 2.
 
 ### Pattern B: Parallel with rebase gate
@@ -96,8 +102,8 @@ Session 2's branch is based on Session 1's branch, not main:
 git worktree add ../myrepo-wt/feat/profile -b feat/profile feat/user-model
 ```
 
-PR for Session 2 targets `feat/user-model`, not `main`. After Session 1
-merges, change Session 2's PR base:
+PR for Session 2 targets `feat/user-model`, not `main`. After Session 1 merges,
+change Session 2's PR base:
 
 ```bash
 gh pr edit <pr-number> --base main
@@ -120,12 +126,13 @@ Use stacked PRs sparingly — they require careful ordering and rebase disciplin
 ### Agent produces an artifact for another agent
 
 Avoid sharing artifacts by reading files across worktrees. Instead:
+
 - Agent 1 commits the artifact, opens a PR.
 - PR merges to main.
 - Agent 2 starts fresh from main (or rebases) and reads the committed artifact.
 
-If the artifact is large or a PR would be too noisy, consider a shared
-temporary branch:
+If the artifact is large or a PR would be too noisy, consider a shared temporary
+branch:
 
 ```bash
 # Agent 1 pushes to a staging branch
@@ -152,6 +159,7 @@ Session 3: packages/ui/src/components/
 ```
 
 When you can't avoid overlap on a shared file (e.g., `index.ts`, `routes.ts`):
+
 - Only one session touches the shared file.
 - Other sessions import from it but don't modify it.
 - Or: sequence the sessions that touch the shared file.
@@ -159,6 +167,7 @@ When you can't avoid overlap on a shared file (e.g., `index.ts`, `routes.ts`):
 ### Config and generated files
 
 These are common conflict magnets:
+
 - `package.json` / `pnpm-lock.yaml` — run only one session that installs deps
 - `prisma/schema.prisma` — serialize DB schema changes; don't parallelize
 - Auto-generated files (GraphQL types, OpenAPI clients) — regenerate once on
@@ -167,9 +176,11 @@ These are common conflict magnets:
 ### Pre-merge checklist (per session)
 
 Before marking a PR ready for merge:
+
 - [ ] `git fetch origin && git rebase origin/main` — resolve any conflicts now
 - [ ] Run tests in the worktree
-- [ ] Check that no other open PR touches the same files (`gh pr list --json files`)
+- [ ] Check that no other open PR touches the same files
+      (`gh pr list --json files`)
 
 ---
 
@@ -177,8 +188,8 @@ Before marking a PR ready for merge:
 
 When multiple sessions complete around the same time:
 
-1. **Merge one at a time.** Don't merge all PRs simultaneously — the first
-   merge changes main, which may conflict with the others.
+1. **Merge one at a time.** Don't merge all PRs simultaneously — the first merge
+   changes main, which may conflict with the others.
 2. **Rebase order matters.** After each merge, rebase the remaining PRs:
    ```bash
    git fetch origin && git rebase origin/main
@@ -210,15 +221,15 @@ Brief the review agent with the PR number and what to focus on.
 
 Not all "parallel" work should actually run simultaneously. Use this guide:
 
-| Scenario | Recommendation |
-|----------|---------------|
-| Completely independent files/modules | True parallel — all sessions at once |
-| Shared config or schema changes | Sequential — one session at a time |
-| Feature + its tests | Same session — keep them together |
-| Refactor + new feature | Sequential — refactor first, then feature |
-| Multiple bug fixes in unrelated files | True parallel |
-| Two features that both modify `main.ts` | Sequential or assign `main.ts` to one session |
-| Exploratory/experimental work | True parallel — each in `agent/experiment/<name>` branch |
+| Scenario                                | Recommendation                                           |
+| --------------------------------------- | -------------------------------------------------------- |
+| Completely independent files/modules    | True parallel — all sessions at once                     |
+| Shared config or schema changes         | Sequential — one session at a time                       |
+| Feature + its tests                     | Same session — keep them together                        |
+| Refactor + new feature                  | Sequential — refactor first, then feature                |
+| Multiple bug fixes in unrelated files   | True parallel                                            |
+| Two features that both modify `main.ts` | Sequential or assign `main.ts` to one session            |
+| Exploratory/experimental work           | True parallel — each in `agent/experiment/<name>` branch |
 
 The overhead of a worktree is low. When in doubt, serialize rather than
 coordinate.

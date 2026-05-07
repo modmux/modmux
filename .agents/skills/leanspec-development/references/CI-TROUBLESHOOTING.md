@@ -9,6 +9,7 @@ Common issues and their solutions for LeanSpec GitHub Actions workflows.
 **Symptoms**: `node` job fails during typecheck step.
 
 **Solution**:
+
 ```bash
 # Run locally to see errors
 pnpm typecheck
@@ -21,6 +22,7 @@ pnpm typecheck
 **Symptoms**: `node` job fails during test step.
 
 **Solution**:
+
 ```bash
 # Run tests locally
 pnpm test
@@ -34,6 +36,7 @@ pnpm --filter @leanspec/core test
 **Symptoms**: `rust` job fails at "Check formatting" step.
 
 **Solution**:
+
 ```bash
 # Format code
 cd rust
@@ -47,6 +50,7 @@ cargo fmt
 **Symptoms**: `rust` job fails at "Run clippy" step with warning messages.
 
 **Solution**:
+
 ```bash
 # Run clippy locally
 cd rust
@@ -60,6 +64,7 @@ cargo clippy -- -D warnings
 **Symptoms**: `rust` job fails at "Validate specs" step.
 
 **Solution**:
+
 ```bash
 # Run validation locally
 lean-spec validate
@@ -78,6 +83,7 @@ lean-spec validate
 **Cause**: npm registry takes time to propagate new package versions.
 
 **Solution**:
+
 ```bash
 # Wait and retry the failed job
 gh run rerun <run-id> --job <publish-main-job-id>
@@ -91,6 +97,7 @@ gh run rerun <run-id> --failed
 **Symptoms**: Build fails with version inconsistency errors.
 
 **Solution**:
+
 ```bash
 # Sync all versions
 pnpm sync-versions
@@ -108,6 +115,7 @@ grep '"version"' package.json packages/*/package.json rust/*/Cargo.toml
 **Cause**: `NPM_TOKEN` secret is invalid or expired.
 
 **Solution**:
+
 1. Generate new npm token: https://www.npmjs.com/settings/tokens
 2. Update repository secret: Settings → Secrets → Actions → `NPM_TOKEN`
 3. Rerun the workflow
@@ -119,6 +127,7 @@ grep '"version"' package.json packages/*/package.json rust/*/Cargo.toml
 **Cause**: Rust build failed or artifact download failed.
 
 **Solution**:
+
 ```bash
 # Check if rust-binaries job succeeded
 gh run view <run-id>
@@ -137,6 +146,7 @@ gh run rerun <run-id>
 **Cause**: `build-ui` job failed or artifact wasn't uploaded.
 
 **Solution**:
+
 ```bash
 # Check build-ui job
 gh run view <run-id> --job <build-ui-job-id>
@@ -167,6 +177,7 @@ gh run view <run-id> --log
 **Symptoms**: Desktop bundle step fails.
 
 **Solution**:
+
 ```bash
 # Build locally to debug
 pnpm --filter @leanspec/desktop bundle:linux  # or macos/windows
@@ -183,11 +194,13 @@ pnpm --filter @leanspec/desktop bundle:linux  # or macos/windows
 **Symptoms**: Push or PR doesn't trigger workflow.
 
 **Possible Causes**:
+
 1. Workflow file has syntax errors
 2. Branch not matching trigger conditions
 3. Path filters not matching changed files
 
 **Solutions**:
+
 ```bash
 # Validate workflow syntax
 gh workflow view ci.yml
@@ -204,6 +217,7 @@ gh workflow run ci.yml
 **Symptoms**: Build takes unexpectedly long or uses stale dependencies.
 
 **Solution**:
+
 ```bash
 # Caches auto-expire, but you can force rebuild
 # by changing cache key (edit workflow) or wait 7 days
@@ -217,6 +231,7 @@ gh api repos/{owner}/{repo}/actions/caches
 **Symptoms**: API calls fail with rate limit errors.
 
 **Solution**:
+
 ```bash
 # Check rate limit status
 gh api rate_limit

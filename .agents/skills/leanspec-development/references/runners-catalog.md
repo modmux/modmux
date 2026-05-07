@@ -5,6 +5,7 @@ Last full audit: 2026-03-03
 ## Tier 1 — High Priority
 
 ### Claude Code
+
 - **Org**: Anthropic
 - **CLI**: `claude`
 - **Config dir**: `.claude`
@@ -13,9 +14,11 @@ Last full audit: 2026-03-03
 - **Prompt flag**: `--print`
 - **Docs**: https://docs.anthropic.com/en/docs/claude-code
 - **Repo**: https://github.com/anthropics/claude-code
-- **Notes**: Default runner in LeanSpec. Supports CLAUDE.md as project instructions and MCP tool servers.
+- **Notes**: Default runner in LeanSpec. Supports CLAUDE.md as project
+  instructions and MCP tool servers.
 
 ### GitHub Copilot
+
 - **Org**: GitHub / Microsoft
 - **CLI**: `copilot`
 - **Config dir**: `.copilot`
@@ -25,22 +28,27 @@ Last full audit: 2026-03-03
 - **Notes**: Supports AGENTS.md natively. Integrated into VS Code and CLI.
 
 ### Cursor
+
 - **Org**: Anysphere
 - **CLI**: `cursor` (IDE launcher only)
 - **Config dirs**: `.cursor`, `.cursorrules`
 - **Executable**: No (IDE-only)
 - **Docs**: https://docs.cursor.com
-- **Notes**: Uses `.cursor/rules/` directory for project rules. Previously used `.cursorrules` file (deprecated but still detected).
+- **Notes**: Uses `.cursor/rules/` directory for project rules. Previously used
+  `.cursorrules` file (deprecated but still detected).
 
 ### Windsurf
+
 - **Org**: Codeium
 - **CLI**: `windsurf` (IDE launcher only)
 - **Config dirs**: `.windsurf`, `.windsurfrules`
 - **Executable**: No (IDE-only)
 - **Docs**: https://docs.windsurf.com
-- **Notes**: Similar config pattern to Cursor. Uses `.windsurf/rules/` directory.
+- **Notes**: Similar config pattern to Cursor. Uses `.windsurf/rules/`
+  directory.
 
 ### Codex CLI
+
 - **Org**: OpenAI
 - **CLI**: `codex`
 - **Config dir**: `.codex`
@@ -49,6 +57,7 @@ Last full audit: 2026-03-03
 - **Notes**: Open source. Supports AGENTS.md for project context.
 
 ### Gemini CLI
+
 - **Org**: Google
 - **CLI**: `gemini`
 - **Config dir**: `.gemini`
@@ -60,6 +69,7 @@ Last full audit: 2026-03-03
 ## Tier 2 — Medium Priority
 
 ### Kiro CLI
+
 - **Org**: AWS
 - **CLI**: `kiro-cli`
 - **Config dir**: `.kiro`
@@ -67,6 +77,7 @@ Last full audit: 2026-03-03
 - **Notes**: AWS-backed agent platform.
 
 ### Amp
+
 - **Org**: Sourcegraph
 - **CLI**: `amp`
 - **Config dir**: `.amp`
@@ -74,6 +85,7 @@ Last full audit: 2026-03-03
 - **Notes**: Terminal-native agent.
 
 ### Aider
+
 - **Org**: Paul Gauthier
 - **CLI**: `aider`
 - **Config dir**: `.aider`
@@ -82,6 +94,7 @@ Last full audit: 2026-03-03
 - **Notes**: Multi-model support. Convention files in `.aider/`.
 
 ### Goose
+
 - **Org**: Block
 - **CLI**: `goose`
 - **Config dir**: `.goose`
@@ -89,6 +102,7 @@ Last full audit: 2026-03-03
 - **Notes**: Open source agent toolkit.
 
 ### Continue
+
 - **Org**: Continue.dev
 - **CLI**: `continue`
 - **Config dir**: `.continue`
@@ -98,6 +112,7 @@ Last full audit: 2026-03-03
 - **Notes**: Open source IDE extension. Config in `.continue/`.
 
 ### Roo Code
+
 - **Org**: Roo Code
 - **Config dir**: `.roo`
 - **VS Code ext**: `rooveterinaryinc.roo-cline`
@@ -107,39 +122,54 @@ Last full audit: 2026-03-03
 ## Tier 3 — Monitor
 
 ### Droid
+
 - **CLI**: `droid` | **Config**: `.droid`
 
 ### Kimi CLI
-- **Org**: MoonshotAI | **CLI**: `kimi` | **Config**: `.kimi` | **Env**: `MOONSHOT_API_KEY`
+
+- **Org**: MoonshotAI | **CLI**: `kimi` | **Config**: `.kimi` | **Env**:
+  `MOONSHOT_API_KEY`
 
 ### Qodo CLI
+
 - **CLI**: `qodo` | **Config**: `.qodo`
 
 ### Trae Agent
+
 - **Org**: ByteDance | **CLI**: `trae` | **Config**: `.trae`
 
 ### Qwen Code
-- **Org**: Alibaba | **CLI**: `qwen-code` | **Config**: `.qwen-code` | **Env**: `DASHSCOPE_API_KEY`
+
+- **Org**: Alibaba | **CLI**: `qwen-code` | **Config**: `.qwen-code` | **Env**:
+  `DASHSCOPE_API_KEY`
 
 ### OpenHands
-- **CLI**: `openhands` | **Config**: `.openhands` | **Repo**: https://github.com/All-Hands-AI/OpenHands
+
+- **CLI**: `openhands` | **Config**: `.openhands` | **Repo**:
+  https://github.com/All-Hands-AI/OpenHands
 
 ### Crush
+
 - **CLI**: `crush` | **Config**: `.crush`
 
 ### CodeBuddy
+
 - **Config**: `.codebuddy` | **Executable**: No (IDE-only)
 
 ### Kilo Code
+
 - **Config**: `.kilocode` | **Executable**: No (IDE-only)
 
 ### Augment
+
 - **Config**: `.augment` | **Executable**: No (IDE-only)
 
 ### Cline
+
 - **CLI**: `cline` | **Executable**: Partial (IDE-focused)
 
 ### OpenCode
+
 - **CLI**: `opencode`
 
 ## Emerging / Not Yet Tracked
@@ -150,6 +180,6 @@ _None currently tracked. Use web search to discover new entrants._
 
 ## Change Log
 
-| Date | Runner | Change | Action |
-|------|--------|--------|--------|
-| 2026-03-03 | All | Initial catalog created from registry | Baseline |
+| Date       | Runner | Change                                | Action   |
+| ---------- | ------ | ------------------------------------- | -------- |
+| 2026-03-03 | All    | Initial catalog created from registry | Baseline |

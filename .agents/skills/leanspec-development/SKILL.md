@@ -5,23 +5,24 @@ description: Development workflows, commands, publishing, CI/CD, changelog manag
 
 # LeanSpec Development Skill
 
-Unified guide for all LeanSpec development: coding, commands, publishing, CI/CD, and runner research.
+Unified guide for all LeanSpec development: coding, commands, publishing, CI/CD,
+and runner research.
 
 ## Quick Navigation
 
-| Goal | Reference |
-|------|-----------|
-| **Mandatory rules & conventions** | [RULES.md](./references/RULES.md) |
-| **Changelog format & workflow** | [Changelog](#changelog) (below) |
-| **i18n file locations & patterns** | [I18N.md](./references/I18N.md) |
-| **Monorepo structure & packages** | [STRUCTURE.md](./references/STRUCTURE.md) |
-| **Full release checklist** | [PUBLISHING.md](./references/PUBLISHING.md) |
-| **npm distribution architecture** | [NPM-DISTRIBUTION.md](./references/NPM-DISTRIBUTION.md) |
-| **Dev publishing workflow** | [DEV-PUBLISHING.md](./references/DEV-PUBLISHING.md) |
-| **CI workflow details** | [CI-WORKFLOWS.md](./references/CI-WORKFLOWS.md) |
-| **gh CLI command reference** | [CI-COMMANDS.md](./references/CI-COMMANDS.md) |
-| **CI troubleshooting** | [CI-TROUBLESHOOTING.md](./references/CI-TROUBLESHOOTING.md) |
-| **Runner ecosystem catalog** | [runners-catalog.md](./references/runners-catalog.md) |
+| Goal                               | Reference                                                   |
+| ---------------------------------- | ----------------------------------------------------------- |
+| **Mandatory rules & conventions**  | [RULES.md](./references/RULES.md)                           |
+| **Changelog format & workflow**    | [Changelog](#changelog) (below)                             |
+| **i18n file locations & patterns** | [I18N.md](./references/I18N.md)                             |
+| **Monorepo structure & packages**  | [STRUCTURE.md](./references/STRUCTURE.md)                   |
+| **Full release checklist**         | [PUBLISHING.md](./references/PUBLISHING.md)                 |
+| **npm distribution architecture**  | [NPM-DISTRIBUTION.md](./references/NPM-DISTRIBUTION.md)     |
+| **Dev publishing workflow**        | [DEV-PUBLISHING.md](./references/DEV-PUBLISHING.md)         |
+| **CI workflow details**            | [CI-WORKFLOWS.md](./references/CI-WORKFLOWS.md)             |
+| **gh CLI command reference**       | [CI-COMMANDS.md](./references/CI-COMMANDS.md)               |
+| **CI troubleshooting**             | [CI-TROUBLESHOOTING.md](./references/CI-TROUBLESHOOTING.md) |
+| **Runner ecosystem catalog**       | [runners-catalog.md](./references/runners-catalog.md)       |
 
 ## Core Principles
 
@@ -29,7 +30,8 @@ Unified guide for all LeanSpec development: coding, commands, publishing, CI/CD,
 2. **DRY** — Extract shared logic, avoid duplication
 3. **Test What Matters** — Business logic and data integrity, not presentation
 4. **Leverage Turborepo** — Smart caching (19s → 126ms builds)
-5. **i18n is MANDATORY** — Every user-facing string needs both en AND zh-CN (see [I18N.md](./references/I18N.md))
+5. **i18n is MANDATORY** — Every user-facing string needs both en AND zh-CN (see
+   [I18N.md](./references/I18N.md))
 6. **Follow Rust Quality** — All code must pass `cargo clippy -- -D warnings`
 
 ---
@@ -104,10 +106,12 @@ pnpm bundle:windows       # NSIS installer
 Rules enforced by hooks or CI:
 
 1. **Light/Dark Theme** — ALL UI must support both themes
-2. **i18n** — Update BOTH en and zh-CN → [I18N.md](./references/I18N.md) ⚠️ commonly forgotten
+2. **i18n** — Update BOTH en and zh-CN → [I18N.md](./references/I18N.md) ⚠️
+   commonly forgotten
 3. **Regression Tests** — Bug fixes MUST include failing-then-passing tests
 4. **Rust Quality** — Must pass `cargo clippy -- -D warnings`
-5. **Rust Params Structs** — Functions with >7 args must use a params struct (enforced by `clippy.toml`)
+5. **Rust Params Structs** — Functions with >7 args must use a params struct
+   (enforced by `clippy.toml`)
 6. **Use shadcn/ui** — No native HTML form elements
 7. **cursor-pointer** — All clickable items must use `cursor-pointer`
 
@@ -157,27 +161,32 @@ lean-spec --version
 - Root `package.json` is the single source of truth for versions
 - `pnpm sync-versions` propagates to all packages (including Rust crates)
 - CI automatically validates version alignment
-- **Never manually edit package versions** — use `npm version` + `pnpm sync-versions`
+- **Never manually edit package versions** — use `npm version` +
+  `pnpm sync-versions`
 
 ### Distribution Architecture
 
 LeanSpec uses optional dependencies for platform-specific Rust binaries:
 
-| Type | Packages |
-|------|----------|
-| **Main** (published) | `lean-spec`, `@leanspec/mcp`, `@leanspec/ui` |
-| **Platform** (published) | `@leanspec/cli-{platform}`, `@leanspec/mcp-{platform}` (5 platforms each) |
-| **Internal** (not published) | `@leanspec/desktop`, `@leanspec/ui-components` |
+| Type                         | Packages                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| **Main** (published)         | `lean-spec`, `@leanspec/mcp`, `@leanspec/ui`                              |
+| **Platform** (published)     | `@leanspec/cli-{platform}`, `@leanspec/mcp-{platform}` (5 platforms each) |
+| **Internal** (not published) | `@leanspec/desktop`, `@leanspec/ui-components`                            |
 
-⚠️ **Platform packages MUST be published before main packages.** The CI workflow handles this automatically.
+⚠️ **Platform packages MUST be published before main packages.** The CI workflow
+handles this automatically.
 
-See [PUBLISHING.md](./references/PUBLISHING.md) and [NPM-DISTRIBUTION.md](./references/NPM-DISTRIBUTION.md) for details.
+See [PUBLISHING.md](./references/PUBLISHING.md) and
+[NPM-DISTRIBUTION.md](./references/NPM-DISTRIBUTION.md) for details.
 
 ---
 
 ## Changelog
 
-Update `CHANGELOG.md` following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Update `CHANGELOG.md` following
+[Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format and
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Discovering Changes
 
@@ -191,12 +200,15 @@ git diff $(git describe --tags --abbrev=0)..HEAD --stat
 
 ### Entry Format
 
-**Only include shipped/implemented changes** — not planned specs, drafts, or WIP.
+**Only include shipped/implemented changes** — not planned specs, drafts, or
+WIP.
 
-Add under `## [Unreleased]` using these categories: **Added**, **Changed**, **Fixed**, **Deprecated**, **Removed**, **Security**, **Technical**.
+Add under `## [Unreleased]` using these categories: **Added**, **Changed**,
+**Fixed**, **Deprecated**, **Removed**, **Security**, **Technical**.
 
 ```markdown
-- **Feature Name** ([spec 123](https://web.lean-spec.dev/specs/123)) - Brief description
+- **Feature Name** ([spec 123](https://web.lean-spec.dev/specs/123)) - Brief
+  description
   - Sub-bullet with implementation details
 ```
 
@@ -212,21 +224,23 @@ Add under `## [Unreleased]` using these categories: **Added**, **Changed**, **Fi
 ### Creating a Release
 
 1. Move entries from `[Unreleased]` to new version: `## [X.Y.Z] - YYYY-MM-DD`
-2. Add release link at bottom: `[X.Y.Z]: https://github.com/codervisor/lean-spec/releases/tag/vX.Y.Z`
+2. Add release link at bottom:
+   `[X.Y.Z]: https://github.com/codervisor/lean-spec/releases/tag/vX.Y.Z`
 
 ---
 
 ## CI/CD (GitHub Actions)
 
-All workflow interactions use the `gh` CLI. Check status before triggering new runs; minimum 30s between polls.
+All workflow interactions use the `gh` CLI. Check status before triggering new
+runs; minimum 30s between polls.
 
 ### Available Workflows
 
-| Workflow | File | Triggers | Purpose |
-|----------|------|----------|---------|
-| **CI** | `ci.yml` | push, PR to main | Build, test, lint (Node.js + Rust) |
-| **Publish** | `publish.yml` | release, manual | Publish to npm (all platforms) |
-| **Desktop Build** | `desktop-build.yml` | push, PR, manual | Build Tauri desktop apps |
+| Workflow          | File                      | Triggers         | Purpose                             |
+| ----------------- | ------------------------- | ---------------- | ----------------------------------- |
+| **CI**            | `ci.yml`                  | push, PR to main | Build, test, lint (Node.js + Rust)  |
+| **Publish**       | `publish.yml`             | release, manual  | Publish to npm (all platforms)      |
+| **Desktop Build** | `desktop-build.yml`       | push, PR, manual | Build Tauri desktop apps            |
 | **Copilot Setup** | `copilot-setup-steps.yml` | push, PR, manual | Setup environment for Copilot agent |
 
 ### Quick Reference
@@ -251,32 +265,40 @@ gh run download <run-id>
 gh run download <run-id> --name ui-dist
 ```
 
-See [CI-WORKFLOWS.md](./references/CI-WORKFLOWS.md), [CI-COMMANDS.md](./references/CI-COMMANDS.md), and [CI-TROUBLESHOOTING.md](./references/CI-TROUBLESHOOTING.md) for details.
+See [CI-WORKFLOWS.md](./references/CI-WORKFLOWS.md),
+[CI-COMMANDS.md](./references/CI-COMMANDS.md), and
+[CI-TROUBLESHOOTING.md](./references/CI-TROUBLESHOOTING.md) for details.
 
 ---
 
 ## Runner Research
 
-Research AI agent runners to keep LeanSpec's runner registry current as the ecosystem evolves.
+Research AI agent runners to keep LeanSpec's runner registry current as the
+ecosystem evolves.
 
 ### Workflow
 
-1. **Read current state**: `rust/leanspec-core/src/sessions/runner.rs` (`RunnerRegistry::builtins()`)
+1. **Read current state**: `rust/leanspec-core/src/sessions/runner.rs`
+   (`RunnerRegistry::builtins()`)
 2. **Read catalog**: [runners-catalog.md](./references/runners-catalog.md)
-3. **Research via `web_search`**: Config format changes, CLI changes, new env vars, new capabilities, deprecations, new runners
+3. **Research via `web_search`**: Config format changes, CLI changes, new env
+   vars, new capabilities, deprecations, new runners
 4. **Compare & identify gaps**: Cross-reference findings against registry
-5. **Report**: Minor updates → update catalog directly; major changes → create a spec
+5. **Report**: Minor updates → update catalog directly; major changes → create a
+   spec
 
 ### Runner Tiers
 
-1. **Tier 1** (high priority): Claude Code, Copilot, Cursor, Windsurf, Codex, Gemini
+1. **Tier 1** (high priority): Claude Code, Copilot, Cursor, Windsurf, Codex,
+   Gemini
 2. **Tier 2** (medium): Kiro, Amp, Aider, Goose, Continue, Roo Code
-3. **Tier 3** (monitor): Droid, Kimi, Qodo, Trae, Qwen Code, OpenHands, Crush, CodeBuddy, Kilo, Augment
+3. **Tier 3** (monitor): Droid, Kimi, Qodo, Trae, Qwen Code, OpenHands, Crush,
+   CodeBuddy, Kilo, Augment
 
 ### Key Source Files
 
-| File | Purpose |
-|------|---------|
-| `rust/leanspec-core/src/sessions/runner.rs` | Runner registry with detection config |
-| `schemas/runners.json` | JSON schema for custom runner config |
-| `packages/cli/templates/_shared/agents-components/` | AGENTS.md template components |
+| File                                                | Purpose                               |
+| --------------------------------------------------- | ------------------------------------- |
+| `rust/leanspec-core/src/sessions/runner.rs`         | Runner registry with detection config |
+| `schemas/runners.json`                              | JSON schema for custom runner config  |
+| `packages/cli/templates/_shared/agents-components/` | AGENTS.md template components         |

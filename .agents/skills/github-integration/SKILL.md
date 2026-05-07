@@ -21,12 +21,13 @@ metadata:
 # GitHub Integration
 
 Enable `gh` CLI access in Claude Code cloud and GitHub Copilot coding agent
-environments so agents can create PRs, manage issues, and interact with
-GitHub APIs.
+environments so agents can create PRs, manage issues, and interact with GitHub
+APIs.
 
 ## When to Use This Skill
 
 Activate when:
+
 - User wants cloud AI agents to use `gh` (PRs, issues, releases, API calls)
 - User needs to install `gh` in Claude Code cloud sessions
 - User wants to add `copilot-setup-steps.yml` for GitHub Copilot agents
@@ -66,8 +67,8 @@ Need gh in local dev too?
 
 ### Claude Code Cloud (claude.ai/code)
 
-Claude Code cloud runs sessions in Anthropic-managed VMs. The `gh` CLI
-is **not pre-installed**. You need two things:
+Claude Code cloud runs sessions in Anthropic-managed VMs. The `gh` CLI is **not
+pre-installed**. You need two things:
 
 1. **Setup script** — installs `gh` when the session starts
 2. **`GH_TOKEN` env var** — authenticates `gh` with your GitHub PAT
@@ -81,8 +82,8 @@ In the Claude Code web UI: Environment Settings → Setup script:
 apt update && apt install -y gh
 ```
 
-Then add `GH_TOKEN` as an environment variable with your GitHub Personal
-Access Token (needs `repo` scope).
+Then add `GH_TOKEN` as an environment variable with your GitHub Personal Access
+Token (needs `repo` scope).
 
 #### Alternative: SessionStart Hook (repo-portable)
 
@@ -120,8 +121,8 @@ gh issue list -R codervisor/myrepo
 
 ### GitHub Copilot Coding Agent
 
-Copilot coding agents use `.github/copilot-setup-steps.yml`. The `gh` CLI
-is pre-installed; you just need to authenticate it.
+Copilot coding agents use `.github/copilot-setup-steps.yml`. The `gh` CLI is
+pre-installed; you just need to authenticate it.
 
 Add this file at `.github/copilot-setup-steps.yml`:
 
@@ -142,18 +143,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-See `templates/copilot-setup-steps.yml` for a full template with
-dependency installation.
+See `templates/copilot-setup-steps.yml` for a full template with dependency
+installation.
 
 ## Setup Scripts vs SessionStart Hooks vs copilot-setup-steps
 
-|                  | Setup scripts            | SessionStart hooks              | copilot-setup-steps.yml          |
-|------------------|--------------------------|---------------------------------|----------------------------------|
-| **Platform**     | Claude Code cloud only   | Claude Code (local + cloud)     | GitHub Copilot agents only       |
-| **Configured in**| Environment settings UI  | `.claude/settings.json` in repo | `.github/copilot-setup-steps.yml`|
-| **Runs**         | Before Claude launches   | After Claude launches           | Before Copilot agent launches    |
-| **Runs on resume**| No (new sessions only) | Yes (every session)             | Yes                              |
-| **Network**      | Needs registry access    | Needs registry access           | Full GitHub Actions network      |
+|                    | Setup scripts           | SessionStart hooks              | copilot-setup-steps.yml           |
+| ------------------ | ----------------------- | ------------------------------- | --------------------------------- |
+| **Platform**       | Claude Code cloud only  | Claude Code (local + cloud)     | GitHub Copilot agents only        |
+| **Configured in**  | Environment settings UI | `.claude/settings.json` in repo | `.github/copilot-setup-steps.yml` |
+| **Runs**           | Before Claude launches  | After Claude launches           | Before Copilot agent launches     |
+| **Runs on resume** | No (new sessions only)  | Yes (every session)             | Yes                               |
+| **Network**        | Needs registry access   | Needs registry access           | Full GitHub Actions network       |
 
 ## Common gh Commands for Agents
 
@@ -175,19 +176,21 @@ gh api repos/owner/repo/actions/runs
 
 ## Pitfalls
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `gh: command not found` | Not installed (Claude Code cloud) | Add `apt install -y gh` to setup script |
-| `HTTP 401` / auth error | `GH_TOKEN` not set | Add to environment variables in settings UI |
-| `HTTP 403` on push | Token lacks `repo` scope | Regenerate PAT with `repo` scope |
-| `could not determine repo` | Sandbox proxy hides git remote | Use `-R owner/repo` flag |
-| `gh pr create` fails | No upstream branch | Push with `git push -u origin <branch>` first |
-| Setup script fails | No network access | Set network to "Limited" (default) or "Full" |
+| Symptom                    | Cause                             | Fix                                           |
+| -------------------------- | --------------------------------- | --------------------------------------------- |
+| `gh: command not found`    | Not installed (Claude Code cloud) | Add `apt install -y gh` to setup script       |
+| `HTTP 401` / auth error    | `GH_TOKEN` not set                | Add to environment variables in settings UI   |
+| `HTTP 403` on push         | Token lacks `repo` scope          | Regenerate PAT with `repo` scope              |
+| `could not determine repo` | Sandbox proxy hides git remote    | Use `-R owner/repo` flag                      |
+| `gh pr create` fails       | No upstream branch                | Push with `git push -u origin <branch>` first |
+| Setup script fails         | No network access                 | Set network to "Limited" (default) or "Full"  |
 
 ## References
 
-- `references/cloud-auth.md` — Token auth, scopes, proxy details, troubleshooting
-- `references/copilot-setup-steps.md` — Full guide to customizing the Copilot setup workflow
+- `references/cloud-auth.md` — Token auth, scopes, proxy details,
+  troubleshooting
+- `references/copilot-setup-steps.md` — Full guide to customizing the Copilot
+  setup workflow
 
 ## Setup & Activation
 
@@ -195,6 +198,5 @@ gh api repos/owner/repo/actions/runs
 npx skills add codervisor/forge@github-integration -g -y
 ```
 
-Auto-activates when: user mentions "gh in cloud", "github integration",
-"setup script", "copilot setup steps", or `gh` auth failures in cloud
-environments.
+Auto-activates when: user mentions "gh in cloud", "github integration", "setup
+script", "copilot setup steps", or `gh` auth failures in cloud environments.

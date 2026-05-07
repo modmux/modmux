@@ -4,6 +4,7 @@ Full command reference for git worktree operations — creation, inspection,
 maintenance, and removal.
 
 ## Table of Contents
+
 1. [Create](#create)
 2. [Inspect](#inspect)
 3. [Move](#move)
@@ -23,8 +24,8 @@ git worktree add <path> -b <branch-name>
 
 - Creates the directory at `<path>` if it doesn't exist.
 - Creates and checks out `<branch-name>` in one step.
-- The branch starts at `HEAD` of the current checkout unless you pass a
-  base commit.
+- The branch starts at `HEAD` of the current checkout unless you pass a base
+  commit.
 
 ```bash
 # Start from a specific base
@@ -71,6 +72,7 @@ git worktree list
 ```
 
 Output:
+
 ```
 /home/user/myrepo           abc1234 [main]
 /home/user/myrepo-wt/feat/auth  def5678 [feat/auth]
@@ -94,8 +96,8 @@ git worktree move <old-path> <new-path>
 ```
 
 Git updates the internal metadata so `git worktree list` reflects the new
-location. Do NOT just `mv` the directory — the internal bookkeeping won't
-update and you'll end up with a stale entry.
+location. Do NOT just `mv` the directory — the internal bookkeeping won't update
+and you'll end up with a stale entry.
 
 ---
 
@@ -152,8 +154,8 @@ git worktree prune --dry-run --verbose
 fatal: 'feat/auth' is already checked out at '/home/user/myrepo-wt/feat/auth'
 ```
 
-**Cause:** The branch is open in another worktree.
-**Fix:** Use a different branch name, or remove the existing worktree first.
+**Cause:** The branch is open in another worktree. **Fix:** Use a different
+branch name, or remove the existing worktree first.
 
 ### Detached HEAD after `git worktree add <path> origin/<branch>`
 
@@ -173,8 +175,8 @@ git switch -c <local-branch> --track origin/<remote-branch>
 fatal: Unable to create '/home/user/myrepo-wt/feat/auth/.git': File exists
 ```
 
-Each worktree has its own index file inside `.git/worktrees/<name>/index`.
-This error means *another process* is running git in the same worktree.
+Each worktree has its own index file inside `.git/worktrees/<name>/index`. This
+error means _another process_ is running git in the same worktree.
 
 **Fix:** Ensure only one agent session operates per worktree. If the lock file
 is truly stale (the process crashed), remove it:
@@ -196,8 +198,8 @@ This is common in CI/CD setups and server-side deployments.
 
 ### Worktree inside the repo directory
 
-You *can* put a worktree inside the main repo (e.g., `<repo>/.worktrees/`),
-but then you need to add it to `.gitignore`:
+You _can_ put a worktree inside the main repo (e.g., `<repo>/.worktrees/`), but
+then you need to add it to `.gitignore`:
 
 ```
 # .gitignore
