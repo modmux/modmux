@@ -105,17 +105,16 @@ If `modmux status` shows a different port, use that port instead.
 
 ## `Usage: Not available (error)`
 
-This usually means the GitHub quota backend is not configured, the managed
-Copilot sidecar failed to start, or a manually configured external server is not
-reachable.
+This usually means the GitHub quota backend is disabled, the SDK quota backend
+is unsupported in your runtime, or quota lookup failed.
 
-For the managed sidecar path, confirm `~/.modmux/config.json` includes:
+Confirm `~/.modmux/config.json` includes:
 
 ```json
 {
   "copilotSdk": {
-    "backend": "external-cli",
-    "autoStart": true,
+    "backend": "sdk-direct",
+    "autoStart": false,
     "preferredPort": 4321
   }
 }
@@ -129,8 +128,8 @@ modmux start
 tail -50 ~/.modmux/modmux.log
 ```
 
-If you are using a manual external Copilot CLI server instead, make sure that
-server is already listening on the configured `copilotSdk.cliUrl`.
+If the backend remains unavailable, inspect `~/.modmux/modmux.log` for SDK
+initialization failures.
 
 ## Reset the local setup
 

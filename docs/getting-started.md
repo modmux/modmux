@@ -102,16 +102,16 @@ curl http://127.0.0.1:11435/v1/usage
 ## GitHub quota usage
 
 Real GitHub Copilot quota usage is enabled by default through
-`copilotSdk.backend = "external-cli"`. Modmux can automatically start and manage
-the headless Copilot CLI sidecar for quota usage.
+`copilotSdk.backend = "sdk-direct"`. Modmux uses `@github/copilot-sdk` directly
+for quota usage and does not start a Copilot CLI sidecar.
 
-1. To customize the managed sidecar, add this to `~/.modmux/config.json`:
+1. To keep quota usage enabled, add this to `~/.modmux/config.json`:
 
 ```json
 {
   "copilotSdk": {
-    "backend": "external-cli",
-    "autoStart": true,
+    "backend": "sdk-direct",
+    "autoStart": false,
     "preferredPort": 4321
   }
 }
@@ -125,12 +125,8 @@ modmux start
 modmux status
 ```
 
-Modmux will discover an available port near `preferredPort`, start
-`copilot --headless` as a sidecar, and connect quota usage through that managed
-server.
-
-If you prefer to run the Copilot CLI server yourself, keep `autoStart` disabled
-and configure a fixed `cliUrl` instead.
+If the SDK quota backend is unsupported in your runtime, usage status will show
+`Not available (error)`.
 
 To turn the feature off completely, run `modmux set copilot off` or set
 `copilotSdk.backend` to `disabled`.
