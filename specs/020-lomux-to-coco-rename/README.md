@@ -3,17 +3,17 @@ status: complete
 created: 2026-03-25
 priority: critical
 tags:
-- rename
-- branding
-- cli
-- docs
-- release
+  - rename
+  - branding
+  - cli
+  - docs
+  - release
 created_at: 2026-03-25T02:01:25.434370Z
 updated_at: 2026-04-24T02:57:08.429827Z
 completed_at: 2026-04-24T02:57:08.429827Z
 transitions:
-- status: complete
-  at: 2026-04-24T02:57:08.429827Z
+  - status: complete
+    at: 2026-04-24T02:57:08.429827Z
 ---
 
 # Project Rename: Lomux to Coco

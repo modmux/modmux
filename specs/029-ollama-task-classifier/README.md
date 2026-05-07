@@ -14,6 +14,7 @@ depends_on:
 created_at: 2026-04-23T00:00:00.000000Z
 updated_at: 2026-04-23T00:00:00.000000Z
 ---
+
 # Ollama-Powered Task Classification
 
 ## Overview
@@ -100,7 +101,8 @@ classification and already visible to Modmux or cheaply derived from the
 request:
 
 - endpoint type
-- prompt excerpt or normalized prompt text (first 500 chars only, redact API keys/tokens)
+- prompt excerpt or normalized prompt text (first 500 chars only, redact API
+  keys/tokens)
 - number of messages
 - approximate token count
 - presence and count of tools
@@ -110,6 +112,7 @@ The prompt should avoid including secrets, auth headers, or unnecessary raw
 history. Keep the classification context minimal and bounded.
 
 **Example Prompt Structure**:
+
 ```
 Classify this coding task for model tier selection.
 Endpoint: /v1/responses
@@ -146,27 +149,32 @@ Default behavior:
 If `classifierModel` is `null`, Auto uses heuristics only.
 
 **Recommended Classifier Models**:
+
 - Phi-3 (4B, good speed/accuracy tradeoff)
 - Mistral 7B (GGUF format for Ollama)
 - Any >7B parameter model with good instruction-following.
 
 **Timeout Behavior**: If classifier takes >1500ms, fail-fast (do not wait) and
-return heuristic classification. Do not retry classifier to avoid cascading latency.
+return heuristic classification. Do not retry classifier to avoid cascading
+latency.
 
 ### Local Decision Logging
 
-When both heuristic and Ollama classifications are available, Modmux should append
-to a local JSONL file (one JSON object per line):
+When both heuristic and Ollama classifications are available, Modmux should
+append to a local JSONL file (one JSON object per line):
 
 ```jsonl
 {"timestamp": "2026-04-23T00:00:00.000Z", "endpoint": "/v1/responses", "heuristic": {"recommendedTier": "sonnet", "confidence": 0.62}, "classifier": {"recommendedTier": "opus", "confidence": 0.85}, "selectedModel": "claude-opus-4-6"}
 ```
 
-**Location**: `~/.modmux/auto-decisions.jsonl` (or configurable via `localDecisionLogPath`).
+**Location**: `~/.modmux/auto-decisions.jsonl` (or configurable via
+`localDecisionLogPath`).
 
-**File Permissions**: Set to `0600` (read/write owner only) to protect request patterns.
+**File Permissions**: Set to `0600` (read/write owner only) to protect request
+patterns.
 
-**Retention**: Keep the most recent 1000 entries. Rotate daily if log exceeds 10MB.
+**Retention**: Keep the most recent 1000 entries. Rotate daily if log exceeds
+10MB.
 
 This phase only records data. It does not automatically rewrite heuristic
 weights yet. The product value is immediate smarter routing plus future tuning
@@ -200,8 +208,8 @@ headroom.
 - Keep the classifier module separate from Ollama fallback routing. They are two
   different responsibilities even though they both talk to Ollama.
 - This phase prepares the ground for future heuristic tuning, but deliberately
-  stops short of automatic weight mutation so the initial rollout remains easy to
-  reason about and test.
+  stops short of automatic weight mutation so the initial rollout remains easy
+  to reason about and test.
 - The local decision log is part of the product promise: smarter over time, but
   still private.
 - **Spec 27 Coordination**: Both specs use `gateway/src/ollama/` module. The

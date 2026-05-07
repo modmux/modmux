@@ -13,6 +13,7 @@ depends_on: []
 created_at: 2026-04-23T00:00:00.000000Z
 updated_at: 2026-04-23T00:00:00.000000Z
 ---
+
 # Ollama Fallback Routing
 
 ## Overview
@@ -122,14 +123,16 @@ Default behavior:
 If `enabled` is `true` and `model` is `null`, startup should not fail, but
 fallback should remain inactive and status should explain why.
 
-**Health Check Strategy**: Health check should run periodically in the background
-(every `healthCheckIntervalMs`) using a lightweight endpoint such as `GET /api/tags`.
-Result should be cached so repeated status calls do not hammer Ollama. If health check
-fails, fallback remains unavailable until next check succeeds.
+**Health Check Strategy**: Health check should run periodically in the
+background (every `healthCheckIntervalMs`) using a lightweight endpoint such as
+`GET /api/tags`. Result should be cached so repeated status calls do not hammer
+Ollama. If health check fails, fallback remains unavailable until next check
+succeeds.
 
 ### Runtime Shape
 
-Add a small Ollama integration layer under `gateway/src/ollama/` responsible for:
+Add a small Ollama integration layer under `gateway/src/ollama/` responsible
+for:
 
 - health probe (`GET /api/tags` or equivalent lightweight endpoint) with caching
 - listing installed models for validation/logging via `GET /api/tags`
@@ -157,10 +160,11 @@ without retry. This prevents cascading latency.
   re-run unrelated translation logic.
 - Emit structured logs when fallback is attempted, skipped, succeeds, or fails.
 
-**Logging Structure**: Use a unified `fallback_stage` field to track progression:
-`attempted` → `unavailable` (Ollama not running) / `selected` → `succeeded` or `failed`.
-Log format should include: `request_id`, `copilot_error_code`, `fallback_stage`,
-`fallback_model`, `outcome`, `duration_ms`.
+**Logging Structure**: Use a unified `fallback_stage` field to track
+progression: `attempted` → `unavailable` (Ollama not running) / `selected` →
+`succeeded` or `failed`. Log format should include: `request_id`,
+`copilot_error_code`, `fallback_stage`, `fallback_model`, `outcome`,
+`duration_ms`.
 
 ### Agent Compatibility
 

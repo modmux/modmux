@@ -15,6 +15,7 @@ depends_on:
 created_at: 2026-04-23T00:00:00.000000Z
 updated_at: 2026-04-23T00:00:00.000000Z
 ---
+
 # Cost-Aware Status and Usage Display
 
 ## Overview
@@ -48,8 +49,8 @@ behind the scenes.
 
 ### User Story 1 - See What Recent Requests Cost (Priority: P1)
 
-As a Modmux user, I can run `modmux status` and see an estimate of what my recent
-traffic is costing or consuming so I do not have to guess blindly.
+As a Modmux user, I can run `modmux status` and see an estimate of what my
+recent traffic is costing or consuming so I do not have to guess blindly.
 
 Acceptance scenarios:
 
@@ -88,14 +89,19 @@ If GitHub plan variability makes dollar output misleading, the implementation
 should prefer premium usage estimates over fake precision.
 
 **Token Counting Approach**: Use OpenAI's `tiktoken` library for consistent
-token counting across all input/output. For multi-turn conversations, sum
-input tokens + output tokens per request, then aggregate.
+token counting across all input/output. For multi-turn conversations, sum input
+tokens + output tokens per request, then aggregate.
 
 **Pricing Table Management**:
-- Store pricing in `gateway/src/pricing/models.json` (versioned alongside Modmux).
-- Version schema: `{version: "1.0.0", models: {[modelName]: {inputCostPer1kTokens, outputCostPer1kTokens}}, lastUpdated}}`.
-- If pricing file >30 days old, degrade to premium-units reporting and warn in logs.
-- Currency: USD only in initial phase. Future phases can add multi-currency support.
+
+- Store pricing in `gateway/src/pricing/models.json` (versioned alongside
+  Modmux).
+- Version schema:
+  `{version: "1.0.0", models: {[modelName]: {inputCostPer1kTokens, outputCostPer1kTokens}}, lastUpdated}}`.
+- If pricing file >30 days old, degrade to premium-units reporting and warn in
+  logs.
+- Currency: USD only in initial phase. Future phases can add multi-currency
+  support.
 
 ### Data Model Extensions
 
@@ -122,11 +128,11 @@ interface CostSnapshot {
 }
 ```
 
-Retention: Keep last 100 requests or 7 days of data, whichever is shorter.
-Older entries are rotated out to keep memory bounded.
+Retention: Keep last 100 requests or 7 days of data, whichever is shorter. Older
+entries are rotated out to keep memory bounded.
 
-**Auto-Routed Request Tracking**: Record both the Auto tier and the actual
-model selected. If fallback occurs, record both selected and fallback attempts
+**Auto-Routed Request Tracking**: Record both the Auto tier and the actual model
+selected. If fallback occurs, record both selected and fallback attempts
 separately for transparency in cost attribution.
 
 ### Status Output
@@ -149,6 +155,7 @@ Top models:   claude-sonnet-4-5 (65%), claude-haiku-4-5 (35%)
 ```
 
 **When Auto is Active**: Include tier breakdowns:
+
 ```text
 Auto routing: haiku (15%), sonnet (70%), opus (15%) across 20 recent requests
 ```
@@ -212,6 +219,6 @@ is good enough.
 - **Spec 27 Coordination**: Fallback requests (spec 27) should also be tracked
   in cost ledger, with `model: "ollama"` and `modelActual: {configured-model}`.
   This allows status output to show fallback impact on cost.
-- **Foundation Dependencies**: Depends on specs 019 (complete) and 023 (complete).
-  Specs 025-026 (now complete) provide additional context on release workflow
-  and tool passthrough, which may affect observability reporting.
+- **Foundation Dependencies**: Depends on specs 019 (complete) and 023
+  (complete). Specs 025-026 (now complete) provide additional context on release
+  workflow and tool passthrough, which may affect observability reporting.

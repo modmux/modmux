@@ -5,8 +5,8 @@ created_at: 2026-04-24T02:44:41.958485Z
 updated_at: 2026-04-24T02:44:41.958485Z
 completed_at: 2026-04-24T02:44:41.958485Z
 transitions:
-- status: complete
-  at: 2026-04-24T02:44:41.958485Z
+  - status: complete
+    at: 2026-04-24T02:44:41.958485Z
 title: Conventional Commit Release Notes
 ---
 

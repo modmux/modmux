@@ -15,6 +15,7 @@ depends_on:
 created_at: 2026-04-23T00:00:00.000000Z
 updated_at: 2026-04-23T00:00:00.000000Z
 ---
+
 # Heuristic Auto Model Selection
 
 ## Overview
@@ -59,9 +60,9 @@ Acceptance scenarios:
    then it routes to a concrete Copilot model before calling the upstream.
 2. Given a request whose model is not `auto`, when Modmux handles the request,
    then existing behavior is unchanged.
-3. Given the preferred concrete model for the selected tier is unavailable,
-   when Modmux resolves candidates, then it uses the next compatible live model
-   in the same tier/family before degrading further.
+3. Given the preferred concrete model for the selected tier is unavailable, when
+   Modmux resolves candidates, then it uses the next compatible live model in
+   the same tier/family before degrading further.
 
 ### User Story 2 - Auto Stays Predictable (Priority: P1)
 
@@ -124,9 +125,12 @@ background analysis in this phase.
 
 Heuristics should target a tier, not a hardcoded single model:
 
-- `haiku`: low-latency, low-complexity tasks (≤100 tokens, ≤2 messages, typo/simple-fix keywords)
-- `sonnet`: default balanced tier (100–1000 tokens, ≤5 messages, moderate keywords or tools count ≤2)
-- `opus`: high-complexity or high-reasoning tasks (>1000 tokens, >5 messages, refactor/design/migrate keywords, tools count >2)
+- `haiku`: low-latency, low-complexity tasks (≤100 tokens, ≤2 messages,
+  typo/simple-fix keywords)
+- `sonnet`: default balanced tier (100–1000 tokens, ≤5 messages, moderate
+  keywords or tools count ≤2)
+- `opus`: high-complexity or high-reasoning tasks (>1000 tokens, >5 messages,
+  refactor/design/migrate keywords, tools count >2)
 
 When the preferred concrete model for a selected tier is unavailable, degrade
 up-tier (haiku→sonnet→opus) rather than down-tier. If all models unavailable,
