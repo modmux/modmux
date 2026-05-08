@@ -128,9 +128,11 @@ export async function getServiceState(): Promise<ServiceState> {
   }
 
   // Modmux-managed daemon: check PID + /health
-  let running = pid !== null;
+  const running = pid !== null;
 
-  // If running, confirm reachability via /health (best-effort)
+  // If running, try to confirm reachability via /health (best-effort).
+  // Health check failures don't override PID-based detection to avoid false
+  // negatives on timing issues. Log failures for debugging.
   if (running && port !== null) {
     try {
       const controller = new AbortController();
@@ -143,11 +145,19 @@ export async function getServiceState(): Promise<ServiceState> {
       );
       clearTimeout(timeout);
       if (!resp.ok) {
-        running = false;
+        console.debug(
+          `[status] /health check returned non-OK status: ${resp.status}`,
+        );
       }
-    } catch {
-      // Health check failed — treat as not running
-      running = false;
+    } catch (e) {
+      // Health check failed — log for debugging but don't override running status.
+      // Process is verified alive, so a health check failure is likely a
+      // transient networking or server initialization issue.
+      console.debug(
+        `[status] /health check failed: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
     }
   }
 

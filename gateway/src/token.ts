@@ -19,7 +19,7 @@ export interface TokenStore {
 /**
  * Returns the most secure TokenStore available on the current platform:
  * - macOS  : macOS Keychain via `security` CLI
- * - Windows: Windows Credential Manager via PowerShell
+ * - Windows: File-based store (permission-locked at 0600) for reliability in non-interactive contexts
  * - Linux  : Secret Service via `secret-tool`, falling back to a
  *            permission-locked (0600) file when the daemon is unavailable
  */
@@ -137,80 +137,32 @@ class MacOSKeychainStore implements TokenStore {
 }
 
 // ---------------------------------------------------------------------------
-// Windows Credential Manager  (PowerShell -- ships with every Windows install)
+// Windows  (File-based store for reliability in non-interactive contexts)
 // ---------------------------------------------------------------------------
-
-function winCredentialPath(service: string): string {
-  return `$env:APPDATA\\${service}\\token.xml`;
-}
-
-const WIN_TARGET = `${KEYCHAIN_SERVICE}/${KEYCHAIN_ACCOUNT}`;
 
 class WindowsCredentialStore implements TokenStore {
   async save(token: AuthToken): Promise<void> {
-    const value = JSON.stringify(token);
-    const script = `
-      Add-Type -AssemblyName System.Security
-      $pass = ConvertTo-SecureString '${
-      value.replace(/'/g, "''")
-    }' -AsPlainText -Force
-      $cred = New-Object System.Management.Automation.PSCredential('${WIN_TARGET}', $pass)
-      New-Item -ItemType Directory -Path "$env:APPDATA\\${KEYCHAIN_SERVICE}" -Force | Out-Null
-      $cred | Export-Clixml -Path "${
-      winCredentialPath(KEYCHAIN_SERVICE)
-    }" -Force
-    `;
-    await this.runPS(script);
+    // Write token as plain JSON to a file with restricted permissions (0600)
+    // Using FileTokenStore instead of Credential Manager since PSCredential
+    // Export/Import via PowerShell fails in non-interactive mode.
+    const store = new FileTokenStore(getDataDir(), getLegacyDataDir());
+    return await store.save(token);
   }
 
   async load(): Promise<AuthToken | null> {
-    const canonical = await this.loadFromPath(
-      winCredentialPath(KEYCHAIN_SERVICE),
-    );
-    if (canonical) return canonical;
-    return this.loadFromPath(winCredentialPath(LEGACY_KEYCHAIN_SERVICE));
+    // Read from file storage
+    const store = new FileTokenStore(getDataDir(), getLegacyDataDir());
+    return await store.load();
   }
 
   async clear(): Promise<void> {
-    for (
-      const pathLiteral of [
-        winCredentialPath(KEYCHAIN_SERVICE),
-        winCredentialPath(LEGACY_KEYCHAIN_SERVICE),
-      ]
-    ) {
-      const script = `
-        $path = "${pathLiteral}"
-        if (Test-Path $path) { Remove-Item $path -Force }
-      `;
-      await this.runPS(script).catch(() => {});
-    }
+    // Clear from file storage
+    const store = new FileTokenStore(getDataDir(), getLegacyDataDir());
+    return await store.clear();
   }
 
   isValid(token: AuthToken | null): boolean {
     return !!token && token.expiresAt > Date.now();
-  }
-
-  private async loadFromPath(pathLiteral: string): Promise<AuthToken | null> {
-    const script = `
-      $path = "${pathLiteral}"
-      if (!(Test-Path $path)) { exit 1 }
-      $cred = Import-Clixml -Path $path
-      $cred.GetNetworkCredential().Password
-    `;
-    const raw = await this.runPS(script);
-    if (!raw) return null;
-    return parseToken(raw);
-  }
-
-  private async runPS(script: string): Promise<string> {
-    const { success, stdout } = await new Deno.Command("powershell", {
-      args: ["-NonInteractive", "-Command", script],
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-
-    if (!success) return "";
-    return new TextDecoder().decode(stdout).trim();
   }
 }
 
