@@ -50,6 +50,8 @@ async function copyViaWindows(text: string): Promise<void> {
   const proc = new Deno.Command("powershell", {
     args: [
       "-NonInteractive",
+      "-NoProfile",
+      "-NoLogo",
       "-Command",
       "[Console]::In.ReadToEnd() | Set-Clipboard",
     ],
