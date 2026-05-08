@@ -50,9 +50,9 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact: modmux-windows-x64.exe
           - platform: windows-arm64
-            runner: windows-latest
-            deno_version: canary
-            target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+            deno_version: v2.x
+            target: ""
             artifact: modmux-windows-arm64.exe
     steps:
       - uses: actions/checkout@v6
