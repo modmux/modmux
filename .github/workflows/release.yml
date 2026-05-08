@@ -44,6 +44,10 @@ jobs:
             runner: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: modmux-windows-x64.exe
+          - platform: windows-arm64
+            runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            artifact: modmux-windows-arm64.exe
     steps:
       - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2

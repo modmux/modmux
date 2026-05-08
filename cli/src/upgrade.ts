@@ -25,10 +25,10 @@ interface BinaryUpgradePlan {
   downloadUrl: string;
 }
 
-function detectAssetName(): string | null {
-  const os = Deno.build.os;
-  const arch = Deno.build.arch;
-
+function detectAssetNameFor(
+  os: string,
+  arch: string,
+): string | null {
   if (os === "darwin" && arch === "aarch64") return "modmux-darwin-arm64";
   if (os === "darwin" && arch === "x86_64") return "modmux-darwin-x64";
   if (os === "linux" && arch === "x86_64") return "modmux-linux-x64";
@@ -36,7 +36,14 @@ function detectAssetName(): string | null {
   if (os === "windows" && arch === "x86_64") {
     return "modmux-windows-x64.exe";
   }
+  if (os === "windows" && arch === "aarch64") {
+    return "modmux-windows-arm64.exe";
+  }
   return null;
+}
+
+function detectAssetName(): string | null {
+  return detectAssetNameFor(Deno.build.os, Deno.build.arch);
 }
 
 function isDenoExecutable(path: string): boolean {
@@ -229,3 +236,7 @@ export async function upgrade(): Promise<void> {
     await upgradeBinary();
   }
 }
+
+export const _test = {
+  detectAssetNameFor,
+};

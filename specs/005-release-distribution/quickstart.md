@@ -48,6 +48,11 @@ deno compile --allow-net --allow-env --allow-run --allow-read --allow-write \
 deno compile --allow-net --allow-env --allow-run --allow-read --allow-write \
   --target x86_64-pc-windows-msvc --output bin/claudio-windows-x64 src/cli/main.ts
 ## Note: Deno auto-appends .exe → bin/claudio-windows-x64.exe
+
+## Windows arm64
+deno compile --allow-net --allow-env --allow-run --allow-read --allow-write \
+  --target aarch64-pc-windows-msvc --output bin/claudio-windows-arm64 src/cli/main.ts
+## Note: Deno auto-appends .exe → bin/claudio-windows-arm64.exe
 ```
 
 ---
@@ -91,7 +96,7 @@ gh run watch
 
 The GitHub Actions workflow will:
 
-1. Compile all 5 platform binaries in parallel
+1. Compile all 6 platform binaries in parallel
 2. Generate `release-manifest.json`
 3. Create a GitHub Release with all assets
 4. Publish all 6 npm packages

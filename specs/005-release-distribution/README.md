@@ -29,8 +29,11 @@ delivery channel — zero runtime prerequisites for end users.
 2. **Given** a GitHub Release exists, **When** a user downloads
    `claudio-windows-x64.exe`, **Then** the binary runs on Windows x64 without
    additional runtime dependencies.
-3. **Given** a tag `v*` is pushed to the repository, **When** the GitHub Actions
-   release workflow completes, **Then** five platform binaries are attached as
+3. **Given** a GitHub Release exists, **When** a user downloads
+   `claudio-windows-arm64.exe`, **Then** the binary runs on Windows ARM64
+   without additional runtime dependencies.
+4. **Given** a tag `v*` is pushed to the repository, **When** the GitHub Actions
+   release workflow completes, **Then** six platform binaries are attached as
    release assets.
 
 ---
@@ -120,11 +123,12 @@ supporting it increases discoverability.
 
 #### Functional Requirements
 
-1. **Compile targets**: The release workflow MUST produce five binaries:
+1. **Compile targets**: The release workflow MUST produce six binaries:
    `claudio-macos-arm64`, `claudio-macos-x64`, `claudio-linux-x64`,
-   `claudio-linux-arm64`, `claudio-windows-x64.exe`.
+   `claudio-linux-arm64`, `claudio-windows-x64.exe`,
+   `claudio-windows-arm64.exe`.
 2. **GitHub Release automation**: Pushing a `v*` tag MUST trigger a workflow
-   that creates a GitHub Release and attaches all five binaries.
+   that creates a GitHub Release and attaches all six binaries.
 3. **Single version source**: `deno.json` MUST be the single source of truth for
    the version. All distribution channels MUST read from it.
 4. **npm shim**: The `claudio` npm package MUST resolve to the correct platform

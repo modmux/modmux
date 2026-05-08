@@ -117,7 +117,7 @@ alongside the existing 54 tests (59 total).
 
 ### Phase 3: User Story 1 — GitHub Release Binary (Priority: P1) 🎯 MVP
 
-**Goal**: Pushing a `v*` tag produces a GitHub Release with five self-contained
+**Goal**: Pushing a `v*` tag produces a GitHub Release with six self-contained
 platform binaries attached as assets.
 
 **Independent Test**: Download `claudio-macos-arm64` from a GitHub Release, run
@@ -131,12 +131,13 @@ without Deno installed.
       using `denoland/setup-deno@v1` (`deno-version: v2.x`) on `ubuntu-latest`
 - [x] T010 [US1] Add `build` matrix job (`needs: quality`) to
       `.github/workflows/release.yml` with a `matrix.include` strategy
-      containing all five platform entries:
+      containing all six platform entries:
       `{ platform: macos-arm64, runner: macos-latest, target: aarch64-apple-darwin, artifact: claudio-macos-arm64 }`,
       `{ platform: macos-x64, runner: macos-13, target: x86_64-apple-darwin, artifact: claudio-macos-x64 }`,
       `{ platform: linux-x64, runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, artifact: claudio-linux-x64 }`,
       `{ platform: linux-arm64, runner: ubuntu-latest, target: aarch64-unknown-linux-gnu, artifact: claudio-linux-arm64 }`,
-      `{ platform: windows-x64, runner: windows-latest, target: x86_64-pc-windows-msvc, artifact: claudio-windows-x64.exe }`
+      `{ platform: windows-x64, runner: windows-latest, target: x86_64-pc-windows-msvc, artifact: claudio-windows-x64.exe }`,
+      `{ platform: windows-arm64, runner: windows-11-arm, target: aarch64-pc-windows-msvc, artifact: claudio-windows-arm64.exe }`
 - [x] T011 [US1] Add `actions/checkout@v4`, `denoland/setup-deno@v1`
       (`deno-version: v2.x`), and `actions/cache@v4` (path `~/.deno`, key
       `deno-${{ runner.os }}-${{ hashFiles('deno.lock') }}`) steps to the
@@ -160,7 +161,7 @@ without Deno installed.
       `files: claudio-* release-manifest.json`, `generate_release_notes: true`,
       and `permissions: contents: write`
 
-**Checkpoint**: Push a `v0.1.0` tag — verify five binaries and
+**Checkpoint**: Push a `v0.1.0` tag — verify six binaries and
 `release-manifest.json` appear on the GitHub Release page. Download
 `claudio-macos-arm64`, run `./claudio --version` — prints `Claudio v0.1.0`,
 exits `0`.
@@ -287,7 +288,7 @@ and the binary naming convention established in US1.
 end-to-end validation across all distribution channels.
 
 - [x] T030 Add top-level "Installation" section to `README.md` covering all four
-      channels: GitHub Release direct download (curl commands for all 5
+      channels: GitHub Release direct download (curl commands for all 6
       platforms with `chmod +x`), npm global install, JSR/Deno install, and mise
       install
 - [x] T031 Add macOS Gatekeeper workaround note to `README.md` under the GitHub
@@ -397,7 +398,7 @@ US4 (T028, T029): mise.toml + README — independent of workflow
 1. Complete Phase 1: Setup (T001–T005)
 2. Complete Phase 2: Foundational (T006–T008) — version sync wired
 3. Complete Phase 3: US1 (T009–T016) — GitHub Release workflow live
-4. **STOP AND VALIDATE**: push `v0.1.0` tag → verify 5 binaries on GitHub
+4. **STOP AND VALIDATE**: push `v0.1.0` tag → verify 6 binaries on GitHub
    Release
 5. Binary users can install immediately via `curl` + `chmod`
 
@@ -463,6 +464,7 @@ claudio-macos-x64          ← x86_64-apple-darwin
 claudio-linux-x64          ← x86_64-unknown-linux-gnu
 claudio-linux-arm64        ← aarch64-unknown-linux-gnu
 claudio-windows-x64.exe    ← x86_64-pc-windows-msvc
+claudio-windows-arm64.exe  ← aarch64-pc-windows-msvc
 ```
 
 Compile permissions (must be embedded in every binary):
