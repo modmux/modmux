@@ -289,13 +289,15 @@ Deno.test("getServiceState — includes usage when daemon health check fails", a
     getDaemonManager: () => makeDaemonManager(9876),
     getStoredToken: () => Promise.resolve(null),
     isTokenValid: () => false,
-    fetch: () => Promise.resolve(new Response("unavailable", { status: 503 })),
+    fetch: () => Promise.reject(new Error("connection refused")),
     fetchGitHubCopilotQuota: () => Promise.resolve(mockUsage),
   });
 
   const state = await getServiceState();
-  assertEquals(state.running, false);
-  assertEquals(state.pid, null);
+  // Even if health check fails, if PID exists, we consider it running
+  // (health check is best-effort; process liveness is more reliable)
+  assertEquals(state.running, true);
+  assertEquals(state.pid, 9876);
   assertEquals(state.copilotUsage, {
     used: 12,
     total: 100,

@@ -164,12 +164,17 @@ export async function handleRequest(req: Request): Promise<Response> {
 }
 
 export async function startServer(): Promise<
-  { port: number; stop: () => Promise<void> }
+  { port: number; finished: Promise<void>; stop: () => Promise<void> }
 > {
   await initializeServerRuntime();
   const config = await getConfig();
   await initializeUsageMetrics(config.usageMetrics);
   addShutdownHandler();
+
+  let resolveStart: (() => void) | undefined;
+  const serverReady = new Promise<void>((resolve) => {
+    resolveStart = resolve;
+  });
 
   const httpServer = server({
     hostname: config.hostname,
@@ -177,13 +182,25 @@ export async function startServer(): Promise<
     handler: handleRequest,
     onListen: ({ port, hostname }) => {
       log("info", "Server started", { port, hostname });
+      resolveStart?.();
     },
   });
+
+  // Wait for server to start listening. Race against httpServer.finished so that
+  // a bind failure (port in use, permission denied) surfaces immediately rather
+  // than hanging forever on serverReady, which only resolves via onListen.
+  await Promise.race([
+    serverReady,
+    httpServer.finished.then(() => {
+      throw new Error("Server stopped before it finished starting");
+    }),
+  ]);
 
   const { port } = httpServer.addr as Deno.NetAddr;
 
   return {
     port,
+    finished: httpServer.finished,
     stop: async () => {
       await httpServer.shutdown();
       await shutdown();

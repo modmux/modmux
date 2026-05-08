@@ -57,21 +57,40 @@ export async function findFirstBinary(
 /**
  * Check whether a process identified by PID is alive.
  * Uses `kill -0` on Unix and PowerShell Get-Process on Windows.
+ * On Windows, also tries Tasklist as a fallback for robustness.
  */
 export async function isProcessAlive(pid: number): Promise<boolean> {
   try {
     if (Deno.build.os === "windows") {
-      const cmd = new Deno.Command("powershell", {
-        args: [
-          "-NonInteractive",
-          "-Command",
-          `Get-Process -Id ${pid} -ErrorAction SilentlyContinue`,
-        ],
-        stdout: "piped",
-        stderr: "null",
-      });
-      const { code } = await cmd.output();
-      return code === 0;
+      // Try Get-Process first (more reliable)
+      try {
+        const cmd = new Deno.Command("powershell", {
+          args: [
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            // Emit 'True'/'False' explicitly — $? is unreliable because Out-Null
+            // always succeeds even when Get-Process returns nothing.
+            `if (Get-Process -Id ${pid} -ErrorAction SilentlyContinue) { 'True' } else { 'False' }`,
+          ],
+          stdout: "piped",
+          stderr: "null",
+        });
+        const output = await cmd.output();
+        const result = new TextDecoder().decode(output.stdout).trim();
+        return result === "True";
+      } catch {
+        // Fallback: try tasklist
+        const cmd = new Deno.Command("tasklist", {
+          args: ["/FI", `PID eq ${pid}`],
+          stdout: "piped",
+          stderr: "null",
+        });
+        const output = await cmd.output();
+        const result = new TextDecoder().decode(output.stdout);
+        // Use word-boundary regex to match exact PID (avoid false positives like 123 matching 5123)
+        return new RegExp(`\\b${pid}\\b`).test(result);
+      }
     } else {
       const cmd = new Deno.Command("kill", {
         args: ["-0", String(pid)],

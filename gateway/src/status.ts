@@ -127,27 +127,33 @@ export async function getServiceState(): Promise<ServiceState> {
     return result;
   }
 
-  // Modmux-managed daemon: check PID + /health
-  let running = pid !== null;
+  // Modmux-managed daemon: check PID + /health (on non-Windows)
+  const running = pid !== null;
 
-  // If running, confirm reachability via /health (best-effort)
-  if (running && port !== null) {
+  // On non-Windows, try to confirm reachability via /health (best-effort).
+  // Windows network initialization is slower, making health checks unreliable.
+  // We already have robust process detection (Get-Process + tasklist),
+  // so skipping health checks on Windows is safe and avoids timeouts.
+  // Health check failures don't override PID-based detection anyway.
+  if (running && port !== null && Deno.build.os !== "windows") {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 1000);
-      const resp = await statusRuntimeDeps.fetch(
-        `http://127.0.0.1:${port}/health`,
-        {
-          signal: controller.signal,
-        },
-      );
-      clearTimeout(timeout);
-      if (!resp.ok) {
-        running = false;
+      try {
+        const resp = await statusRuntimeDeps.fetch(
+          `http://127.0.0.1:${port}/health`,
+          { signal: controller.signal },
+        );
+        if (!resp.ok) {
+          throw new Error(`health check returned ${resp.status}`);
+        }
+      } finally {
+        clearTimeout(timeout);
       }
     } catch {
-      // Health check failed — treat as not running
-      running = false;
+      // Health check failed — ignore (best-effort only).
+      // Process is verified alive, so a health check failure is likely a
+      // transient networking or server initialization issue.
     }
   }
 

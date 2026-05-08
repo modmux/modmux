@@ -104,16 +104,21 @@ export async function startDaemon(): Promise<StartResult> {
   // Self-spawn current CLI entrypoint with --daemon
   const self = Deno.execPath();
   const pid = await spawnDetached(self, daemonSpawnArgs(self));
+
   await writePid(pid);
 
-  // Avoid reporting success when the child exits immediately (common spawn issue).
+  // Verify process stays alive by checking multiple times.
+  // On Windows, PowerShell spawning may have timing issues.
   for (let i = 0; i < 10; i++) {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    if (await isProcessAlive(pid)) {
+    const alive = await isProcessAlive(pid);
+    if (alive) {
+      log("info", `Daemon started successfully on port ${port}`);
       return { already: false, port };
     }
   }
 
+  log("error", `Daemon process (PID ${pid}) exited immediately`);
   await removePid();
   throw new Error(
     "Failed to start daemon process. Check ~/.modmux/modmux.log for details.",

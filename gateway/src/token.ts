@@ -1,3 +1,9 @@
+import {
+  winCredDelete,
+  winCredRead,
+  winCredWrite,
+} from "./windows-credential.ts";
+
 export interface AuthToken {
   accessToken: string;
   expiresAt: number;
@@ -19,7 +25,8 @@ export interface TokenStore {
 /**
  * Returns the most secure TokenStore available on the current platform:
  * - macOS  : macOS Keychain via `security` CLI
- * - Windows: Windows Credential Manager via PowerShell
+ * - Windows: Windows Credential Manager via FFI (primary) or PowerShell P/Invoke (fallback),
+ *            with a file-based fallback when both are unavailable.
  * - Linux  : Secret Service via `secret-tool`, falling back to a
  *            permission-locked (0600) file when the daemon is unavailable
  */
@@ -28,7 +35,7 @@ export function createTokenStore(): TokenStore {
     return new MacOSKeychainStore();
   }
   if (Deno.build.os === "windows") {
-    return new WindowsCredentialStore();
+    return new WindowsCredentialManagerStore();
   }
   // Linux / other -- try Secret Service; fall back to locked file
   return new SecretServiceStore(
@@ -137,80 +144,58 @@ class MacOSKeychainStore implements TokenStore {
 }
 
 // ---------------------------------------------------------------------------
-// Windows Credential Manager  (PowerShell -- ships with every Windows install)
+// Windows  (Credential Manager via FFI or PowerShell P/Invoke, file fallback)
 // ---------------------------------------------------------------------------
 
-function winCredentialPath(service: string): string {
-  return `$env:APPDATA\\${service}\\token.xml`;
-}
+const WIN_CRED_TARGET = "modmux";
 
-const WIN_TARGET = `${KEYCHAIN_SERVICE}/${KEYCHAIN_ACCOUNT}`;
+class WindowsCredentialManagerStore implements TokenStore {
+  private readonly fallback = new FileTokenStore(getDataDir(), getLegacyDataDir());
 
-class WindowsCredentialStore implements TokenStore {
   async save(token: AuthToken): Promise<void> {
-    const value = JSON.stringify(token);
-    const script = `
-      Add-Type -AssemblyName System.Security
-      $pass = ConvertTo-SecureString '${
-      value.replace(/'/g, "''")
-    }' -AsPlainText -Force
-      $cred = New-Object System.Management.Automation.PSCredential('${WIN_TARGET}', $pass)
-      New-Item -ItemType Directory -Path "$env:APPDATA\\${KEYCHAIN_SERVICE}" -Force | Out-Null
-      $cred | Export-Clixml -Path "${
-      winCredentialPath(KEYCHAIN_SERVICE)
-    }" -Force
-    `;
-    await this.runPS(script);
+    try {
+      await winCredWrite(WIN_CRED_TARGET, KEYCHAIN_ACCOUNT, JSON.stringify(token));
+    } catch {
+      return this.fallback.save(token);
+    }
   }
 
   async load(): Promise<AuthToken | null> {
-    const canonical = await this.loadFromPath(
-      winCredentialPath(KEYCHAIN_SERVICE),
-    );
-    if (canonical) return canonical;
-    return this.loadFromPath(winCredentialPath(LEGACY_KEYCHAIN_SERVICE));
+    try {
+      const raw = await winCredRead(WIN_CRED_TARGET);
+      if (raw !== null) {
+        const token = parseToken(raw);
+        if (token) return token;
+      }
+    } catch {
+      return this.fallback.load();
+    }
+
+    // One-time migration from legacy plain-text file store.
+    const fileToken = await this.fallback.load();
+    if (fileToken) {
+      try {
+        await winCredWrite(WIN_CRED_TARGET, KEYCHAIN_ACCOUNT, JSON.stringify(fileToken));
+        await this.fallback.clear();
+      } catch {
+        // Migration failed; return file token as-is
+      }
+      return fileToken;
+    }
+    return null;
   }
 
   async clear(): Promise<void> {
-    for (
-      const pathLiteral of [
-        winCredentialPath(KEYCHAIN_SERVICE),
-        winCredentialPath(LEGACY_KEYCHAIN_SERVICE),
-      ]
-    ) {
-      const script = `
-        $path = "${pathLiteral}"
-        if (Test-Path $path) { Remove-Item $path -Force }
-      `;
-      await this.runPS(script).catch(() => {});
+    try {
+      await winCredDelete(WIN_CRED_TARGET);
+    } catch {
+      // not found or already cleared — ok
     }
+    await this.fallback.clear();
   }
 
   isValid(token: AuthToken | null): boolean {
     return !!token && token.expiresAt > Date.now();
-  }
-
-  private async loadFromPath(pathLiteral: string): Promise<AuthToken | null> {
-    const script = `
-      $path = "${pathLiteral}"
-      if (!(Test-Path $path)) { exit 1 }
-      $cred = Import-Clixml -Path $path
-      $cred.GetNetworkCredential().Password
-    `;
-    const raw = await this.runPS(script);
-    if (!raw) return null;
-    return parseToken(raw);
-  }
-
-  private async runPS(script: string): Promise<string> {
-    const { success, stdout } = await new Deno.Command("powershell", {
-      args: ["-NonInteractive", "-Command", script],
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-
-    if (!success) return "";
-    return new TextDecoder().decode(stdout).trim();
   }
 }
 

@@ -1,5 +1,8 @@
 export type { DeviceFlowResult, DeviceFlowState } from "./copilot.ts";
 export { pollForToken, startDeviceFlow, stopClient } from "./copilot.ts";
+export { copyToClipboard } from "./clipboard.ts";
+export { openBrowser } from "./open-browser.ts";
+export { promptAndWaitForEnter } from "./stdin.ts";
 export type { AuthToken, TokenStore } from "./token.ts";
 export { createTokenStore } from "./token.ts";
 export * from "./errors.ts";
@@ -53,8 +56,3 @@ export {
 export { AGENT_REGISTRY } from "./registry.ts";
 export { getConfig } from "./server.ts";
 export { startServer } from "./router.ts";
-export {
-  isElevated,
-  reExecuteElevated,
-  shouldRequestElevation,
-} from "./windows-elevation.ts";

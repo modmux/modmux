@@ -30,7 +30,7 @@
     "fmt:check": "deno fmt --check",
     "check": "deno check cli/src/**/*.ts gateway/src/**/*.ts providers/src/**/*.ts tests/**/*.ts",
     "quality": "deno lint && deno fmt --check && deno check && deno test --allow-all",
-    "compile": "deno compile --allow-net --allow-env --allow-run --allow-read --allow-write --output bin/modmux cli/src/main.ts"
+    "compile": "deno compile --allow-net --allow-env --allow-run --allow-read --allow-write --allow-ffi --output bin/modmux cli/src/main.ts"
   },
   "workspace": [
     "cli",
