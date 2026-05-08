@@ -1,9 +1,12 @@
 import {
   type AuthToken,
+  copyToClipboard,
   createTokenStore,
   DeviceFlowTimeoutError,
   NetworkError,
+  openBrowser,
   pollForToken,
+  promptAndWaitForEnter,
   RateLimitError,
   startDeviceFlow,
   SubscriptionRequiredError,
@@ -35,16 +38,61 @@ export function isTokenValid(token: AuthToken | null): boolean {
 /**
  * Runs the GitHub OAuth device flow using the Copilot VS Code extension
  * client ID. This produces a token that the copilot_internal API accepts.
- * Prints the user code and verification URI, then polls until authorized.
+ * Copies the user code to clipboard, prompts for user to open browser,
+ * then polls until authorized.
  */
 export async function authenticate(): Promise<AuthToken> {
   try {
     const flow = await startDeviceFlow();
 
     console.log("\nAuthenticate with GitHub Copilot:");
-    console.log(`  Visit : ${flow.verificationUri}`);
-    console.log(`  Code  : ${flow.userCode}\n`);
-    console.log("Waiting for authorization...");
+
+    // Try to copy device code to clipboard
+    let clipboardSuccess = false;
+    try {
+      await copyToClipboard(flow.userCode);
+      console.log(
+        `  Device code copied to clipboard: ${flow.userCode}`,
+      );
+      clipboardSuccess = true;
+    } catch {
+      // Clipboard unavailable; just show the code
+      console.log(`  Device code: ${flow.userCode}`);
+    }
+
+    console.log(`  Visit: ${flow.verificationUri}`);
+
+    // Prompt user to press Enter and open browser
+    if (clipboardSuccess) {
+      await promptAndWaitForEnter(
+        "\n  Press Enter to open browser (code is in clipboard)...",
+      );
+    } else {
+      await promptAndWaitForEnter(
+        "\n  Press Enter to open browser...",
+      );
+    }
+
+    // Try to open browser automatically
+    try {
+      await openBrowser(flow.verificationUri);
+    } catch (err) {
+      // Browser open failed; guide user manually
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.log(
+        `\n  Could not open browser automatically: ${errMsg}`,
+      );
+      console.log(
+        "  Please open manually at: " + flow.verificationUri,
+      );
+      if (!clipboardSuccess) {
+        console.log(
+          `  Device code to paste: ${flow.userCode}`,
+        );
+      }
+    }
+
+    console.log("\nWaiting for authorization...");
 
     const result = await pollForToken(flow);
 
