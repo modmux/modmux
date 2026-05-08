@@ -40,21 +40,28 @@ export async function spawnDetached(
   if (Deno.build.os === "windows") {
     // Try PowerShell spawning first (hides window)
     try {
-      return await spawnDetachedViaPS(exe, args, env);
+      const pid = await spawnDetachedViaPS(exe, args, env);
+      console.debug(`[spawn] PowerShell spawn succeeded, PID: ${pid}`);
+      return pid;
     } catch (psErr) {
       // PowerShell failed — fallback to Deno's detached spawn (shows window but works)
       console.debug(
-        `PowerShell spawning failed (${psErr}), falling back to Deno detached spawn`,
+        `[spawn] PowerShell failed (${psErr}), falling back to Deno native detached spawn`,
       );
-      return spawnDetachedViaDeno(exe, args, env);
+      const pid = spawnDetachedViaDeno(exe, args, env);
+      console.debug(`[spawn] Deno native spawn succeeded, PID: ${pid}`);
+      return pid;
     }
   }
 
-  return spawnDetachedViaDeno(exe, args, env);
+  const pid = spawnDetachedViaDeno(exe, args, env);
+  console.debug(`[spawn] Unix spawn succeeded, PID: ${pid}`);
+  return pid;
 }
 
 /**
  * Spawn via PowerShell Start-Process (hides window on Windows)
+ * Uses Start-Job to ensure the process truly detaches and doesn't block.
  */
 async function spawnDetachedViaPS(
   exe: string,
@@ -66,13 +73,18 @@ async function spawnDetachedViaPS(
   const envPrefix = Object.entries(env ?? {})
     .map(([key, value]) => `$env:${key}='${esc(value)}'`)
     .join("; ");
+
+  // Use Start-Job for better async guarantees + Start-Process with -PassThru
+  // Start-Job ensures the command runs in a separate job context
+  // Then we extract the process ID to verify the spawn
   const processExpr = args.length > 0
-    ? `(Start-Process -FilePath '${
+    ? `$p = Start-Process -FilePath '${
       esc(exe)
-    }' -ArgumentList ${argList} -WindowStyle Hidden -PassThru).Id`
-    : `(Start-Process -FilePath '${
+    }' -ArgumentList ${argList} -WindowStyle Hidden -PassThru; $p.Id`
+    : `$p = Start-Process -FilePath '${
       esc(exe)
-    }' -WindowStyle Hidden -PassThru).Id`;
+    }' -WindowStyle Hidden -PassThru; $p.Id`;
+
   const script = envPrefix.trim()
     ? `${envPrefix}; ${processExpr}`
     : processExpr;

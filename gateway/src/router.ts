@@ -171,14 +171,23 @@ export async function startServer(): Promise<
   await initializeUsageMetrics(config.usageMetrics);
   addShutdownHandler();
 
+  let resolveStart: (() => void) | undefined;
+  const serverReady = new Promise<void>((resolve) => {
+    resolveStart = resolve;
+  });
+
   const httpServer = server({
     hostname: config.hostname,
     port: config.port,
     handler: handleRequest,
     onListen: ({ port, hostname }) => {
       log("info", "Server started", { port, hostname });
+      resolveStart?.();
     },
   });
+
+  // Wait for server to actually start listening before returning
+  await serverReady;
 
   const { port } = httpServer.addr as Deno.NetAddr;
 

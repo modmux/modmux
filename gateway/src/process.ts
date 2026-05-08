@@ -57,21 +57,47 @@ export async function findFirstBinary(
 /**
  * Check whether a process identified by PID is alive.
  * Uses `kill -0` on Unix and PowerShell Get-Process on Windows.
+ * On Windows, also tries Tasklist as a fallback for robustness.
  */
 export async function isProcessAlive(pid: number): Promise<boolean> {
   try {
     if (Deno.build.os === "windows") {
-      const cmd = new Deno.Command("powershell", {
-        args: [
-          "-NonInteractive",
-          "-Command",
-          `Get-Process -Id ${pid} -ErrorAction SilentlyContinue`,
-        ],
-        stdout: "piped",
-        stderr: "null",
-      });
-      const { code } = await cmd.output();
-      return code === 0;
+      // Try Get-Process first (more reliable)
+      try {
+        const cmd = new Deno.Command("powershell", {
+          args: [
+            "-NonInteractive",
+            "-Command",
+            `Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Out-Null; $?`,
+          ],
+          stdout: "piped",
+          stderr: "null",
+        });
+        const output = await cmd.output();
+        const result = new TextDecoder().decode(output.stdout).trim();
+        const isAlive = result === "True" || output.code === 0;
+        console.debug(
+          `[process] Get-Process check: PID ${pid} alive=${isAlive}`,
+        );
+        return isAlive;
+      } catch (e) {
+        console.debug(
+          `[process] Get-Process failed (${e}), trying Tasklist fallback`,
+        );
+        // Fallback: try tasklist
+        const cmd = new Deno.Command("tasklist", {
+          args: ["/FI", `"PID eq ${pid}"`],
+          stdout: "piped",
+          stderr: "null",
+        });
+        const output = await cmd.output();
+        const result = new TextDecoder().decode(output.stdout);
+        const isAlive = result.includes(String(pid));
+        console.debug(
+          `[process] Tasklist fallback: PID ${pid} alive=${isAlive}`,
+        );
+        return isAlive;
+      }
     } else {
       const cmd = new Deno.Command("kill", {
         args: ["-0", String(pid)],
@@ -81,7 +107,8 @@ export async function isProcessAlive(pid: number): Promise<boolean> {
       const { code } = await cmd.output();
       return code === 0;
     }
-  } catch {
+  } catch (e) {
+    console.debug(`[process] isProcessAlive check failed: ${e}`);
     return false;
   }
 }

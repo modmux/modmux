@@ -609,7 +609,18 @@ async function main() {
   if (args.includes("--daemon")) {
     const authenticated = await ensureAuthenticated();
     if (!authenticated) Deno.exit(1);
-    await startServer();
+    try {
+      await startServer();
+      // Daemon stays alive until explicitly stopped
+      // Prevent the process from exiting by waiting forever
+      await new Promise(() => {}); // Never resolves
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        `[daemon] Fatal error: ${message}`,
+      );
+      Deno.exit(1);
+    }
     return;
   }
 

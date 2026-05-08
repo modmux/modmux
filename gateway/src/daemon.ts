@@ -84,12 +84,14 @@ export async function startDaemon(): Promise<StartResult> {
   // Check if already running
   const existingPid = await readPid();
   if (existingPid !== null && await isProcessAlive(existingPid)) {
+    log("debug", `Daemon already running with PID ${existingPid}`);
     const config = await loadConfig();
     return { already: true, port: config.port };
   }
 
   // Stale PID — clean up
   if (existingPid !== null) {
+    log("debug", `Cleaning up stale PID file for PID ${existingPid}`);
     await removePid();
   }
 
@@ -103,17 +105,26 @@ export async function startDaemon(): Promise<StartResult> {
 
   // Self-spawn current CLI entrypoint with --daemon
   const self = Deno.execPath();
+  log("debug", `Spawning daemon: ${self} ${daemonSpawnArgs(self).join(" ")}`);
   const pid = await spawnDetached(self, daemonSpawnArgs(self));
-  await writePid(pid);
+  log("debug", `Spawned daemon with PID ${pid}`);
 
-  // Avoid reporting success when the child exits immediately (common spawn issue).
+  await writePid(pid);
+  log("debug", `Wrote PID file: ${pidPath()}`);
+
+  // Verify process stays alive by checking multiple times.
+  // On Windows, PowerShell spawning may have timing issues.
   for (let i = 0; i < 10; i++) {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    if (await isProcessAlive(pid)) {
+    const alive = await isProcessAlive(pid);
+    log("debug", `Process check ${i + 1}/10: PID ${pid} alive=${alive}`);
+    if (alive) {
+      log("info", `Daemon started successfully on port ${port}`);
       return { already: false, port };
     }
   }
 
+  log("error", `Daemon process (PID ${pid}) exited immediately`);
   await removePid();
   throw new Error(
     "Failed to start daemon process. Check ~/.modmux/modmux.log for details.",
