@@ -97,11 +97,13 @@ async function spawnDetachedViaPS(
   }
 
   const pidStr = new TextDecoder().decode(stdout).trim();
-  if (!pidStr) {
+  // Use the last non-empty line in case PowerShell emits advisory text before the PID.
+  const lastLine = pidStr.split(/\r?\n/).filter(Boolean).at(-1) ?? "";
+  if (!lastLine) {
     throw new Error("PowerShell returned empty PID");
   }
 
-  const pid = parseInt(pidStr, 10);
+  const pid = parseInt(lastLine, 10);
   if (isNaN(pid)) {
     throw new Error(`Could not parse PID from PowerShell: "${pidStr}"`);
   }

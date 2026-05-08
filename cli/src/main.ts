@@ -79,7 +79,9 @@ function showVersion() {
 
 async function cmdAuth(sub: string | undefined): Promise<void> {
   if (sub === "login") {
-    await logout();
+    // Do NOT logout() before authenticate() — if auth fails, the existing
+    // token must remain intact. authenticate() calls store.save() on success,
+    // which overwrites the stored token atomically.
     try {
       await authenticate();
       console.log("Authenticated successfully.");
@@ -116,7 +118,7 @@ async function cmdAuth(sub: string | undefined): Promise<void> {
   }
 
   const expiresDate = new Date(token.expiresAt);
-  const daysLeft = Math.ceil((token.expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.floor((token.expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
   const expiresStr = expiresDate.toISOString().slice(0, 10);
 
   const username = await getGitHubUsername(token);

@@ -15,6 +15,7 @@ import {
 } from "@modmux/gateway";
 import { clearTokenCache, getToken } from "@modmux/providers";
 import type { TokenStore } from "@modmux/gateway";
+import { VERSION } from "./version.ts";
 
 let tokenStore: TokenStore | null = null;
 
@@ -140,7 +141,7 @@ export async function getGitHubUsername(token: AuthToken): Promise<string | null
     const res = await fetch("https://api.github.com/user", {
       headers: {
         "Authorization": `token ${token.accessToken}`,
-        "User-Agent": "modmux",
+        "User-Agent": `modmux/${VERSION}`,
         "Accept": "application/vnd.github+json",
       },
     });
