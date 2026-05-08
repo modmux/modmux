@@ -51,7 +51,7 @@ jobs:
             artifact: modmux-windows-x64.exe
           - platform: windows-arm64
             runner: windows-latest
-            deno_version: v2.x
+            deno_version: canary
             target: aarch64-pc-windows-msvc
             artifact: modmux-windows-arm64.exe
     steps:

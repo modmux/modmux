@@ -70,9 +70,9 @@ These map to `deno.json`:
 - **Compile command reuse**: The release workflow now calls `deno task compile`
   and passes `DENO_TARGET` / `OUTPUT_FILE_NAME` so CI uses the same compile
   flags as local builds.
-- **Windows ARM64 target availability**: The release workflow pins the Windows
-  ARM64 job to Deno canary because stable 2.7.14 does not expose
-  `aarch64-pc-windows-msvc` in CI.
+- **Windows ARM64 target availability**: The release workflow uses Deno canary
+  for the Windows ARM64 artifact because the stable 2.7.14 build used in GitHub
+  Actions does not expose `aarch64-pc-windows-msvc`.
 - **macOS code-signing**: arm64 binaries are auto-signed by Deno. No additional
   step required.
 - **First-run download**: CI caches `~/.deno` between runs to avoid
