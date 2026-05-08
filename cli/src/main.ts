@@ -616,9 +616,7 @@ async function main() {
       await new Promise(() => {}); // Never resolves
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(
-        `[daemon] Fatal error: ${message}`,
-      );
+      console.error(`Error: ${message}`);
       Deno.exit(1);
     }
     return;

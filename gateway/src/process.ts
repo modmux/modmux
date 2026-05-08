@@ -75,15 +75,8 @@ export async function isProcessAlive(pid: number): Promise<boolean> {
         });
         const output = await cmd.output();
         const result = new TextDecoder().decode(output.stdout).trim();
-        const isAlive = result === "True" || output.code === 0;
-        console.debug(
-          `[process] Get-Process check: PID ${pid} alive=${isAlive}`,
-        );
-        return isAlive;
-      } catch (e) {
-        console.debug(
-          `[process] Get-Process failed (${e}), trying Tasklist fallback`,
-        );
+        return result === "True" || output.code === 0;
+      } catch {
         // Fallback: try tasklist
         const cmd = new Deno.Command("tasklist", {
           args: ["/FI", `"PID eq ${pid}"`],
@@ -92,11 +85,7 @@ export async function isProcessAlive(pid: number): Promise<boolean> {
         });
         const output = await cmd.output();
         const result = new TextDecoder().decode(output.stdout);
-        const isAlive = result.includes(String(pid));
-        console.debug(
-          `[process] Tasklist fallback: PID ${pid} alive=${isAlive}`,
-        );
-        return isAlive;
+        return result.includes(String(pid));
       }
     } else {
       const cmd = new Deno.Command("kill", {
@@ -107,8 +96,7 @@ export async function isProcessAlive(pid: number): Promise<boolean> {
       const { code } = await cmd.output();
       return code === 0;
     }
-  } catch (e) {
-    console.debug(`[process] isProcessAlive check failed: ${e}`);
+  } catch {
     return false;
   }
 }

@@ -41,21 +41,15 @@ export async function spawnDetached(
     // Try PowerShell spawning first (hides window)
     try {
       const pid = await spawnDetachedViaPS(exe, args, env);
-      console.debug(`[spawn] PowerShell spawn succeeded, PID: ${pid}`);
       return pid;
-    } catch (psErr) {
+    } catch {
       // PowerShell failed — fallback to Deno's detached spawn (shows window but works)
-      console.debug(
-        `[spawn] PowerShell failed (${psErr}), falling back to Deno native detached spawn`,
-      );
       const pid = spawnDetachedViaDeno(exe, args, env);
-      console.debug(`[spawn] Deno native spawn succeeded, PID: ${pid}`);
       return pid;
     }
   }
 
   const pid = spawnDetachedViaDeno(exe, args, env);
-  console.debug(`[spawn] Unix spawn succeeded, PID: ${pid}`);
   return pid;
 }
 
