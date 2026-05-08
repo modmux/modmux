@@ -164,7 +164,7 @@ export async function handleRequest(req: Request): Promise<Response> {
 }
 
 export async function startServer(): Promise<
-  { port: number; stop: () => Promise<void> }
+  { port: number; finished: Promise<void>; stop: () => Promise<void> }
 > {
   await initializeServerRuntime();
   const config = await getConfig();
@@ -193,6 +193,7 @@ export async function startServer(): Promise<
 
   return {
     port,
+    finished: httpServer.finished,
     stop: async () => {
       await httpServer.shutdown();
       await shutdown();

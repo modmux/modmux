@@ -9,7 +9,7 @@
  *
  * Supports:
  * - macOS: `open <url>`
- * - Windows: `start <url>`
+ * - Windows: `PowerShell Start-Process <url>`
  * - Linux: `xdg-open <url>`
  */
 export async function openBrowser(url: string): Promise<void> {
@@ -39,17 +39,20 @@ async function openBrowserMacOS(url: string): Promise<void> {
 }
 
 /**
- * Open URL on Windows using `start`
+ * Open URL on Windows using PowerShell Start-Process.
+ * Avoids cmd.exe quirks (title-arg confusion, special-char interpretation).
  */
 async function openBrowserWindows(url: string): Promise<void> {
-  const { success, stderr } = await new Deno.Command("cmd", {
-    args: ["/c", "start", url],
+  // Single-quote the URL for PowerShell; escape any embedded single quotes.
+  const esc = (s: string) => s.replace(/'/g, "''");
+  const { success, stderr } = await new Deno.Command("powershell", {
+    args: ["-NonInteractive", "-Command", `Start-Process '${esc(url)}'`],
     stderr: "piped",
   }).output();
 
   if (!success) {
     const errMsg = new TextDecoder().decode(stderr).trim();
-    throw new Error(`start command failed: ${errMsg}`);
+    throw new Error(`Start-Process command failed: ${errMsg}`);
   }
 }
 

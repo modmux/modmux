@@ -54,8 +54,8 @@ export async function spawnDetached(
 }
 
 /**
- * Spawn via PowerShell Start-Process (hides window on Windows)
- * Uses Start-Job to ensure the process truly detaches and doesn't block.
+ * Spawn via PowerShell Start-Process (hides window on Windows).
+ * Runs Start-Process with -PassThru to obtain the spawned process ID.
  */
 async function spawnDetachedViaPS(
   exe: string,
@@ -68,9 +68,8 @@ async function spawnDetachedViaPS(
     .map(([key, value]) => `$env:${key}='${esc(value)}'`)
     .join("; ");
 
-  // Use Start-Job for better async guarantees + Start-Process with -PassThru
-  // Start-Job ensures the command runs in a separate job context
-  // Then we extract the process ID to verify the spawn
+  // Use Start-Process with -PassThru to get the process ID
+  // Start-Process manages window style; PassThru returns the new process object
   const processExpr = args.length > 0
     ? `$p = Start-Process -FilePath '${
       esc(exe)

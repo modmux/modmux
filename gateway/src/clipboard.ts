@@ -42,18 +42,26 @@ async function copyViaMacOS(text: string): Promise<void> {
 }
 
 /**
- * Copy to clipboard on Windows using PowerShell's Set-Clipboard
+ * Copy to clipboard on Windows using PowerShell's Set-Clipboard.
+ * Text is passed via stdin to avoid quoting/injection issues.
  */
 async function copyViaWindows(text: string): Promise<void> {
-  // Escape single quotes in text
-  const escaped = text.replace(/'/g, "''");
-  const script = `"${escaped}" | Set-Clipboard`;
-
-  const { success, stderr } = await new Deno.Command("powershell", {
-    args: ["-NonInteractive", "-Command", script],
+  // Read stdin content and pipe to Set-Clipboard to safely handle any text.
+  const proc = new Deno.Command("powershell", {
+    args: [
+      "-NonInteractive",
+      "-Command",
+      "[Console]::In.ReadToEnd() | Set-Clipboard",
+    ],
+    stdin: "piped",
     stderr: "piped",
-  }).output();
+  }).spawn();
 
+  const writer = proc.stdin!.getWriter();
+  await writer.write(new TextEncoder().encode(text));
+  await writer.close();
+
+  const { success, stderr } = await proc.output();
   if (!success) {
     const errMsg = new TextDecoder().decode(stderr).trim();
     throw new Error(`PowerShell Set-Clipboard failed: ${errMsg}`);

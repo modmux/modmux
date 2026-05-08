@@ -610,10 +610,9 @@ async function main() {
     const authenticated = await ensureAuthenticated();
     if (!authenticated) Deno.exit(1);
     try {
-      await startServer();
-      // Daemon stays alive until explicitly stopped
-      // Prevent the process from exiting by waiting forever
-      await new Promise(() => {}); // Never resolves
+      const srv = await startServer();
+      // Daemon stays alive until the server stops (e.g. on SIGTERM / shutdown).
+      await srv.finished;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`Error: ${message}`);

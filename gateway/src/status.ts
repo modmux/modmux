@@ -139,13 +139,16 @@ export async function getServiceState(): Promise<ServiceState> {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 1000);
-      await statusRuntimeDeps.fetch(
-        `http://127.0.0.1:${port}/health`,
-        {
-          signal: controller.signal,
-        },
-      );
-      clearTimeout(timeout);
+      try {
+        await statusRuntimeDeps.fetch(
+          `http://127.0.0.1:${port}/health`,
+          {
+            signal: controller.signal,
+          },
+        );
+      } finally {
+        clearTimeout(timeout);
+      }
     } catch {
       // Health check failed — ignore (best-effort only).
       // Process is verified alive, so a health check failure is likely a
