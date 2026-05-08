@@ -69,7 +69,7 @@ Used during the GitHub Actions build matrix and npm shim resolution.
 | `linux-x64`   | `linux`  | `x64`   | `@claudio/linux-x64`    | `x86_64-unknown-linux-gnu`  | `claudio-linux-x64`       | `ubuntu-latest`  |
 | `linux-arm64` | `linux`  | `arm64` | `@claudio/linux-arm64`  | `aarch64-unknown-linux-gnu` | `claudio-linux-arm64`     | `ubuntu-latest`  |
 | `windows-x64` | `win32`  | `x64`   | `@claudio/win32-x64`    | `x86_64-pc-windows-msvc`    | `claudio-windows-x64.exe` | `windows-latest` |
-| `windows-arm64` | `win32` | `arm64` | —                       | `aarch64-pc-windows-msvc`   | `claudio-windows-arm64.exe` | `windows-11-arm` |
+| `windows-arm64` | `win32` | `arm64` | —                       | `aarch64-pc-windows-msvc`   | `claudio-windows-arm64.exe` | `windows-latest` |
 
 ---
 

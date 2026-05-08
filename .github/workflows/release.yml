@@ -50,8 +50,8 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact: modmux-windows-x64.exe
           - platform: windows-arm64
-            runner: windows-11-arm
-            deno_version: canary
+            runner: windows-latest
+            deno_version: v2.x
             target: aarch64-pc-windows-msvc
             artifact: modmux-windows-arm64.exe
     steps:
@@ -70,9 +70,17 @@ jobs:
           DENO_TARGET: ${{ matrix.target }}
           OUTPUT_FILE_NAME: ${{ matrix.artifact }}
         run: deno task compile
-      - name: Smoke test ARM64 binary
+      - name: Verify ARM64 binary
         if: matrix.platform == 'windows-arm64'
-        run: .\${{ matrix.artifact }} --version
+        shell: pwsh
+        run: |
+          $path = "${{ matrix.artifact }}"
+          $bytes = [System.IO.File]::ReadAllBytes($path)
+          $peOffset = [BitConverter]::ToInt32($bytes, 0x3C)
+          $machine = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
+          if ($machine -ne 0xAA64) {
+            throw ("Expected ARM64 PE machine 0xAA64, got 0x{0:X4}" -f $machine)
+          }
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}

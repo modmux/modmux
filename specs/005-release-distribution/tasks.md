@@ -137,7 +137,7 @@ without Deno installed.
       `{ platform: linux-x64, runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, artifact: claudio-linux-x64 }`,
       `{ platform: linux-arm64, runner: ubuntu-latest, target: aarch64-unknown-linux-gnu, artifact: claudio-linux-arm64 }`,
       `{ platform: windows-x64, runner: windows-latest, target: x86_64-pc-windows-msvc, artifact: claudio-windows-x64.exe }`,
-      `{ platform: windows-arm64, runner: windows-11-arm, target: aarch64-pc-windows-msvc, artifact: claudio-windows-arm64.exe }`
+      `{ platform: windows-arm64, runner: windows-latest, target: aarch64-pc-windows-msvc, artifact: claudio-windows-arm64.exe }`
 - [x] T011 [US1] Add `actions/checkout@v4`, `denoland/setup-deno@v1`
       (`deno-version: v2.x`), and `actions/cache@v4` (path `~/.deno`, key
       `deno-${{ runner.os }}-${{ hashFiles('deno.lock') }}`) steps to the

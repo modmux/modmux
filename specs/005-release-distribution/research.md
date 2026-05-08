@@ -28,7 +28,7 @@ Principle V (Portability) and Principle VII (Self-Containment).
 | Linux x64   | `x86_64-unknown-linux-gnu`  | `ubuntu-latest` (native)                       | `claudio-linux-x64`       |
 | Linux arm64 | `aarch64-unknown-linux-gnu` | `ubuntu-latest` (cross-compile via `--target`) | `claudio-linux-arm64`     |
 | Windows x64 | `x86_64-pc-windows-msvc`    | `windows-latest` (native)                      | `claudio-windows-x64.exe` |
-| Windows arm64 | `aarch64-pc-windows-msvc` | `windows-11-arm` (native)                      | `claudio-windows-arm64.exe` |
+| Windows arm64 | `aarch64-pc-windows-msvc` | `windows-latest` (cross-compile)               | `claudio-windows-arm64.exe` |
 
 **Note**: Deno automatically appends `.exe` for Windows targets when `--output`
 does not already include the extension.
@@ -113,7 +113,7 @@ trigger: push tag v*
         ├── ubuntu-latest   → claudio-linux-x64  (native)
         ├── ubuntu-latest   → claudio-linux-arm64 (cross-compile --target)
         ├── windows-latest   → claudio-windows-x64.exe
-        └── windows-11-arm   → claudio-windows-arm64.exe
+        └── windows-latest   → claudio-windows-arm64.exe
         each uploads to actions/upload-artifact@v4 (TTL: 1 day)
   └── job: release (needs: build)
         downloads all artifacts → softprops/action-gh-release@v2
@@ -133,7 +133,7 @@ trigger: push tag v*
 - `macos-13` → x64 native (Intel Haswell)
 - `ubuntu-latest` → x64 native; cross-compile arm64 with `--target` flag
 - `windows-latest` → x64 native
-- `windows-11-arm` → arm64 native
+- `windows-latest` → x64 native; cross-compile ARM64 with `--target`
 
 #### Alternatives Considered
 
