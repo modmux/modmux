@@ -67,6 +67,9 @@ These map to `deno.json`:
 
 - **Dynamic imports**: Not bundled unless `--include` is used. Claudio has no
   dynamic imports — not a concern.
+- **Compile command reuse**: The release workflow now calls `deno task compile`
+  and passes `DENO_TARGET` / `OUTPUT_FILE_NAME` so CI uses the same compile
+  flags as local builds.
 - **macOS code-signing**: arm64 binaries are auto-signed by Deno. No additional
   step required.
 - **First-run download**: CI caches `~/.deno` between runs to avoid

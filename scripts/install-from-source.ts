@@ -1,5 +1,6 @@
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
 import { fromFileUrl, join, resolve } from "@std/path";
+import { runCompile } from "./compile.ts";
 
 const PATH_GUARD_BEGIN = "# modmux-path-begin";
 const PATH_GUARD_END = "# modmux-path-end";
@@ -296,29 +297,7 @@ async function main(): Promise<void> {
     console.log(`Stopped running modmux daemon (PID ${stoppedPid}).`);
   }
 
-  const args = [
-    "compile",
-    "--allow-net",
-    "--allow-env",
-    "--allow-run",
-    "--allow-read",
-    "--allow-write",
-    "--output",
-    outputPath,
-    "cli/src/main.ts",
-  ];
-
-  const command = new Deno.Command("deno", {
-    args,
-    cwd: repoRoot,
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
-  const { success, code } = await command.output();
-  if (!success) {
-    Deno.exit(code);
-  }
+  await runCompile({ cwd: repoRoot, output: outputPath });
 
   if (Deno.build.os !== "windows") {
     await Deno.chmod(outputPath, 0o755);

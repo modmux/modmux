@@ -26,46 +26,53 @@ jobs:
         include:
           - platform: darwin-arm64
             runner: macos-latest
+            deno_version: v2.x
             target: aarch64-apple-darwin
             artifact: modmux-darwin-arm64
           - platform: darwin-x64
             runner: macos-15-intel
+            deno_version: v2.x
             target: x86_64-apple-darwin
             artifact: modmux-darwin-x64
           - platform: linux-x64
             runner: ubuntu-latest
+            deno_version: v2.x
             target: x86_64-unknown-linux-gnu
             artifact: modmux-linux-x64
           - platform: linux-arm64
             runner: ubuntu-latest
+            deno_version: v2.x
             target: aarch64-unknown-linux-gnu
             artifact: modmux-linux-arm64
           - platform: windows-x64
             runner: windows-latest
+            deno_version: v2.x
             target: x86_64-pc-windows-msvc
             artifact: modmux-windows-x64.exe
           - platform: windows-arm64
             runner: windows-11-arm
+            deno_version: v2.x
             target: aarch64-pc-windows-msvc
             artifact: modmux-windows-arm64.exe
     steps:
       - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: ${{ matrix.deno_version }}
       - uses: actions/cache@v5
         with:
           path: ~/.deno
-          key: deno-${{ runner.os }}-${{ hashFiles('deno.lock') }}
+          key: deno-${{ runner.os }}-${{ matrix.platform }}-${{ hashFiles('deno.lock') }}
       - name: Sync version
         run: deno run -A scripts/sync-version.ts
       - name: Compile binary
-        run: >
-          deno compile
-          --allow-net --allow-env --allow-run --allow-read --allow-write
-          --target ${{ matrix.target }}
-          --output ${{ matrix.artifact }}
-          cli/src/main.ts
+        env:
+          DENO_TARGET: ${{ matrix.target }}
+          OUTPUT_FILE_NAME: ${{ matrix.artifact }}
+        run: deno task compile
+      - name: Smoke test ARM64 binary
+        if: matrix.platform == 'windows-arm64'
+        run: .\${{ matrix.artifact }} --version
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
