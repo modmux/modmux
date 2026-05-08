@@ -1,4 +1,10 @@
-import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
+import {
+  authenticate,
+  getGitHubUsername,
+  getStoredToken,
+  isTokenValid,
+  logout,
+} from "./auth.ts";
 import { VERSION } from "./version.ts";
 import { runUpgradeHelper, upgrade } from "./upgrade.ts";
 import { checkForNewerVersion, maybeNotifyUpdate } from "./update-check.ts";
@@ -49,6 +55,9 @@ Commands:
   stop                 Stop the background proxy service
   restart              Restart the background proxy service
   status               Show service and auth status
+  auth                 Show authentication status
+  auth login           Authenticate (or re-authenticate) with GitHub
+  auth logout          Remove stored credentials
   configure <agent>    Configure an agent to use ${APP_NAME}
   unconfigure <agent>  Revert agent configuration
   doctor               Scan and report all agent states
@@ -66,6 +75,55 @@ Options:
 
 function showVersion() {
   console.log(`${APP_NAME} v${VERSION}`);
+}
+
+async function cmdAuth(sub: string | undefined): Promise<void> {
+  if (sub === "login") {
+    await logout();
+    try {
+      await authenticate();
+      console.log("Authenticated successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error: Authentication failed: ${message}`);
+      Deno.exit(1);
+    }
+    return;
+  }
+
+  if (sub === "logout") {
+    await logout();
+    console.log(`Logged out. Run '${CANONICAL_CLI_NAME} auth login' to re-authenticate.`);
+    return;
+  }
+
+  if (sub !== undefined && sub !== "status") {
+    console.error(`Error: Unknown auth subcommand '${sub}'.`);
+    console.error(
+      `Usage: ${CANONICAL_CLI_NAME} auth [login|logout|status]`,
+    );
+    Deno.exit(1);
+  }
+
+  // status (default)
+  const token = await getStoredToken();
+  if (!token || !isTokenValid(token)) {
+    console.log("Auth status: not authenticated");
+    console.log(
+      `\nRun '${CANONICAL_CLI_NAME} auth login' to authenticate.`,
+    );
+    return;
+  }
+
+  const expiresDate = new Date(token.expiresAt);
+  const daysLeft = Math.ceil((token.expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
+  const expiresStr = expiresDate.toISOString().slice(0, 10);
+
+  const username = await getGitHubUsername(token);
+
+  console.log("Auth status: authenticated");
+  if (username) console.log(`  Account : ${username}`);
+  console.log(`  Expires : ${expiresStr} (${daysLeft} day${daysLeft !== 1 ? "s" : ""})`);
 }
 
 export async function ensureAuthenticated(): Promise<boolean> {
@@ -656,6 +714,9 @@ async function main() {
       break;
     case "status":
       await cmdStatus();
+      break;
+    case "auth":
+      await cmdAuth(args[1]);
       break;
     case "configure":
       await cmdConfigure(args[1]);

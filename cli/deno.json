@@ -19,6 +19,6 @@
   "tasks": {
     "install": "deno install --global --allow-all --config deno.json -n modmux --force src/main.ts",
     "dev": "deno run -A src/main.ts",
-    "compile": "deno compile --allow-net --allow-env --allow-run --allow-read --allow-write --output ../../bin/modmux src/main.ts"
+    "compile": "deno compile --allow-net --allow-env --allow-run --allow-read --allow-write --allow-ffi --output ../../bin/modmux src/main.ts"
   }
 }

@@ -1,3 +1,9 @@
+import {
+  winCredDelete,
+  winCredRead,
+  winCredWrite,
+} from "./windows-credential.ts";
+
 export interface AuthToken {
   accessToken: string;
   expiresAt: number;
@@ -19,9 +25,8 @@ export interface TokenStore {
 /**
  * Returns the most secure TokenStore available on the current platform:
  * - macOS  : macOS Keychain via `security` CLI
- * - Windows: File-based store (permission-locked at 0600) for reliability in non-interactive contexts.
- *            Note: 0o600 permission mode is best-effort on Windows NTFS (not enforced like Unix).
- *            This approach prioritizes daemon reliability over maximum security.
+ * - Windows: Windows Credential Manager via FFI (primary) or PowerShell P/Invoke (fallback),
+ *            with a file-based fallback when both are unavailable.
  * - Linux  : Secret Service via `secret-tool`, falling back to a
  *            permission-locked (0600) file when the daemon is unavailable
  */
@@ -30,7 +35,7 @@ export function createTokenStore(): TokenStore {
     return new MacOSKeychainStore();
   }
   if (Deno.build.os === "windows") {
-    return new WindowsFileTokenStore();
+    return new WindowsCredentialManagerStore();
   }
   // Linux / other -- try Secret Service; fall back to locked file
   return new SecretServiceStore(
@@ -139,31 +144,54 @@ class MacOSKeychainStore implements TokenStore {
 }
 
 // ---------------------------------------------------------------------------
-// Windows  (File-based store for reliability in non-interactive contexts)
+// Windows  (Credential Manager via FFI or PowerShell P/Invoke, file fallback)
 // ---------------------------------------------------------------------------
 
-class WindowsFileTokenStore implements TokenStore {
+const WIN_CRED_TARGET = "modmux";
+
+class WindowsCredentialManagerStore implements TokenStore {
+  private readonly fallback = new FileTokenStore(getDataDir(), getLegacyDataDir());
+
   async save(token: AuthToken): Promise<void> {
-    // Write token as plain JSON to a file with restricted permissions (0600).
-    // We use FileTokenStore instead of Credential Manager because PSCredential
-    // Export/Import via PowerShell fails in non-interactive mode, which is critical
-    // for daemon startup. File-based storage with 0o600 permissions provides
-    // reliable token persistence, and while less secure than Credential Manager,
-    // reliability is prioritized for daemon contexts.
-    const store = new FileTokenStore(getDataDir(), getLegacyDataDir());
-    return await store.save(token);
+    try {
+      await winCredWrite(WIN_CRED_TARGET, KEYCHAIN_ACCOUNT, JSON.stringify(token));
+    } catch {
+      return this.fallback.save(token);
+    }
   }
 
   async load(): Promise<AuthToken | null> {
-    // Read from file storage
-    const store = new FileTokenStore(getDataDir(), getLegacyDataDir());
-    return await store.load();
+    try {
+      const raw = await winCredRead(WIN_CRED_TARGET);
+      if (raw !== null) {
+        const token = parseToken(raw);
+        if (token) return token;
+      }
+    } catch {
+      return this.fallback.load();
+    }
+
+    // One-time migration from legacy plain-text file store.
+    const fileToken = await this.fallback.load();
+    if (fileToken) {
+      try {
+        await winCredWrite(WIN_CRED_TARGET, KEYCHAIN_ACCOUNT, JSON.stringify(fileToken));
+        await this.fallback.clear();
+      } catch {
+        // Migration failed; return file token as-is
+      }
+      return fileToken;
+    }
+    return null;
   }
 
   async clear(): Promise<void> {
-    // Clear from file storage
-    const store = new FileTokenStore(getDataDir(), getLegacyDataDir());
-    return await store.clear();
+    try {
+      await winCredDelete(WIN_CRED_TARGET);
+    } catch {
+      // not found or already cleared — ok
+    }
+    await this.fallback.clear();
   }
 
   isValid(token: AuthToken | null): boolean {

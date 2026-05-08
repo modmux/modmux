@@ -129,6 +129,29 @@ export async function authenticate(): Promise<AuthToken> {
   }
 }
 
+export async function logout(): Promise<void> {
+  const store = getTokenStore();
+  await store.clear();
+  clearTokenCache();
+}
+
+export async function getGitHubUsername(token: AuthToken): Promise<string | null> {
+  try {
+    const res = await fetch("https://api.github.com/user", {
+      headers: {
+        "Authorization": `token ${token.accessToken}`,
+        "User-Agent": "modmux",
+        "Accept": "application/vnd.github+json",
+      },
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { login?: string };
+    return typeof data.login === "string" ? data.login : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function validateToken(token: AuthToken): Promise<boolean> {
   if (!token || !isTokenValid(token)) {
     return false;
