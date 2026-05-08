@@ -186,8 +186,15 @@ export async function startServer(): Promise<
     },
   });
 
-  // Wait for server to actually start listening before returning
-  await serverReady;
+  // Wait for server to start listening. Race against httpServer.finished so that
+  // a bind failure (port in use, permission denied) surfaces immediately rather
+  // than hanging forever on serverReady, which only resolves via onListen.
+  await Promise.race([
+    serverReady,
+    httpServer.finished.then(() => {
+      throw new Error("Server stopped before it finished starting");
+    }),
+  ]);
 
   const { port } = httpServer.addr as Deno.NetAddr;
 

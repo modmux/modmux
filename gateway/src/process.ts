@@ -67,8 +67,11 @@ export async function isProcessAlive(pid: number): Promise<boolean> {
         const cmd = new Deno.Command("powershell", {
           args: [
             "-NonInteractive",
+            "-NoProfile",
             "-Command",
-            `Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Out-Null; $?`,
+            // Emit 'True'/'False' explicitly — $? is unreliable because Out-Null
+            // always succeeds even when Get-Process returns nothing.
+            `if (Get-Process -Id ${pid} -ErrorAction SilentlyContinue) { 'True' } else { 'False' }`,
           ],
           stdout: "piped",
           stderr: "null",

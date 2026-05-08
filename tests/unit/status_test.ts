@@ -289,7 +289,7 @@ Deno.test("getServiceState — includes usage when daemon health check fails", a
     getDaemonManager: () => makeDaemonManager(9876),
     getStoredToken: () => Promise.resolve(null),
     isTokenValid: () => false,
-    fetch: () => Promise.resolve(new Response("unavailable", { status: 503 })),
+    fetch: () => Promise.reject(new Error("connection refused")),
     fetchGitHubCopilotQuota: () => Promise.resolve(mockUsage),
   });
 

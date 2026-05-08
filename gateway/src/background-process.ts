@@ -83,7 +83,7 @@ async function spawnDetachedViaPS(
     : processExpr;
 
   const { success, stdout, stderr } = await new Deno.Command("powershell", {
-    args: ["-NonInteractive", "-Command", script],
+    args: ["-NonInteractive", "-NoProfile", "-NoLogo", "-Command", script],
     stdin: "null",
     stdout: "piped",
     stderr: "piped",

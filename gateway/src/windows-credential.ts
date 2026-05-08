@@ -22,7 +22,8 @@
 
 const CRED_TYPE_GENERIC = 1;
 const CRED_PERSIST_LOCAL_MACHINE = 2;
-const CRED_MAX_BLOB_SIZE = 5 * 512;
+// Windows CREDENTIAL.CredentialBlobSize limit for generic credentials is 5120 bytes.
+const CRED_MAX_BLOB_SIZE = 5120;
 const ERROR_NOT_FOUND = 1168;
 
 // ──────────────────────────────────────────────────────────────────────────────

@@ -4,20 +4,25 @@
 
 /**
  * Display a prompt and wait for the user to press Enter.
- * Returns when user presses Enter or throws if input fails.
+ * Returns immediately in non-interactive contexts (non-TTY stdin).
+ * Best-effort: stdout write errors (e.g. EPIPE) and stdin errors are silently ignored.
  */
 export async function promptAndWaitForEnter(message: string): Promise<void> {
-  // Print the prompt
-  Deno.stdout.writeSync(
-    new TextEncoder().encode(`${message}`),
-  );
+  try {
+    Deno.stdout.writeSync(new TextEncoder().encode(message));
+  } catch {
+    // stdout closed or redirected (EPIPE etc.) — prompt is best-effort
+  }
 
-  // Create a buffer to read one line
+  // Don't block in non-interactive contexts (CI, daemon, piped input).
+  if (!Deno.stdin.isTerminal()) {
+    return;
+  }
+
   const buf = new Uint8Array(1024);
   try {
     await Deno.stdin.read(buf);
-    // Successfully read input (user pressed Enter)
-  } catch (_err) {
-    // stdin closed or error; this is OK (e.g., in CI environments)
+  } catch {
+    // stdin closed or errored; treat as Enter pressed
   }
 }

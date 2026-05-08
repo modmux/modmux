@@ -140,12 +140,13 @@ export async function getServiceState(): Promise<ServiceState> {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 1000);
       try {
-        await statusRuntimeDeps.fetch(
+        const resp = await statusRuntimeDeps.fetch(
           `http://127.0.0.1:${port}/health`,
-          {
-            signal: controller.signal,
-          },
+          { signal: controller.signal },
         );
+        if (!resp.ok) {
+          throw new Error(`health check returned ${resp.status}`);
+        }
       } finally {
         clearTimeout(timeout);
       }
