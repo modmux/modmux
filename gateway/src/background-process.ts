@@ -28,6 +28,9 @@ export function findFreePort(preferred: number): number {
  * terminal window. Work around this by routing through PowerShell
  * `Start-Process -WindowStyle Hidden`, which sets SW_HIDE in STARTUPINFO
  * so the console window is never shown.
+ *
+ * If PowerShell spawning fails (e.g., execution policy, non-interactive mode),
+ * falls back to Deno's native `detached: true` (will show window but succeeds).
  */
 export async function spawnDetached(
   exe: string,
@@ -35,37 +38,80 @@ export async function spawnDetached(
   env?: Record<string, string>,
 ): Promise<number> {
   if (Deno.build.os === "windows") {
-    const esc = (s: string) => s.replace(/'/g, "''");
-    const argList = args.map((a) => `'${esc(a)}'`).join(",");
-    const envPrefix = Object.entries(env ?? {})
-      .map(([key, value]) => `$env:${key}='${esc(value)}'`)
-      .join("; ");
-    const processExpr = args.length > 0
-      ? `(Start-Process -FilePath '${
-        esc(exe)
-      }' -ArgumentList ${argList} -WindowStyle Hidden -PassThru).Id`
-      : `(Start-Process -FilePath '${
-        esc(exe)
-      }' -WindowStyle Hidden -PassThru).Id`;
-    const script = envPrefix.trim()
-      ? `${envPrefix}; ${processExpr}`
-      : processExpr;
-    const { success, stdout } = await new Deno.Command("powershell", {
-      args: ["-NonInteractive", "-Command", script],
-      stdin: "null",
-      stdout: "piped",
-      stderr: "null",
-    }).output();
-    if (!success) {
-      throw new Error("Failed to spawn detached process via PowerShell");
+    // Try PowerShell spawning first (hides window)
+    try {
+      return await spawnDetachedViaPS(exe, args, env);
+    } catch (psErr) {
+      // PowerShell failed — fallback to Deno's detached spawn (shows window but works)
+      console.debug(
+        `PowerShell spawning failed (${psErr}), falling back to Deno detached spawn`,
+      );
+      return spawnDetachedViaDeno(exe, args, env);
     }
-    const pid = parseInt(new TextDecoder().decode(stdout).trim(), 10);
-    if (isNaN(pid)) {
-      throw new Error("Could not read detached process PID from PowerShell");
-    }
-    return pid;
   }
 
+  return spawnDetachedViaDeno(exe, args, env);
+}
+
+/**
+ * Spawn via PowerShell Start-Process (hides window on Windows)
+ */
+async function spawnDetachedViaPS(
+  exe: string,
+  args: string[],
+  env?: Record<string, string>,
+): Promise<number> {
+  const esc = (s: string) => s.replace(/'/g, "''");
+  const argList = args.map((a) => `'${esc(a)}'`).join(",");
+  const envPrefix = Object.entries(env ?? {})
+    .map(([key, value]) => `$env:${key}='${esc(value)}'`)
+    .join("; ");
+  const processExpr = args.length > 0
+    ? `(Start-Process -FilePath '${
+      esc(exe)
+    }' -ArgumentList ${argList} -WindowStyle Hidden -PassThru).Id`
+    : `(Start-Process -FilePath '${
+      esc(exe)
+    }' -WindowStyle Hidden -PassThru).Id`;
+  const script = envPrefix.trim()
+    ? `${envPrefix}; ${processExpr}`
+    : processExpr;
+
+  const { success, stdout, stderr } = await new Deno.Command("powershell", {
+    args: ["-NonInteractive", "-Command", script],
+    stdin: "null",
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+
+  if (!success) {
+    const errMsg = new TextDecoder().decode(stderr).trim();
+    throw new Error(
+      `PowerShell spawn failed: ${errMsg || "unknown error"}`,
+    );
+  }
+
+  const pidStr = new TextDecoder().decode(stdout).trim();
+  if (!pidStr) {
+    throw new Error("PowerShell returned empty PID");
+  }
+
+  const pid = parseInt(pidStr, 10);
+  if (isNaN(pid)) {
+    throw new Error(`Could not parse PID from PowerShell: "${pidStr}"`);
+  }
+
+  return pid;
+}
+
+/**
+ * Spawn via Deno's native detached (shows window on Windows, but always works)
+ */
+function spawnDetachedViaDeno(
+  exe: string,
+  args: string[],
+  env?: Record<string, string>,
+): number {
   const child = new Deno.Command(exe, {
     args,
     env,

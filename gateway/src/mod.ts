@@ -53,8 +53,3 @@ export {
 export { AGENT_REGISTRY } from "./registry.ts";
 export { getConfig } from "./server.ts";
 export { startServer } from "./router.ts";
-export {
-  isElevated,
-  reExecuteElevated,
-  shouldRequestElevation,
-} from "./windows-elevation.ts";
