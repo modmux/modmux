@@ -34,9 +34,18 @@ const ERROR_NOT_FOUND = 1168;
 // resource leaks in long-running processes and test environments.
 
 const ADV_SYMBOLS = {
-  CredWriteW: { parameters: ["pointer", "u32"] as const, result: "i32" as const },
-  CredReadW: { parameters: ["pointer", "u32", "u32", "pointer"] as const, result: "i32" as const },
-  CredDeleteW: { parameters: ["pointer", "u32", "u32"] as const, result: "i32" as const },
+  CredWriteW: {
+    parameters: ["pointer", "u32"] as const,
+    result: "i32" as const,
+  },
+  CredReadW: {
+    parameters: ["pointer", "u32", "u32", "pointer"] as const,
+    result: "i32" as const,
+  },
+  CredDeleteW: {
+    parameters: ["pointer", "u32", "u32"] as const,
+    result: "i32" as const,
+  },
   CredFree: { parameters: ["pointer"] as const, result: "void" as const },
 };
 
@@ -52,7 +61,10 @@ function toWide(s: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(ab);
 }
 
-function fromWideBlob(ptr: NonNullable<Deno.PointerValue>, byteLen: number): string {
+function fromWideBlob(
+  ptr: NonNullable<Deno.PointerValue>,
+  byteLen: number,
+): string {
   const pv = new Deno.UnsafePointerView(ptr);
   const chars: number[] = [];
   for (let i = 0; i < byteLen; i += 2) {
@@ -149,7 +161,11 @@ function ffiDelete(target: string): void {
   const adv = Deno.dlopen("advapi32.dll", ADV_SYMBOLS);
   try {
     const tgt = toWide(target);
-    const ok = adv.symbols.CredDeleteW(Deno.UnsafePointer.of(tgt), CRED_TYPE_GENERIC, 0);
+    const ok = adv.symbols.CredDeleteW(
+      Deno.UnsafePointer.of(tgt),
+      CRED_TYPE_GENERIC,
+      0,
+    );
     if (ok === 0) {
       const code = k32.symbols.GetLastError();
       if (code !== ERROR_NOT_FOUND) {
@@ -190,7 +206,11 @@ public struct CREDENTIAL {
     public string UserName;
 }`.trim();
 
-function buildWriteScript(target: string, username: string, password: string): string {
+function buildWriteScript(
+  target: string,
+  username: string,
+  password: string,
+): string {
   return `
 $ErrorActionPreference = 'Stop'
 Add-Type @"
@@ -233,7 +253,9 @@ public class CredMan {
 }
 "@
 $Ptr = [IntPtr]::Zero
-if (-not [CredMan]::CredReadW('${q(target)}', 1, 0, [ref]$Ptr)) { throw 'Credential not found' }
+if (-not [CredMan]::CredReadW('${
+    q(target)
+  }', 1, 0, [ref]$Ptr)) { throw 'Credential not found' }
 try {
     $Cred = [System.Runtime.InteropServices.Marshal]::PtrToStructure($Ptr, [type][CredMan+CREDENTIAL])
     $Bytes = New-Object byte[] $Cred.CredentialBlobSize
@@ -255,7 +277,9 @@ public class CredMan {
     public static extern bool CredDeleteW(string targetName, int type, int flags);
 }
 "@
-if (-not [CredMan]::CredDeleteW('${q(target)}', 1, 0)) { throw 'CredDeleteW failed' }`.trim();
+if (-not [CredMan]::CredDeleteW('${
+    q(target)
+  }', 1, 0)) { throw 'CredDeleteW failed' }`.trim();
 }
 
 async function psInvoke(script: string, capture = false): Promise<string> {
@@ -284,7 +308,11 @@ async function psInvoke(script: string, capture = false): Promise<string> {
   throw lastErr;
 }
 
-async function psWrite(target: string, username: string, password: string): Promise<void> {
+async function psWrite(
+  target: string,
+  username: string,
+  password: string,
+): Promise<void> {
   await psInvoke(buildWriteScript(target, username, password));
 }
 
@@ -332,7 +360,7 @@ export async function winCredRead(target: string): Promise<string | null> {
   } catch {
     // FFI unavailable or failed — fall through to PowerShell
   }
-  return psRead(target);
+  return await psRead(target);
 }
 
 export async function winCredDelete(target: string): Promise<void> {

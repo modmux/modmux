@@ -136,7 +136,9 @@ export async function logout(): Promise<void> {
   clearTokenCache();
 }
 
-export async function getGitHubUsername(token: AuthToken): Promise<string | null> {
+export async function getGitHubUsername(
+  token: AuthToken,
+): Promise<string | null> {
   try {
     const res = await fetch("https://api.github.com/user", {
       headers: {

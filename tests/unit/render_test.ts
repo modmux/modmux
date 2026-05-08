@@ -18,10 +18,10 @@ Deno.test("buildTUIState includes installed version", () => {
     [],
     new Set<string>(),
     new Set<string>(),
-    "0.5.0",
+    "0.6.0",
   );
 
-  assertEquals(state.installedVersion, "0.5.0");
+  assertEquals(state.installedVersion, "0.6.0");
   assertEquals(state.updateVersion, null);
 });
 
@@ -31,10 +31,10 @@ Deno.test("buildTUIState keeps installed and update versions distinct", () => {
     [],
     new Set<string>(),
     new Set<string>(),
-    "0.5.0",
-    "0.5.0",
+    "0.6.0",
+    "0.6.0",
   );
 
-  assertEquals(state.installedVersion, "0.5.0");
-  assertEquals(state.updateVersion, "0.5.0");
+  assertEquals(state.installedVersion, "0.6.0");
+  assertEquals(state.updateVersion, "0.6.0");
 });

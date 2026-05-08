@@ -15,7 +15,7 @@ PATH. No Deno or manual download required.
 To pin to a specific version:
 
 ```bash
-mise use -g github:modmux/modmux@0.5.0
+mise use -g github:modmux/modmux@0.6.0
 ```
 
 ## Update

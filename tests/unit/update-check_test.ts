@@ -46,7 +46,7 @@ Deno.test("maybeNotifyUpdate — writes state file on first run", async () => {
     const moduleUrl = new URL(CLI_PATH, import.meta.url).href;
     const script = makeScript(
       moduleUrl,
-      `globalThis.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ tag_name: "v0.5.0" }) });`,
+      `globalThis.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ tag_name: "v0.6.0" }) });`,
     );
     const scriptPath = join(tmp, "run.ts");
     await Deno.writeTextFile(scriptPath, script);
@@ -108,7 +108,7 @@ Deno.test("maybeNotifyUpdate — silent on malformed state file", async () => {
     const moduleUrl = new URL(CLI_PATH, import.meta.url).href;
     const script = makeScript(
       moduleUrl,
-      `globalThis.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ tag_name: "v0.5.0" }) });`,
+      `globalThis.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ tag_name: "v0.6.0" }) });`,
     );
     const scriptPath = join(tmp, "run.ts");
     await Deno.writeTextFile(scriptPath, script);
@@ -219,14 +219,14 @@ Deno.test("isNewerVersion compares semantic versions correctly", async () => {
   try {
     const moduleUrl = new URL(CLI_PATH, import.meta.url).href;
     const cases: Array<[string, string, boolean]> = [
-      ["0.5.0", "0.5.0", false],
-      ["0.4.1", "0.5.0", false],
+      ["0.6.0", "0.6.0", false],
+      ["0.4.1", "0.6.0", false],
       ["1.0.0", "0.9.9", true],
-      ["0.5", "0.5.0", false],
+      ["0.5", "0.6.0", false],
       ["0.5.1-beta.2", "0.5.1-beta.1", true],
       ["0.5.1", "0.5.1-beta.2", true],
       ["0.5.1-beta.1", "0.5.1", false],
-      ["invalid", "0.5.0", false],
+      ["invalid", "0.6.0", false],
     ];
 
     for (const [candidate, current, expected] of cases) {
@@ -277,7 +277,7 @@ Deno.test("maybeNotifyUpdate — re-checks after 24h and updates state", async (
     const moduleUrl = new URL(CLI_PATH, import.meta.url).href;
     const script = makeScript(
       moduleUrl,
-      `globalThis.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ tag_name: "v0.5.0" }) });`,
+      `globalThis.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ tag_name: "v0.6.0" }) });`,
     );
     const scriptPath = join(tmp, "run.ts");
     await Deno.writeTextFile(scriptPath, script);
@@ -290,7 +290,7 @@ Deno.test("maybeNotifyUpdate — re-checks after 24h and updates state", async (
 
     const raw = await Deno.readTextFile(join(modmuxDir, "update-check.json"));
     const state = JSON.parse(raw);
-    assertEquals(state.latestVersion, "0.5.0");
+    assertEquals(state.latestVersion, "0.6.0");
     const lastChecked = new Date(state.lastChecked).getTime();
     assertEquals(Date.now() - lastChecked < 60_000, true);
   } finally {

@@ -150,11 +150,18 @@ class MacOSKeychainStore implements TokenStore {
 const WIN_CRED_TARGET = "modmux";
 
 class WindowsCredentialManagerStore implements TokenStore {
-  private readonly fallback = new FileTokenStore(getDataDir(), getLegacyDataDir());
+  private readonly fallback = new FileTokenStore(
+    getDataDir(),
+    getLegacyDataDir(),
+  );
 
   async save(token: AuthToken): Promise<void> {
     try {
-      await winCredWrite(WIN_CRED_TARGET, KEYCHAIN_ACCOUNT, JSON.stringify(token));
+      await winCredWrite(
+        WIN_CRED_TARGET,
+        KEYCHAIN_ACCOUNT,
+        JSON.stringify(token),
+      );
     } catch {
       return this.fallback.save(token);
     }
@@ -175,7 +182,11 @@ class WindowsCredentialManagerStore implements TokenStore {
     const fileToken = await this.fallback.load();
     if (fileToken) {
       try {
-        await winCredWrite(WIN_CRED_TARGET, KEYCHAIN_ACCOUNT, JSON.stringify(fileToken));
+        await winCredWrite(
+          WIN_CRED_TARGET,
+          KEYCHAIN_ACCOUNT,
+          JSON.stringify(fileToken),
+        );
         await this.fallback.clear();
       } catch {
         // Migration failed; return file token as-is

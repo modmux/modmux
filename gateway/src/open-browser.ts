@@ -46,7 +46,13 @@ async function openBrowserWindows(url: string): Promise<void> {
   // Single-quote the URL for PowerShell; escape any embedded single quotes.
   const esc = (s: string) => s.replace(/'/g, "''");
   const { success, stderr } = await new Deno.Command("powershell", {
-    args: ["-NonInteractive", "-NoProfile", "-NoLogo", "-Command", `Start-Process '${esc(url)}'`],
+    args: [
+      "-NonInteractive",
+      "-NoProfile",
+      "-NoLogo",
+      "-Command",
+      `Start-Process '${esc(url)}'`,
+    ],
     stderr: "piped",
   }).output();
 

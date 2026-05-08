@@ -95,7 +95,9 @@ async function cmdAuth(sub: string | undefined): Promise<void> {
 
   if (sub === "logout") {
     await logout();
-    console.log(`Logged out. Run '${CANONICAL_CLI_NAME} auth login' to re-authenticate.`);
+    console.log(
+      `Logged out. Run '${CANONICAL_CLI_NAME} auth login' to re-authenticate.`,
+    );
     return;
   }
 
@@ -118,14 +120,18 @@ async function cmdAuth(sub: string | undefined): Promise<void> {
   }
 
   const expiresDate = new Date(token.expiresAt);
-  const daysLeft = Math.floor((token.expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.floor(
+    (token.expiresAt - Date.now()) / (1000 * 60 * 60 * 24),
+  );
   const expiresStr = expiresDate.toISOString().slice(0, 10);
 
   const username = await getGitHubUsername(token);
 
   console.log("Auth status: authenticated");
   if (username) console.log(`  Account : ${username}`);
-  console.log(`  Expires : ${expiresStr} (${daysLeft} day${daysLeft !== 1 ? "s" : ""})`);
+  console.log(
+    `  Expires : ${expiresStr} (${daysLeft} day${daysLeft !== 1 ? "s" : ""})`,
+  );
 }
 
 export async function ensureAuthenticated(): Promise<boolean> {
