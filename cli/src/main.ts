@@ -4,6 +4,7 @@ import { runUpgradeHelper, upgrade } from "./upgrade.ts";
 import { checkForNewerVersion, maybeNotifyUpdate } from "./update-check.ts";
 import { ensureMiseRestartHook, removeMiseRestartHook } from "./mise-hook.ts";
 import { isRunningFromMiseInstall } from "./mise-install.ts";
+import { handleElevation } from "./windows-elevation-handler.ts";
 import { formatStatus, getServiceState } from "../../gateway/src/status.ts";
 import {
   getDaemonManager,
@@ -84,6 +85,11 @@ export async function ensureAuthenticated(): Promise<boolean> {
 }
 
 async function cmdStart(): Promise<void> {
+  // Handle Windows privilege elevation if needed
+  if (await handleElevation()) {
+    return;
+  }
+
   const authenticated = await ensureAuthenticated();
   if (!authenticated) Deno.exit(1);
   const svc = getServiceManager();
