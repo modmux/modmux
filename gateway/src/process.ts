@@ -75,17 +75,18 @@ export async function isProcessAlive(pid: number): Promise<boolean> {
         });
         const output = await cmd.output();
         const result = new TextDecoder().decode(output.stdout).trim();
-        return result === "True" || output.code === 0;
+        return result === "True";
       } catch {
         // Fallback: try tasklist
         const cmd = new Deno.Command("tasklist", {
-          args: ["/FI", `"PID eq ${pid}"`],
+          args: ["/FI", `PID eq ${pid}`],
           stdout: "piped",
           stderr: "null",
         });
         const output = await cmd.output();
         const result = new TextDecoder().decode(output.stdout);
-        return result.includes(String(pid));
+        // Use word-boundary regex to match exact PID (avoid false positives like 123 matching 5123)
+        return new RegExp(`\\b${pid}\\b`).test(result);
       }
     } else {
       const cmd = new Deno.Command("kill", {
