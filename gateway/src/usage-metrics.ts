@@ -2,10 +2,6 @@ import { dirname, join } from "@std/path";
 import { configDir } from "./store.ts";
 import { log } from "./log.ts";
 import type { GitHubCopilotUsageData } from "./copilot-sdk.ts";
-import {
-  fetchGitHubCopilotQuota,
-  shutdownCopilotSdkTracking,
-} from "./copilot-sdk.ts";
 
 interface StatusBuckets {
   "2xx": number;
@@ -75,6 +71,18 @@ interface InternalState {
 let state: InternalState = createInitialState();
 let options: UsageMetricsRuntimeOptions = defaultOptions();
 let snapshotIntervalId: number | null = null;
+
+async function fetchGitHubCopilotQuota(): Promise<
+  GitHubCopilotUsageData | null
+> {
+  const { fetchGitHubCopilotQuota } = await import("./copilot-sdk.ts");
+  return await fetchGitHubCopilotQuota();
+}
+
+async function shutdownCopilotSdkTracking(): Promise<void> {
+  const { shutdownCopilotSdkTracking } = await import("./copilot-sdk.ts");
+  await shutdownCopilotSdkTracking();
+}
 
 function createInitialState(): InternalState {
   const now = new Date();

@@ -6,6 +6,10 @@
         "@leanspec/mcp"
       ],
       "command": "npx"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
     }
   }
 }

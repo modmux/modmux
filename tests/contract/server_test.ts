@@ -167,30 +167,13 @@ Deno.test("Server - graceful shutdown stops accepting new connections", async ()
   assert(refused, "Expected connection to be refused after shutdown");
 });
 
-Deno.test("Server runtime initializes sidecar config and shuts it down", async () => {
+Deno.test("Server runtime initializes config and shuts down runtime services", async () => {
   await withTempHome(async () => {
-    await saveConfig({
-      ...DEFAULT_CONFIG,
-      copilotSdk: {
-        backend: "external-cli",
-        cliUrl: null,
-        autoStart: true,
-        preferredPort: 4321,
-      },
-    });
+    await saveConfig(DEFAULT_CONFIG);
 
-    const started: string[] = [];
     const stopped: string[] = [];
 
     __setServerTestDeps({
-      ensureCopilotSdkSidecarStarted: (copilotSdk) => {
-        started.push(`${copilotSdk.backend}:${copilotSdk.autoStart}`);
-        return Promise.resolve({ cliUrl: "127.0.0.1:4321", statusHint: null });
-      },
-      stopCopilotSdkSidecar: () => {
-        stopped.push("sidecar");
-        return Promise.resolve();
-      },
       shutdownUsageMetrics: () => {
         stopped.push("metrics");
         return Promise.resolve();
@@ -205,7 +188,6 @@ Deno.test("Server runtime initializes sidecar config and shuts it down", async (
     await initializeServerRuntime();
     const config = await loadConfig();
 
-    assertEquals(started, ["external-cli:true"]);
     assert(config.lastStarted !== null);
     assertEquals(typeof config.lastStarted, "string");
 
@@ -215,6 +197,6 @@ Deno.test("Server runtime initializes sidecar config and shuts it down", async (
     assert(configFile.includes('"lastStarted"'));
 
     await shutdown();
-    assertEquals(stopped, ["metrics", "sidecar", "client"]);
+    assertEquals(stopped, ["metrics", "client"]);
   });
 });

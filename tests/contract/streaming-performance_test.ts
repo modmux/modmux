@@ -44,15 +44,7 @@ async function withTempHome<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 async function saveStreamingTestConfig(): Promise<void> {
-  await saveConfig({
-    ...DEFAULT_CONFIG,
-    copilotSdk: {
-      ...DEFAULT_CONFIG.copilotSdk,
-      backend: "disabled",
-      autoStart: false,
-      cliUrl: null,
-    },
-  });
+  await saveConfig(DEFAULT_CONFIG);
 }
 
 // Test helper to measure streaming latency

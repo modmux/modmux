@@ -1,5 +1,53 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { formatStatus, ServiceState } from "@modmux/gateway";
+import { DEFAULT_CONFIG, formatStatus, ServiceState } from "@modmux/gateway";
+import type {
+  DaemonManager,
+  ServiceManager,
+} from "../../gateway/src/managers/interfaces.ts";
+import {
+  __resetStatusTestDeps,
+  __setStatusTestDeps,
+  getServiceState,
+} from "../../gateway/src/status.ts";
+
+const mockUsage = {
+  quota: {
+    entitlementRequests: 100,
+    usedRequests: 12,
+    remainingRequests: 88,
+    remainingPercentage: 88,
+    overage: 0,
+  },
+  status: "authenticated" as const,
+  lastUpdated: "2026-05-07T00:00:00.000Z",
+};
+
+function makeServiceManager(
+  installed: boolean,
+  running: boolean,
+): ServiceManager {
+  return {
+    isInstalled: () => Promise.resolve(installed),
+    isRunning: () => Promise.resolve(running),
+    install: () => Promise.reject(new Error("not used")),
+    uninstall: () => Promise.reject(new Error("not used")),
+    start: () => Promise.resolve(),
+    stop: () => Promise.resolve(),
+  };
+}
+
+function makeDaemonManager(pid: number | null): DaemonManager {
+  return {
+    isRunning: () => Promise.resolve(pid !== null),
+    getPid: () => Promise.resolve(pid),
+    start: () => Promise.reject(new Error("not used")),
+    stop: () => Promise.resolve(false),
+  };
+}
+
+Deno.test.afterEach(() => {
+  __resetStatusTestDeps();
+});
 
 function baseState(overrides: Partial<ServiceState>): ServiceState {
   return {
@@ -201,4 +249,57 @@ Deno.test("formatStatus — output includes usage line when quota data is availa
   assertEquals(lines.length, 6);
   assertStringIncludes(lines[4], "Usage:");
   assertStringIncludes(lines[5], "Version:");
+});
+
+Deno.test("getServiceState — includes usage when service is running", async () => {
+  __setStatusTestDeps({
+    loadConfig: () =>
+      Promise.resolve({
+        ...DEFAULT_CONFIG,
+        port: 4321,
+      }),
+    getServiceManager: () => makeServiceManager(true, true),
+    getDaemonManager: () => makeDaemonManager(null),
+    getStoredToken: () => Promise.resolve(null),
+    isTokenValid: () => false,
+    fetch: () =>
+      Promise.resolve(new Response('{"status":"ok"}', { status: 200 })),
+    fetchGitHubCopilotQuota: () => Promise.resolve(mockUsage),
+  });
+
+  const state = await getServiceState();
+  assertEquals(state.running, true);
+  assertEquals(state.serviceInstalled, true);
+  assertEquals(state.copilotUsage, {
+    used: 12,
+    total: 100,
+    remainingPercentage: 88,
+    status: "authenticated",
+  });
+});
+
+Deno.test("getServiceState — includes usage when daemon health check fails", async () => {
+  __setStatusTestDeps({
+    loadConfig: () =>
+      Promise.resolve({
+        ...DEFAULT_CONFIG,
+        port: 4321,
+      }),
+    getServiceManager: () => makeServiceManager(false, false),
+    getDaemonManager: () => makeDaemonManager(9876),
+    getStoredToken: () => Promise.resolve(null),
+    isTokenValid: () => false,
+    fetch: () => Promise.resolve(new Response("unavailable", { status: 503 })),
+    fetchGitHubCopilotQuota: () => Promise.resolve(mockUsage),
+  });
+
+  const state = await getServiceState();
+  assertEquals(state.running, false);
+  assertEquals(state.pid, null);
+  assertEquals(state.copilotUsage, {
+    used: 12,
+    total: 100,
+    remainingPercentage: 88,
+    status: "authenticated",
+  });
 });

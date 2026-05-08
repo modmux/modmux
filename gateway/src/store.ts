@@ -34,19 +34,6 @@ export interface UsageMetricsConfig {
   filePath: string | null;
 }
 
-export type CopilotSdkBackend = "disabled" | "external-cli";
-
-export interface CopilotSdkConfig {
-  /** Backend used to fetch real GitHub Copilot quota data. Default: "disabled". */
-  backend: CopilotSdkBackend;
-  /** External Copilot CLI server URL used when backend="external-cli". */
-  cliUrl: string | null;
-  /** Auto-start a managed Copilot CLI sidecar instead of using a fixed cliUrl. */
-  autoStart: boolean;
-  /** Preferred localhost port for the managed Copilot CLI sidecar. */
-  preferredPort: number;
-}
-
 export interface UpdatesConfig {
   /** Whether to check for newer versions once per day. Default: true. */
   checkEnabled: boolean;
@@ -72,14 +59,13 @@ export interface ModmuxConfig {
   streaming: StreamingConfig;
   /** Usage metrics configuration for aggregation and optional persistence. */
   usageMetrics: UsageMetricsConfig;
-  /** Copilot SDK backend configuration. */
-  copilotSdk: CopilotSdkConfig;
   /** Update check and upgrade configuration. */
   updates: UpdatesConfig;
 }
 
 interface LegacyModmuxConfig extends Partial<ModmuxConfig> {
-  githubUsage?: Partial<CopilotSdkConfig>;
+  githubUsage?: Record<string, unknown>;
+  copilotSdk?: Record<string, unknown>;
 }
 
 export const DEFAULT_CONFIG: ModmuxConfig = {
@@ -100,12 +86,6 @@ export const DEFAULT_CONFIG: ModmuxConfig = {
     persist: false,
     snapshotIntervalMs: 60_000,
     filePath: null,
-  },
-  copilotSdk: {
-    backend: "external-cli",
-    cliUrl: null,
-    autoStart: true,
-    preferredPort: 4321,
   },
   updates: {
     checkEnabled: true,
@@ -155,17 +135,6 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
   const portRaw = envValue("MODMUX_PORT");
   const logLevelRaw = envValue("MODMUX_LOG_LEVEL");
   const policyRaw = envValue("MODMUX_MODEL_MAPPING_POLICY");
-  const copilotSdkBackendRaw = envValue("MODMUX_COPILOT_SDK_BACKEND") ??
-    envValue("MODMUX_GITHUB_USAGE_BACKEND");
-  const copilotSdkCliUrlRaw = envValue("MODMUX_COPILOT_SDK_CLI_URL") ??
-    envValue("MODMUX_GITHUB_USAGE_CLI_URL");
-  const copilotSdkAutoStartRaw = envValue("MODMUX_COPILOT_SDK_AUTO_START") ??
-    envValue("MODMUX_GITHUB_USAGE_AUTO_START");
-  const copilotSdkPreferredPortRaw = envValue(
-    "MODMUX_COPILOT_SDK_PREFERRED_PORT",
-  ) ?? envValue(
-    "MODMUX_GITHUB_USAGE_PREFERRED_PORT",
-  );
   const updateCheckEnabledRaw = envValue("MODMUX_UPDATE_CHECK_ENABLED");
 
   const next: ModmuxConfig = { ...config };
@@ -184,42 +153,6 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
 
   if (policyRaw !== undefined) {
     next.modelMappingPolicy = policyRaw as ModelMappingPolicy;
-  }
-
-  if (
-    copilotSdkBackendRaw !== undefined ||
-    copilotSdkCliUrlRaw !== undefined ||
-    copilotSdkAutoStartRaw !== undefined ||
-    copilotSdkPreferredPortRaw !== undefined
-  ) {
-    next.copilotSdk = { ...config.copilotSdk };
-  }
-  if (copilotSdkBackendRaw !== undefined) {
-    next.copilotSdk.backend = copilotSdkBackendRaw as CopilotSdkBackend;
-  }
-  if (copilotSdkCliUrlRaw !== undefined) {
-    next.copilotSdk.cliUrl = copilotSdkCliUrlRaw.trim()
-      ? copilotSdkCliUrlRaw
-      : null;
-  }
-  if (copilotSdkAutoStartRaw !== undefined) {
-    if (
-      copilotSdkAutoStartRaw !== "true" && copilotSdkAutoStartRaw !== "false"
-    ) {
-      throw new Error(
-        `Invalid MODMUX_COPILOT_SDK_AUTO_START value: ${copilotSdkAutoStartRaw}`,
-      );
-    }
-    next.copilotSdk.autoStart = copilotSdkAutoStartRaw === "true";
-  }
-  if (copilotSdkPreferredPortRaw !== undefined) {
-    const parsed = parseInt(copilotSdkPreferredPortRaw, 10);
-    if (Number.isNaN(parsed)) {
-      throw new Error(
-        `Invalid MODMUX_COPILOT_SDK_PREFERRED_PORT value: ${copilotSdkPreferredPortRaw}`,
-      );
-    }
-    next.copilotSdk.preferredPort = parsed;
   }
 
   if (updateCheckEnabledRaw !== undefined) {
@@ -310,39 +243,6 @@ function validate(config: ModmuxConfig): void {
       throw new Error("Invalid usageMetrics.filePath: cannot be empty string");
     }
   }
-
-  if (config.copilotSdk) {
-    const validBackends: CopilotSdkBackend[] = ["disabled", "external-cli"];
-    if (!validBackends.includes(config.copilotSdk.backend)) {
-      throw new Error(
-        `Invalid copilotSdk.backend: ${config.copilotSdk.backend}`,
-      );
-    }
-    if (
-      config.copilotSdk.cliUrl !== null &&
-      !config.copilotSdk.cliUrl.trim()
-    ) {
-      throw new Error("Invalid copilotSdk.cliUrl: cannot be empty string");
-    }
-    if (
-      config.copilotSdk.autoStart &&
-      config.copilotSdk.backend !== "external-cli"
-    ) {
-      throw new Error(
-        "Invalid copilotSdk configuration: autoStart requires backend external-cli",
-      );
-    }
-    if (
-      config.copilotSdk.preferredPort < 1024 ||
-      config.copilotSdk.preferredPort > 65535
-    ) {
-      throw new Error(
-        `Invalid copilotSdk.preferredPort: ${config.copilotSdk.preferredPort}. Must be 1024–65535.`,
-      );
-    }
-    // Allow cliUrl to be null for external-cli backend when autoStart is false;
-    // runtime will default to 127.0.0.1:4301 if not provided.
-  }
 }
 
 export async function loadConfig(): Promise<ModmuxConfig> {
@@ -350,11 +250,6 @@ export async function loadConfig(): Promise<ModmuxConfig> {
   try {
     const raw = await Deno.readTextFile(path);
     const parsed = JSON.parse(raw) as LegacyModmuxConfig;
-    const migratedCopilotSdk = {
-      ...DEFAULT_CONFIG.copilotSdk,
-      ...(parsed.githubUsage || {}),
-      ...(parsed.copilotSdk || {}),
-    };
     const config: ModmuxConfig = applyEnvOverrides({
       ...DEFAULT_CONFIG,
       ...parsed,
@@ -368,7 +263,6 @@ export async function loadConfig(): Promise<ModmuxConfig> {
         ...DEFAULT_CONFIG.usageMetrics,
         ...(parsed.usageMetrics || {}),
       },
-      copilotSdk: migratedCopilotSdk,
       updates: {
         checkEnabled: parsed.updates?.checkEnabled ??
           DEFAULT_CONFIG.updates.checkEnabled,

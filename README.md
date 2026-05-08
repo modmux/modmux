@@ -99,13 +99,13 @@ Modmux is under active development. Below are completed and planned features:
 
 Core infrastructure that powers the local gateway:
 
-| Feature | Specs | Impact |
-| --- | --- | --- |
-| **Copilot Authentication & Setup** | 001, 008 | GitHub OAuth, daemon autostart |
-| **Protocol Translation** | 002, 003, 010 | Anthropic & OpenAI compatible APIs |
-| **Multi-Agent Support** | 004, 006, 019 | Claude Code, Cline, Codex integration |
-| **Usage & Observability** | 011, 023 | Status commands, real-time quota tracking |
-| **Cross-Platform Support** | 012 | Windows, macOS, Linux service abstraction |
+| Feature                            | Specs         | Impact                                    |
+| ---------------------------------- | ------------- | ----------------------------------------- |
+| **Copilot Authentication & Setup** | 001, 008      | GitHub OAuth, daemon autostart            |
+| **Protocol Translation**           | 002, 003, 010 | Anthropic & OpenAI compatible APIs        |
+| **Multi-Agent Support**            | 004, 006, 019 | Claude Code, Cline, Codex integration     |
+| **Usage & Observability**          | 011, 023      | Status commands, real-time quota tracking |
+| **Cross-Platform Support**         | 012           | Windows, macOS, Linux service abstraction |
 
 </details>
 
@@ -114,11 +114,11 @@ Core infrastructure that powers the local gateway:
 
 Recently shipped features and improvements:
 
-| Feature | Specs | Impact |
-| --- | --- | --- |
-| **Documentation & UX** | 009, 021, 022 | Editorial pass, clarity improvements |
-| **Tool Passthrough** | 026 | Fixed OpenAI tool compatibility |
-| **Release Workflow** | 025 | Conventional commits for release notes |
+| Feature                | Specs         | Impact                                 |
+| ---------------------- | ------------- | -------------------------------------- |
+| **Documentation & UX** | 009, 021, 022 | Editorial pass, clarity improvements   |
+| **Tool Passthrough**   | 026           | Fixed OpenAI tool compatibility        |
+| **Release Workflow**   | 025           | Conventional commits for release notes |
 
 </details>
 
@@ -127,14 +127,15 @@ Recently shipped features and improvements:
 
 Next phase of development:
 
-| Feature | Specs | Impact |
-| --- | --- | --- |
-| **Ollama Fallback** | 027 | Graceful degradation when Copilot is down |
-| **Auto Model Selection** | 028 | Request `auto` and Modmux chooses Haiku, Sonnet, or Opus |
-| **Smart Classification** | 029 | Use local models to refine Auto tier selection |
-| **Cost Visibility** | 030 | Estimate usage and cost in `modmux status` |
+| Feature                  | Specs | Impact                                                   |
+| ------------------------ | ----- | -------------------------------------------------------- |
+| **Ollama Fallback**      | 027   | Graceful degradation when Copilot is down                |
+| **Auto Model Selection** | 028   | Request `auto` and Modmux chooses Haiku, Sonnet, or Opus |
+| **Smart Classification** | 029   | Use local models to refine Auto tier selection           |
+| **Cost Visibility**      | 030   | Estimate usage and cost in `modmux status`               |
 
-For more detail, see the [specs folder](./specs) and [contribution guide](./CONTRIBUTING.md).
+For more detail, see the [specs folder](./specs) and
+[contribution guide](./CONTRIBUTING.md).
 
 </details>
 

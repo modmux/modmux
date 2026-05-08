@@ -17,7 +17,7 @@ const VALID_MESSAGE_BODY = {
   max_tokens: 10,
 };
 
-// /v1/messages/count_tokens — pure calculation, no Copilot SDK needed
+// /v1/messages/count_tokens — pure calculation, no Copilot usage backend needed
 
 Deno.test("POST /v1/messages/count_tokens - returns 200 with usage", async () => {
   const req = postJSON("/v1/messages/count_tokens", {

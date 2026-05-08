@@ -409,31 +409,26 @@ Usage metrics can be configured via the Modmux configuration file:
   },
   "copilotSdk": {
     "backend": "sdk-direct",
-    "autoStart": false,
-    "preferredPort": 4321,
-    "cliUrl": null
+    "backend": "sdk-direct"
   }
 }
 ```
 
 ### Configuration Options
 
-| Field                             | Type                   | Default      | Description                                             |
-| --------------------------------- | ---------------------- | ------------ | ------------------------------------------------------- |
-| `usageMetrics.persist`            | boolean                | `false`      | Persist periodic usage snapshots to disk                |
-| `usageMetrics.snapshotIntervalMs` | number                 | `60000`      | Snapshot interval when persistence is enabled           |
-| `usageMetrics.filePath`           | string \| null         | `null`       | Override the default snapshot file path                 |
-| `copilotSdk.backend`              | `disabled\|sdk-direct` | `sdk-direct` | Backend used for real GitHub Copilot quota retrieval    |
-| `copilotSdk.autoStart`            | boolean                | `false`      | Deprecated compatibility field (not used by sdk-direct) |
-| `copilotSdk.preferredPort`        | number                 | `4321`       | Deprecated compatibility field (not used by sdk-direct) |
-| `copilotSdk.cliUrl`               | string \| null         | `null`       | Deprecated compatibility field (not used by sdk-direct) |
+| Field                             | Type                   | Default      | Description                                          |
+| --------------------------------- | ---------------------- | ------------ | ---------------------------------------------------- |
+| `usageMetrics.persist`            | boolean                | `false`      | Persist periodic usage snapshots to disk             |
+| `usageMetrics.snapshotIntervalMs` | number                 | `60000`      | Snapshot interval when persistence is enabled        |
+| `usageMetrics.filePath`           | string \| null         | `null`       | Override the default snapshot file path              |
+| `copilotSdk.backend`              | `disabled\|sdk-direct` | `sdk-direct` | Backend used for real GitHub Copilot quota retrieval |
 
 When `copilotSdk.backend` is `sdk-direct`, `/v1/usage` includes
 `github_copilot.status` with these meanings:
 
 - `authenticated` — real Copilot quota data was fetched successfully
 - `unauthenticated` — the Modmux GitHub token is missing or invalid
-- `error` — the SDK quota backend is unavailable or failed
+- `error` — the quota backend is unavailable or failed
 
 ## Next Steps
 

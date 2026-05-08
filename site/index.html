@@ -335,35 +335,49 @@
 
           <div class="roadmap-phase">
             <h3 class="phase-title">Foundation (Complete)</h3>
-            <p class="phase-desc">Core infrastructure that powers the local gateway</p>
+            <p class="phase-desc">
+              Core infrastructure that powers the local gateway
+            </p>
             <div class="roadmap-list">
               <article class="roadmap-card completed">
                 <div class="roadmap-header">
                   <h4>Copilot & Multi-Agent</h4>
                   <span class="badge badge-complete">✓ Complete</span>
                 </div>
-                <p>GitHub auth, daemon startup, and support for Claude Code, Cline, and Codex.</p>
+                <p>
+                  GitHub auth, daemon startup, and support for Claude Code,
+                  Cline, and Codex.
+                </p>
               </article>
               <article class="roadmap-card completed">
                 <div class="roadmap-header">
                   <h4>Protocol Translation</h4>
                   <span class="badge badge-complete">✓ Complete</span>
                 </div>
-                <p>Anthropic and OpenAI compatible APIs with transparent usage data handling.</p>
+                <p>
+                  Anthropic and OpenAI compatible APIs with transparent usage
+                  data handling.
+                </p>
               </article>
               <article class="roadmap-card completed">
                 <div class="roadmap-header">
                   <h4>Cross-Platform Service</h4>
                   <span class="badge badge-complete">✓ Complete</span>
                 </div>
-                <p>Windows, macOS, and Linux daemon support with unified lifecycle management.</p>
+                <p>
+                  Windows, macOS, and Linux daemon support with unified
+                  lifecycle management.
+                </p>
               </article>
               <article class="roadmap-card completed">
                 <div class="roadmap-header">
                   <h4>Usage & Observability</h4>
                   <span class="badge badge-complete">✓ Complete</span>
                 </div>
-                <p>Real-time GitHub Copilot quota tracking and request metrics visible in CLI.</p>
+                <p>
+                  Real-time GitHub Copilot quota tracking and request metrics
+                  visible in CLI.
+                </p>
               </article>
             </div>
           </div>
@@ -377,14 +391,19 @@
                   <h4>Documentation & UX</h4>
                   <span class="badge badge-complete">✓ Complete</span>
                 </div>
-                <p>Editorial improvements and clarity pass across README and docs.</p>
+                <p>
+                  Editorial improvements and clarity pass across README and
+                  docs.
+                </p>
               </article>
               <article class="roadmap-card completed">
                 <div class="roadmap-header">
                   <h4>Compatibility Fixes</h4>
                   <span class="badge badge-complete">✓ Complete</span>
                 </div>
-                <p>OpenAI tool passthrough and conventional commit release notes.</p>
+                <p>
+                  OpenAI tool passthrough and conventional commit release notes.
+                </p>
               </article>
             </div>
           </div>
@@ -393,76 +412,81 @@
             <h3 class="phase-title">Upcoming (Planned)</h3>
             <p class="phase-desc">Next phase of local AI features</p>
             <div class="roadmap-list">
-            <article class="roadmap-card">
-              <div class="roadmap-header">
-                <h3>Ollama Fallback Routing</h3>
-                <span class="badge badge-high">High Priority</span>
-              </div>
-              <p>
-                Keep using your coding agent when Copilot is temporarily down.
-                Modmux will gracefully fall back to a local Ollama model you configure.
-              </p>
-              <ul class="feature-points">
-                <li>Detect Copilot failures and retry locally</li>
-                <li>Optional Ollama configuration</li>
-                <li>Visible in <code>modmux status</code></li>
-              </ul>
-            </article>
+              <article class="roadmap-card">
+                <div class="roadmap-header">
+                  <h3>Ollama Fallback Routing</h3>
+                  <span class="badge badge-high">High Priority</span>
+                </div>
+                <p>
+                  Keep using your coding agent when Copilot is temporarily down.
+                  Modmux will gracefully fall back to a local Ollama model you
+                  configure.
+                </p>
+                <ul class="feature-points">
+                  <li>Detect Copilot failures and retry locally</li>
+                  <li>Optional Ollama configuration</li>
+                  <li>Visible in <code>modmux status</code></li>
+                </ul>
+              </article>
 
-            <article class="roadmap-card">
-              <div class="roadmap-header">
-                <h3>Heuristic Auto Model Selection</h3>
-                <span class="badge badge-high">High Priority</span>
-              </div>
-              <p>
-                Send <code>model: "auto"</code> and let Modmux choose between Haiku,
-                Sonnet, and Opus based on request complexity and size.
-              </p>
-              <ul class="feature-points">
-                <li>Request-local heuristic classification</li>
-                <li>Deterministic, fully observable decisions</li>
-                <li>Balances speed and quality automatically</li>
-              </ul>
-            </article>
+              <article class="roadmap-card">
+                <div class="roadmap-header">
+                  <h3>Heuristic Auto Model Selection</h3>
+                  <span class="badge badge-high">High Priority</span>
+                </div>
+                <p>
+                  Send <code>model: "auto"</code> and let Modmux choose between
+                  Haiku, Sonnet, and Opus based on request complexity and size.
+                </p>
+                <ul class="feature-points">
+                  <li>Request-local heuristic classification</li>
+                  <li>Deterministic, fully observable decisions</li>
+                  <li>Balances speed and quality automatically</li>
+                </ul>
+              </article>
 
-            <article class="roadmap-card">
-              <div class="roadmap-header">
-                <h3>Ollama-Powered Classification</h3>
-                <span class="badge badge-high">High Priority</span>
-              </div>
-              <p>
-                Optionally run a small local model to improve Auto tier selection
-                beyond hand-written heuristics.
-              </p>
-              <ul class="feature-points">
-                <li>Use Phi-3, Mistral, or similar models</li>
-                <li>Fall back to heuristics if unavailable</li>
-                <li>All-local decision logging for future tuning</li>
-              </ul>
-            </article>
+              <article class="roadmap-card">
+                <div class="roadmap-header">
+                  <h3>Ollama-Powered Classification</h3>
+                  <span class="badge badge-high">High Priority</span>
+                </div>
+                <p>
+                  Optionally run a small local model to improve Auto tier
+                  selection beyond hand-written heuristics.
+                </p>
+                <ul class="feature-points">
+                  <li>Use Phi-3, Mistral, or similar models</li>
+                  <li>Fall back to heuristics if unavailable</li>
+                  <li>All-local decision logging for future tuning</li>
+                </ul>
+              </article>
 
-            <article class="roadmap-card">
-              <div class="roadmap-header">
-                <h3>Cost-Aware Status Display</h3>
-                <span class="badge badge-medium">Medium Priority</span>
-              </div>
-              <p>
-                See estimated cost and token usage directly in <code>modmux status</code>
-                so you understand what your recent requests are consuming.
-              </p>
-              <ul class="feature-points">
-                <li>Per-model usage breakdown</li>
-                <li>Recent cost estimates</li>
-                <li>Machine-readable JSON export</li>
-              </ul>
-            </article>
+              <article class="roadmap-card">
+                <div class="roadmap-header">
+                  <h3>Cost-Aware Status Display</h3>
+                  <span class="badge badge-medium">Medium Priority</span>
+                </div>
+                <p>
+                  See estimated cost and token usage directly in <code>modmux
+                    status</code>
+                  so you understand what your recent requests are consuming.
+                </p>
+                <ul class="feature-points">
+                  <li>Per-model usage breakdown</li>
+                  <li>Recent cost estimates</li>
+                  <li>Machine-readable JSON export</li>
+                </ul>
+              </article>
             </div>
           </div>
           <p class="roadmap-note">
-            Features are in active development and subject to change. For detailed specs and status,
-            visit the <a href="https://github.com/myty/modmux/tree/main/specs">specs folder</a>.
+            Features are in active development and subject to change. For
+            detailed specs and status, visit the <a
+              href="https://github.com/myty/modmux/tree/main/specs"
+            >specs folder</a>.
           </p>
         </section>
+        <section id="faq" class="section">
           <div class="section-heading narrow">
             <p class="eyebrow">FAQ</p>
             <h2>Questions that usually block adoption.</h2>
@@ -507,8 +531,8 @@
             <details>
               <summary>Does Modmux track my Copilot usage?</summary>
               <p>
-                Yes. By default, Modmux manages the Copilot CLI sidecar needed
-                for real quota visibility through <code>/v1/usage</code>. Run
+                Yes. By default, Modmux uses SDK-direct quota tracking for real
+                visibility through <code>/v1/usage</code>. Run
                 <code>modmux set copilot off</code> if you want to disable it.
               </p>
             </details>

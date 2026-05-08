@@ -1,13 +1,7 @@
-import { CopilotClient } from "@github/copilot-sdk";
-import {
-  ensureCopilotSdkSidecarStarted,
-  resolveConfiguredCopilotSdkCliUrl,
-} from "./copilot-sidecar.ts";
 import { log } from "./log.ts";
-import { loadConfig } from "./store.ts";
-import type { CopilotSdkConfig } from "./store.ts";
+import { createTokenStore } from "./token.ts";
+import type { AuthToken, TokenStore } from "./token.ts";
 
-// Types for GitHub Copilot quota information
 export interface GitHubCopilotQuota {
   entitlementRequests: number;
   usedRequests: number;
@@ -24,42 +18,33 @@ export interface GitHubCopilotUsageData {
 }
 
 interface GitHubQuotaSnapshot {
-  entitlementRequests: number;
-  usedRequests: number;
-  remainingPercentage: number;
-  overage: number;
-  resetDate?: string;
+  entitlement: number;
+  remaining: number;
+  unlimited: boolean;
+  overage_count: number;
+  overage_permitted: boolean;
+  percent_remaining: number;
+  quota_id?: string;
+  reset_date?: string;
 }
 
-interface CopilotClientInstance {
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  rpc: {
-    account: {
-      getQuota(): Promise<{
-        quotaSnapshots: Record<string, GitHubQuotaSnapshot>;
-      }>;
-    };
-  };
+interface GitHubCopilotUserInfo {
+  quota_reset_date?: string;
+  quota_snapshots?: Record<string, GitHubQuotaSnapshot>;
 }
 
 interface CopilotSdkRuntimeDeps {
-  loadConfig: typeof loadConfig;
-  ensureCopilotSdkSidecarStarted: typeof ensureCopilotSdkSidecarStarted;
-  resolveConfiguredCopilotSdkCliUrl: typeof resolveConfiguredCopilotSdkCliUrl;
   log: typeof log;
   now: () => number;
-  createClient: (options: { cliUrl: string }) => CopilotClientInstance;
+  createTokenStore: typeof createTokenStore;
+  fetch: typeof fetch;
 }
 
 const defaultCopilotSdkRuntimeDeps: CopilotSdkRuntimeDeps = {
-  loadConfig,
-  ensureCopilotSdkSidecarStarted,
-  resolveConfiguredCopilotSdkCliUrl,
   log,
   now: () => Date.now(),
-  createClient: (options) =>
-    new CopilotClient(options) as unknown as CopilotClientInstance,
+  createTokenStore,
+  fetch,
 };
 
 let copilotSdkRuntimeDeps: CopilotSdkRuntimeDeps = {
@@ -76,14 +61,19 @@ export function __resetCopilotSdkTestDeps(): void {
   copilotSdkRuntimeDeps = { ...defaultCopilotSdkRuntimeDeps };
 }
 
-// Cache for quota data
 let cachedQuotaData: GitHubCopilotUsageData | null = null;
-let lastFetchTime: number = 0;
-const CACHE_DURATION_MS = 60_000; // 60 seconds, following opencode-copilot-plus pattern
+let lastFetchTime = 0;
+let cachedTokenFingerprint: string | null = null;
+const CACHE_DURATION_MS = 60_000;
 
-// Copilot SDK client instance
-let copilotClient: CopilotClient | null = null;
-let copilotClientConfigKey: string | null = null;
+let tokenStore: TokenStore | null = null;
+
+function getTokenStore(): TokenStore {
+  if (!tokenStore) {
+    tokenStore = copilotSdkRuntimeDeps.createTokenStore();
+  }
+  return tokenStore;
+}
 
 function emptyQuota(): GitHubCopilotQuota {
   return {
@@ -105,20 +95,34 @@ function buildUsageData(
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isQuotaSnapshot(value: unknown): value is GitHubQuotaSnapshot {
+  if (!isRecord(value)) return false;
+  return typeof value.entitlement === "number" &&
+    typeof value.remaining === "number" &&
+    typeof value.unlimited === "boolean" &&
+    typeof value.overage_count === "number" &&
+    typeof value.overage_permitted === "boolean" &&
+    typeof value.percent_remaining === "number" &&
+    (value.quota_id === undefined || typeof value.quota_id === "string") &&
+    (value.reset_date === undefined || typeof value.reset_date === "string");
+}
+
 function isPlaceholderQuotaSnapshot(snapshot: GitHubQuotaSnapshot): boolean {
-  return snapshot.entitlementRequests === 1 &&
-    snapshot.usedRequests === 0 &&
-    snapshot.remainingPercentage === 100 &&
-    snapshot.overage === 0;
+  return snapshot.entitlement === 1 &&
+    snapshot.remaining === 0 &&
+    snapshot.percent_remaining === 100 &&
+    snapshot.overage_count === 0;
 }
 
 export function selectGitHubQuotaSnapshot(
   quotaSnapshots: Record<string, GitHubQuotaSnapshot>,
 ): [string, GitHubQuotaSnapshot] | null {
   const quotaEntries = Object.entries(quotaSnapshots);
-  if (quotaEntries.length === 0) {
-    return null;
-  }
+  if (quotaEntries.length === 0) return null;
 
   if (
     quotaEntries.length > 1 &&
@@ -130,16 +134,51 @@ export function selectGitHubQuotaSnapshot(
   quotaEntries.sort((a, b) => {
     const [, left] = a;
     const [, right] = b;
-    if (right.entitlementRequests !== left.entitlementRequests) {
-      return right.entitlementRequests - left.entitlementRequests;
+    if (right.entitlement !== left.entitlement) {
+      return right.entitlement - left.entitlement;
     }
-    if (right.usedRequests !== left.usedRequests) {
-      return right.usedRequests - left.usedRequests;
+    if (right.remaining !== left.remaining) {
+      return right.remaining - left.remaining;
     }
     return a[0].localeCompare(b[0]);
   });
 
   return quotaEntries[0];
+}
+
+function getQuotaSnapshots(
+  user: GitHubCopilotUserInfo,
+): Record<string, GitHubQuotaSnapshot> | null {
+  if (!isRecord(user.quota_snapshots)) return null;
+
+  const snapshots: Record<string, GitHubQuotaSnapshot> = {};
+  for (const [key, value] of Object.entries(user.quota_snapshots)) {
+    if (isQuotaSnapshot(value)) {
+      snapshots[key] = value;
+    }
+  }
+
+  return Object.keys(snapshots).length > 0 ? snapshots : null;
+}
+
+function toUsageData(
+  user: GitHubCopilotUserInfo,
+  selected: [string, GitHubQuotaSnapshot],
+): GitHubCopilotUsageData {
+  const [, snapshot] = selected;
+  const usedRequests = Math.max(snapshot.entitlement - snapshot.remaining, 0);
+  return {
+    quota: {
+      entitlementRequests: snapshot.entitlement,
+      usedRequests,
+      remainingRequests: Math.max(snapshot.remaining, 0),
+      remainingPercentage: snapshot.percent_remaining,
+      overage: snapshot.overage_count,
+      resetDate: user.quota_reset_date ?? snapshot.reset_date,
+    },
+    status: "authenticated",
+    lastUpdated: new Date().toISOString(),
+  };
 }
 
 function isAuthenticationError(error: unknown): boolean {
@@ -155,322 +194,151 @@ function isAuthenticationError(error: unknown): boolean {
     message.includes("not logged in");
 }
 
-async function resetCopilotClient(): Promise<void> {
-  if (!copilotClient) return;
-  try {
-    await copilotClient.stop();
-  } catch (error) {
-    await copilotSdkRuntimeDeps.log(
-      "warn",
-      "Error resetting GitHub Copilot usage client",
-      {
-        error: error instanceof Error ? error.message : String(error),
+async function loadStoredToken(): Promise<AuthToken | null> {
+  return await getTokenStore().load();
+}
+
+function tokenFingerprint(token: AuthToken): string {
+  return `${token.accessToken}:${token.expiresAt}`;
+}
+
+function cacheUsageData(
+  fingerprint: string,
+  data: GitHubCopilotUsageData,
+): GitHubCopilotUsageData {
+  cachedQuotaData = data;
+  cachedTokenFingerprint = fingerprint;
+  lastFetchTime = copilotSdkRuntimeDeps.now();
+  return data;
+}
+
+async function fetchCopilotUser(
+  accessToken: string,
+): Promise<GitHubCopilotUserInfo | null> {
+  const response = await copilotSdkRuntimeDeps.fetch(
+    "https://api.github.com/copilot_internal/user",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "User-Agent": "modmux",
       },
-    );
-  } finally {
-    copilotClient = null;
-    copilotClientConfigKey = null;
+    },
+  );
+
+  if (!response.ok) {
+    let body = "";
+    try {
+      body = await response.text();
+    } catch {
+      body = "";
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(body || `HTTP ${response.status}`);
+    }
+
+    throw new Error(body || `HTTP ${response.status}`);
   }
+
+  const parsed = await response.json() as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error("Invalid Copilot usage payload");
+  }
+
+  return {
+    quota_reset_date: typeof parsed.quota_reset_date === "string"
+      ? parsed.quota_reset_date
+      : undefined,
+    quota_snapshots: isRecord(parsed.quota_snapshots)
+      ? Object.fromEntries(
+        Object.entries(parsed.quota_snapshots).filter(([, value]) =>
+          isQuotaSnapshot(value)
+        ) as Array<[string, GitHubQuotaSnapshot]>,
+      )
+      : undefined,
+  };
 }
 
-function getClientConfigKey(cliUrl: string): string {
-  return `external-cli:${cliUrl}`;
-}
+async function fetchInternalUsage(
+  token: AuthToken,
+): Promise<GitHubCopilotUsageData> {
+  const fingerprint = tokenFingerprint(token);
 
-async function getCopilotSdkConfig(): Promise<{
-  backend: CopilotSdkConfig["backend"];
-  cliUrl: string | null;
-  autoStart: boolean;
-  preferredPort: number;
-}> {
-  const config = await copilotSdkRuntimeDeps.loadConfig();
-  return config.copilotSdk;
-}
-
-// Default URL/port for an external Copilot CLI server
-export const COPILOT_CLI_DEFAULT_URL = "127.0.0.1:4301";
-
-export function buildCopilotSdkClientOptions(
-  cliUrl: string | null,
-  copilotSdk?: {
-    backend: string;
-    autoStart: boolean;
-  },
-): { cliUrl: string } | null {
   if (
-    cliUrl === null &&
-    copilotSdk &&
-    copilotSdk.backend === "external-cli" &&
-    !copilotSdk.autoStart
+    cachedQuotaData &&
+    cachedTokenFingerprint === fingerprint &&
+    cachedQuotaData.status === "authenticated" &&
+    (copilotSdkRuntimeDeps.now() - lastFetchTime) < CACHE_DURATION_MS
   ) {
-    // Warn: defaulting to local Copilot CLI URL
-    copilotSdkRuntimeDeps.log(
-      "info",
-      `No cliUrl provided; defaulting to Copilot CLI at ${COPILOT_CLI_DEFAULT_URL}`,
-      { backend: copilotSdk.backend, autoStart: copilotSdk.autoStart },
-    );
-    return { cliUrl: COPILOT_CLI_DEFAULT_URL };
+    return cachedQuotaData;
   }
-  if (cliUrl === null) {
-    return null;
+
+  try {
+    const user = await fetchCopilotUser(token.accessToken);
+    if (!user) {
+      return buildUsageData("error");
+    }
+
+    const snapshots = getQuotaSnapshots(user);
+    if (!snapshots) {
+      return buildUsageData("error");
+    }
+
+    const selected = selectGitHubQuotaSnapshot(snapshots);
+    if (selected === null) {
+      return buildUsageData("error");
+    }
+
+    return cacheUsageData(fingerprint, toUsageData(user, selected));
+  } catch (error) {
+    const status = isAuthenticationError(error) ? "unauthenticated" : "error";
+    await copilotSdkRuntimeDeps.log("warn", "Failed to fetch Copilot quota", {
+      status,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return buildUsageData(status);
   }
-  // External Copilot CLI servers manage their own authentication.
-  return { cliUrl };
 }
 
-/**
- * Initialize the GitHub Copilot SDK client for usage tracking
- */
 export async function initializeCopilotSdkTracking(): Promise<
   GitHubCopilotUsageData["status"]
 > {
-  const copilotSdk = await getCopilotSdkConfig();
-  const runtimeTarget = await copilotSdkRuntimeDeps
-    .ensureCopilotSdkSidecarStarted(
-      copilotSdk,
-    );
-  const clientOptions = buildCopilotSdkClientOptions(
-    runtimeTarget.cliUrl,
-    copilotSdk,
-  );
-  if (clientOptions === null) {
-    await resetCopilotClient();
-    await copilotSdkRuntimeDeps.log(
-      "info",
-      "GitHub Copilot usage tracking backend unavailable",
-      {
-        backend: copilotSdk.backend,
-        autoStart: copilotSdk.autoStart,
-        cliUrl: copilotSdk.cliUrl,
-        status: runtimeTarget.statusHint ?? "error",
-      },
-    );
-    return runtimeTarget.statusHint ?? "error";
-  }
-
-  const configKey = getClientConfigKey(clientOptions.cliUrl);
-  if (copilotClient && copilotClientConfigKey === configKey) {
-    return "authenticated";
-  }
-  if (copilotClient && copilotClientConfigKey !== configKey) {
-    await resetCopilotClient();
-  }
-
-  try {
-    copilotClient = copilotSdkRuntimeDeps.createClient(
-      clientOptions,
-    ) as unknown as CopilotClient;
-    await copilotClient.start();
-    copilotClientConfigKey = configKey;
-    await copilotSdkRuntimeDeps.log(
-      "info",
-      "GitHub Copilot usage tracking initialized",
-    );
-    return "authenticated";
-  } catch (error) {
-    const status = isAuthenticationError(error) ? "unauthenticated" : "error";
-    await copilotSdkRuntimeDeps.log(
-      "warn",
-      "Failed to initialize GitHub Copilot usage tracking",
-      {
-        backend: copilotSdk.backend,
-        cliUrl: clientOptions.cliUrl,
-        status,
-        error: error instanceof Error ? error.message : String(error),
-      },
-    );
-    copilotClient = null;
-    copilotClientConfigKey = null;
-    return status;
-  }
+  const token = await loadStoredToken();
+  if (!token || token.expiresAt <= Date.now()) return "unauthenticated";
+  return "authenticated";
 }
 
-/**
- * Shutdown the GitHub Copilot SDK client
- */
-export async function shutdownCopilotSdkTracking(): Promise<void> {
-  if (!copilotClient) {
-    return;
-  }
-
-  try {
-    await copilotClient.stop();
-    copilotClient = null;
-    await copilotSdkRuntimeDeps.log(
-      "info",
-      "GitHub Copilot usage tracking shutdown",
-    );
-  } catch (error) {
-    await copilotSdkRuntimeDeps.log(
-      "warn",
-      "Error shutting down GitHub Copilot usage tracking",
-      {
-        error: error instanceof Error ? error.message : String(error),
-      },
-    );
-  }
+export function shutdownCopilotSdkTracking(): void {
+  // Nothing persistent to stop.
 }
 
-/**
- * Fetch GitHub Copilot quota data via the SDK
- * Returns cached data if fresh (< 60 seconds old)
- */
 export async function fetchGitHubCopilotQuota(): Promise<
   GitHubCopilotUsageData | null
 > {
-  const now = copilotSdkRuntimeDeps.now();
-  const copilotSdk = await getCopilotSdkConfig();
-  const resolvedCliUrl = await copilotSdkRuntimeDeps
-    .resolveConfiguredCopilotSdkCliUrl(copilotSdk);
-  const configKey = resolvedCliUrl !== null
-    ? getClientConfigKey(resolvedCliUrl)
-    : `${copilotSdk.backend}:${copilotSdk.autoStart ? "auto" : "manual"}`;
-
-  // Return cached data if still fresh
-  if (
-    cachedQuotaData && cachedQuotaData.status === "authenticated" &&
-    copilotClientConfigKey === configKey &&
-    (now - lastFetchTime) < CACHE_DURATION_MS
-  ) {
-    return cachedQuotaData;
+  const token = await loadStoredToken();
+  if (!token || token.expiresAt <= Date.now()) {
+    return buildUsageData("unauthenticated");
   }
 
-  // Initialize client if needed
-  if (copilotClient && copilotClientConfigKey !== configKey) {
-    await resetCopilotClient();
-  }
-
-  if (!copilotClient) {
-    const status = await initializeCopilotSdkTracking();
-    if (!copilotClient) {
-      const usageData = buildUsageData(
-        status === "authenticated" ? "error" : status,
-      );
-      cachedQuotaData = usageData;
-      copilotClientConfigKey = configKey;
-      lastFetchTime = now;
-      return usageData;
-    }
-  }
-
-  try {
-    await copilotSdkRuntimeDeps.log(
-      "info",
-      "Attempting to fetch GitHub Copilot quota data",
-    );
-
-    // Call the RPC method to get quota information
-    const result = await copilotClient.rpc.account.getQuota();
-    await copilotSdkRuntimeDeps.log(
-      "info",
-      "Successfully received quota result",
-      {
-        result: JSON.stringify(result),
-      },
-    );
-
-    // The result has quotaSnapshots as a Record<string, QuotaSnapshot>
-    // We'll aggregate all quotas or pick the first/main one
-    const selectedQuotaSnapshot = selectGitHubQuotaSnapshot(
-      result.quotaSnapshots,
-    );
-    if (selectedQuotaSnapshot === null) {
-      throw new Error("No usable quota snapshots available");
-    }
-
-    const [quotaId, snapshot] = selectedQuotaSnapshot;
-    await copilotSdkRuntimeDeps.log("info", "Using quota snapshot", {
-      quotaId,
-      snapshot,
-    });
-
-    const remainingRequests = Math.max(
-      snapshot.entitlementRequests - snapshot.usedRequests,
-      0,
-    );
-
-    const usageData: GitHubCopilotUsageData = {
-      quota: {
-        entitlementRequests: snapshot.entitlementRequests,
-        usedRequests: snapshot.usedRequests,
-        remainingRequests,
-        remainingPercentage: snapshot.remainingPercentage,
-        overage: Math.max(
-          snapshot.usedRequests - snapshot.entitlementRequests,
-          0,
-        ),
-        // resetDate is not provided in the snapshot, would need separate API call
-      },
-      status: "authenticated",
-      lastUpdated: new Date().toISOString(),
-    };
-
-    // Cache the result
-    cachedQuotaData = usageData;
-    copilotClientConfigKey = configKey;
-    lastFetchTime = now;
-
-    await copilotSdkRuntimeDeps.log(
-      "info",
-      "Successfully fetched GitHub Copilot quota",
-      {
-        quotaId,
-        usedRequests: usageData.quota.usedRequests,
-        entitlementRequests: usageData.quota.entitlementRequests,
-        remainingPercentage: usageData.quota.remainingPercentage,
-      },
-    );
-
-    return usageData;
-  } catch (error) {
-    const status = isAuthenticationError(error) ? "unauthenticated" : "error";
-    await copilotSdkRuntimeDeps.log(
-      "error",
-      "Failed to fetch GitHub Copilot quota",
-      {
-        status,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      },
-    );
-
-    await resetCopilotClient();
-
-    const errorData = buildUsageData(status);
-
-    // Cache the error state briefly to avoid hammering the API
-    cachedQuotaData = errorData;
-    copilotClientConfigKey = configKey;
-    lastFetchTime = now;
-
-    return errorData;
-  }
+  return await fetchInternalUsage(token);
 }
 
-/**
- * Clear the quota data cache, forcing a fresh fetch on next request
- */
 export function clearQuotaCache(): void {
   cachedQuotaData = null;
   lastFetchTime = 0;
-  copilotClientConfigKey = null;
+  cachedTokenFingerprint = null;
 }
 
-export async function __resetCopilotSdkTestState(): Promise<void> {
-  await resetCopilotClient();
+export function __resetCopilotSdkTestState(): void {
   clearQuotaCache();
+  tokenStore = null;
 }
 
-/**
- * Get cached quota data without making a network request
- * Returns null if no cached data exists
- */
 export function getCachedQuotaData(): GitHubCopilotUsageData | null {
   const now = Date.now();
-
   if (cachedQuotaData && (now - lastFetchTime) < CACHE_DURATION_MS) {
     return cachedQuotaData;
   }
-
   return null;
 }

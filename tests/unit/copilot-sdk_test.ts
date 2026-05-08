@@ -3,169 +3,80 @@ import {
   __resetCopilotSdkTestDeps,
   __resetCopilotSdkTestState,
   __setCopilotSdkTestDeps,
-  buildCopilotSdkClientOptions,
-  COPILOT_CLI_DEFAULT_URL,
   fetchGitHubCopilotQuota,
   selectGitHubQuotaSnapshot,
-  shutdownCopilotSdkTracking,
 } from "../../gateway/src/copilot-sdk.ts";
-import { DEFAULT_CONFIG } from "@modmux/gateway";
+import type { AuthToken, TokenStore } from "../../gateway/src/token.ts";
 
-class MockCopilotClient {
-  startCalls = 0;
-  stopCalls = 0;
-  quotaCalls = 0;
+type QuotaSnapshot = {
+  entitlement: number;
+  remaining: number;
+  unlimited: boolean;
+  overage_count: number;
+  overage_permitted: boolean;
+  percent_remaining: number;
+  quota_id?: string;
+  reset_date?: string;
+};
 
-  constructor(
-    private readonly snapshotsFactory: () => Record<string, {
-      entitlementRequests: number;
-      usedRequests: number;
-      remainingPercentage: number;
-      overage: number;
-    }>,
-  ) {}
-
-  start(): Promise<void> {
-    this.startCalls += 1;
-    return Promise.resolve();
-  }
-
-  stop(): Promise<void> {
-    this.stopCalls += 1;
-    return Promise.resolve();
-  }
-
-  rpc = {
-    account: {
-      getQuota: (): Promise<{
-        quotaSnapshots: Record<string, {
-          entitlementRequests: number;
-          usedRequests: number;
-          remainingPercentage: number;
-          overage: number;
-        }>;
-      }> => {
-        this.quotaCalls += 1;
-        return Promise.resolve({ quotaSnapshots: this.snapshotsFactory() });
-      },
-    },
+function token(overrides?: Partial<AuthToken>): AuthToken {
+  return {
+    accessToken: "copilot-token",
+    expiresAt: Date.now() + 60_000,
+    createdAt: Date.now(),
+    ...overrides,
   };
 }
 
-function copilotSdkConfig() {
+function makeTokenStore(tokenValue: AuthToken | null): TokenStore {
   return {
-    ...DEFAULT_CONFIG,
-    copilotSdk: {
-      backend: "external-cli" as const,
-      cliUrl: null,
-      autoStart: true,
-      preferredPort: 4321,
-    },
+    save: () => Promise.resolve(),
+    load: () => Promise.resolve(tokenValue),
+    clear: () => Promise.resolve(),
+    isValid: (value) => !!value && value.expiresAt > Date.now(),
   };
+}
+
+function makeResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function setDeps(options: {
+  tokenValue: AuthToken | null;
+  fetchImpl?: typeof fetch;
+}) {
+  __setCopilotSdkTestDeps({
+    createTokenStore: () => makeTokenStore(options.tokenValue),
+    fetch: options.fetchImpl ?? fetch,
+    log: () => Promise.resolve(),
+  });
 }
 
 Deno.test.afterEach(async () => {
-  await shutdownCopilotSdkTracking();
   await __resetCopilotSdkTestState();
   __resetCopilotSdkTestDeps();
-});
-
-Deno.test("buildCopilotSdkClientOptions returns null for missing cliUrl", () => {
-  const options = buildCopilotSdkClientOptions(null);
-  assertEquals(options, null);
-});
-
-Deno.test("buildCopilotSdkClientOptions returns external cliUrl only", () => {
-  const options = buildCopilotSdkClientOptions("127.0.0.1:4321");
-
-  assertEquals(options, { cliUrl: "127.0.0.1:4321" });
-});
-
-Deno.test("buildCopilotSdkClientOptions defaults to local Copilot CLI URL if cliUrl is null, external-cli backend, and autoStart false", () => {
-  let logCalled = false;
-  let logLevel = "";
-  let logMsg = "";
-  let logMeta: { backend?: string; autoStart?: boolean } | undefined;
-
-  __setCopilotSdkTestDeps({
-    log: (level, message, meta) => {
-      logCalled = true;
-      logLevel = level;
-      logMsg = message;
-      logMeta = meta as { backend?: string; autoStart?: boolean } | undefined;
-      return Promise.resolve();
-    },
-  });
-
-  const options = buildCopilotSdkClientOptions(null, {
-    backend: "external-cli",
-    autoStart: false,
-  });
-
-  assertEquals(options, { cliUrl: COPILOT_CLI_DEFAULT_URL });
-  assertEquals(logCalled, true);
-  assertEquals(logLevel, "info");
-  assertEquals(logMsg.includes(COPILOT_CLI_DEFAULT_URL), true);
-  assertEquals(logMeta, { backend: "external-cli", autoStart: false });
-});
-
-Deno.test("buildCopilotSdkClientOptions does not default when autoStart is true", () => {
-  let logCalled = false;
-
-  __setCopilotSdkTestDeps({
-    log: () => {
-      logCalled = true;
-      return Promise.resolve();
-    },
-  });
-
-  const options = buildCopilotSdkClientOptions(null, {
-    backend: "external-cli",
-    autoStart: true,
-  });
-
-  assertEquals(options, null);
-  assertEquals(logCalled, false);
-});
-
-Deno.test("buildCopilotSdkClientOptions does not default for disabled backend", () => {
-  let logCalled = false;
-
-  __setCopilotSdkTestDeps({
-    log: () => {
-      logCalled = true;
-      return Promise.resolve();
-    },
-  });
-
-  const options = buildCopilotSdkClientOptions(null, {
-    backend: "disabled",
-    autoStart: false,
-  });
-
-  assertEquals(options, null);
-  assertEquals(logCalled, false);
 });
 
 Deno.test("selectGitHubQuotaSnapshot ignores repeated placeholder quotas", () => {
   const snapshot = selectGitHubQuotaSnapshot({
     chat: {
-      entitlementRequests: 1,
-      usedRequests: 0,
-      remainingPercentage: 100,
-      overage: 0,
+      entitlement: 1,
+      remaining: 0,
+      unlimited: false,
+      overage_count: 0,
+      overage_permitted: false,
+      percent_remaining: 100,
     },
     completions: {
-      entitlementRequests: 1,
-      usedRequests: 0,
-      remainingPercentage: 100,
-      overage: 0,
-    },
-    premium_interactions: {
-      entitlementRequests: 1,
-      usedRequests: 0,
-      remainingPercentage: 100,
-      overage: 0,
+      entitlement: 1,
+      remaining: 0,
+      unlimited: false,
+      overage_count: 0,
+      overage_permitted: false,
+      percent_remaining: 100,
     },
   });
 
@@ -175,84 +86,91 @@ Deno.test("selectGitHubQuotaSnapshot ignores repeated placeholder quotas", () =>
 Deno.test("selectGitHubQuotaSnapshot prefers the largest real quota", () => {
   const snapshot = selectGitHubQuotaSnapshot({
     chat: {
-      entitlementRequests: 30,
-      usedRequests: 10,
-      remainingPercentage: 67,
-      overage: 0,
+      entitlement: 30,
+      remaining: 20,
+      unlimited: false,
+      overage_count: 0,
+      overage_permitted: false,
+      percent_remaining: 67,
     },
     completions: {
-      entitlementRequests: 300,
-      usedRequests: 25,
-      remainingPercentage: 92,
-      overage: 0,
+      entitlement: 300,
+      remaining: 275,
+      unlimited: false,
+      overage_count: 0,
+      overage_permitted: false,
+      percent_remaining: 92,
     },
   });
 
   assertEquals(snapshot, [
     "completions",
     {
-      entitlementRequests: 300,
-      usedRequests: 25,
-      remainingPercentage: 92,
-      overage: 0,
+      entitlement: 300,
+      remaining: 275,
+      unlimited: false,
+      overage_count: 0,
+      overage_permitted: false,
+      percent_remaining: 92,
     },
   ]);
 });
 
 Deno.test("fetchGitHubCopilotQuota returns error when all snapshots are placeholders", async () => {
-  const client = new MockCopilotClient(() => ({
-    chat: {
-      entitlementRequests: 1,
-      usedRequests: 0,
-      remainingPercentage: 100,
-      overage: 0,
+  let fetchCalls = 0;
+  setDeps({
+    tokenValue: token(),
+    fetchImpl: () => {
+      fetchCalls += 1;
+      return Promise.resolve(makeResponse({
+        quota_reset_date: "2026-05-07T00:00:00.000Z",
+        quota_snapshots: {
+          chat: {
+            entitlement: 1,
+            remaining: 0,
+            unlimited: false,
+            overage_count: 0,
+            overage_permitted: false,
+            percent_remaining: 100,
+          },
+          completions: {
+            entitlement: 1,
+            remaining: 0,
+            unlimited: false,
+            overage_count: 0,
+            overage_permitted: false,
+            percent_remaining: 100,
+          },
+        },
+      }));
     },
-    completions: {
-      entitlementRequests: 1,
-      usedRequests: 0,
-      remainingPercentage: 100,
-      overage: 0,
-    },
-  }));
-
-  __setCopilotSdkTestDeps({
-    loadConfig: () => Promise.resolve(copilotSdkConfig()),
-    ensureCopilotSdkSidecarStarted: () =>
-      Promise.resolve({
-        cliUrl: "127.0.0.1:4321",
-        statusHint: null,
-      }),
-    resolveConfiguredCopilotSdkCliUrl: () => Promise.resolve("127.0.0.1:4321"),
-    createClient: () => client,
-    log: () => Promise.resolve(),
   });
 
   const usage = await fetchGitHubCopilotQuota();
   assertEquals(usage?.status, "error");
-  assertEquals(client.startCalls, 1);
-  assertEquals(client.quotaCalls, 1);
+  assertEquals(fetchCalls, 1);
 });
 
-Deno.test("fetchGitHubCopilotQuota reuses cached data for the same cliUrl", async () => {
-  const client = new MockCopilotClient(() => ({
-    completions: {
-      entitlementRequests: 300,
-      usedRequests: 25,
-      remainingPercentage: 92,
-      overage: 0,
+Deno.test("fetchGitHubCopilotQuota reuses cached data", async () => {
+  let fetchCalls = 0;
+  setDeps({
+    tokenValue: token(),
+    fetchImpl: () => {
+      fetchCalls += 1;
+      return Promise.resolve(makeResponse({
+        quota_reset_date: "2026-05-07T00:00:00.000Z",
+        quota_snapshots: {
+          completions: {
+            entitlement: 300,
+            remaining: 275,
+            unlimited: false,
+            overage_count: 0,
+            overage_permitted: false,
+            percent_remaining: 92,
+          },
+        },
+      }));
     },
-  }));
-
-  __setCopilotSdkTestDeps({
-    loadConfig: () => Promise.resolve(copilotSdkConfig()),
-    ensureCopilotSdkSidecarStarted: () =>
-      Promise.resolve({
-        cliUrl: "127.0.0.1:4321",
-        statusHint: null,
-      }),
-    resolveConfiguredCopilotSdkCliUrl: () => Promise.resolve("127.0.0.1:4321"),
-    createClient: () => client,
-    log: () => Promise.resolve(),
   });
 
   const first = await fetchGitHubCopilotQuota();
@@ -260,44 +178,58 @@ Deno.test("fetchGitHubCopilotQuota reuses cached data for the same cliUrl", asyn
 
   assertEquals(first?.quota.entitlementRequests, 300);
   assertEquals(second?.quota.entitlementRequests, 300);
-  assertEquals(client.startCalls, 1);
-  assertEquals(client.quotaCalls, 1);
+  assertEquals(fetchCalls, 1);
 });
 
-Deno.test("fetchGitHubCopilotQuota resets the client when the resolved cliUrl changes", async () => {
-  let currentCliUrl = "127.0.0.1:4321";
-  const createdClients: MockCopilotClient[] = [];
+Deno.test("fetchGitHubCopilotQuota resets cache after token change", async () => {
+  let currentToken = token({ accessToken: "copilot-token-a" });
+  let fetchCalls = 0;
 
-  __setCopilotSdkTestDeps({
-    loadConfig: () => Promise.resolve(copilotSdkConfig()),
-    ensureCopilotSdkSidecarStarted: () =>
-      Promise.resolve({
-        cliUrl: currentCliUrl,
-        statusHint: null,
-      }),
-    resolveConfiguredCopilotSdkCliUrl: () => Promise.resolve(currentCliUrl),
-    createClient: () => {
-      const client = new MockCopilotClient(() => ({
-        completions: {
-          entitlementRequests: currentCliUrl.endsWith("4321") ? 300 : 150,
-          usedRequests: currentCliUrl.endsWith("4321") ? 25 : 10,
-          remainingPercentage: currentCliUrl.endsWith("4321") ? 92 : 93,
-          overage: 0,
+  setDeps({
+    tokenValue: null,
+    fetchImpl: () => {
+      fetchCalls += 1;
+      return Promise.resolve(makeResponse({
+        quota_reset_date: "2026-05-07T00:00:00.000Z",
+        quota_snapshots: {
+          completions: {
+            entitlement: 120,
+            remaining: 100,
+            unlimited: false,
+            overage_count: 0,
+            overage_permitted: false,
+            percent_remaining: 83,
+          },
         },
       }));
-      createdClients.push(client);
-      return client;
     },
-    log: () => Promise.resolve(),
+  });
+  __setCopilotSdkTestDeps({
+    createTokenStore: () => ({
+      save: () => Promise.resolve(),
+      load: () => Promise.resolve(currentToken),
+      clear: () => Promise.resolve(),
+      isValid: (value) => !!value && value.expiresAt > Date.now(),
+    }),
   });
 
   const first = await fetchGitHubCopilotQuota();
-  currentCliUrl = "127.0.0.1:5000";
+  currentToken = token({ accessToken: "copilot-token-b" });
+
   const second = await fetchGitHubCopilotQuota();
 
-  assertEquals(first?.quota.entitlementRequests, 300);
-  assertEquals(second?.quota.entitlementRequests, 150);
-  assertEquals(createdClients.length, 2);
-  assertEquals(createdClients[0].stopCalls, 1);
-  assertEquals(createdClients[1].startCalls, 1);
+  assertEquals(first?.status, "authenticated");
+  assertEquals(second?.status, "authenticated");
+  assertEquals(fetchCalls, 2);
+});
+
+Deno.test("fetchGitHubCopilotQuota maps auth failures to unauthenticated", async () => {
+  setDeps({
+    tokenValue: token(),
+    fetchImpl: () =>
+      Promise.resolve(makeResponse({ message: "Unauthorized" }, 401)),
+  });
+
+  const usage = await fetchGitHubCopilotQuota();
+  assertEquals(usage?.status, "unauthenticated");
 });

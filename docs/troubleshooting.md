@@ -105,17 +105,15 @@ If `modmux status` shows a different port, use that port instead.
 
 ## `Usage: Not available (error)`
 
-This usually means the GitHub quota backend is disabled, the SDK quota backend
-is unsupported in your runtime, or quota lookup failed.
+This usually means the GitHub quota backend is disabled, the quota backend is
+unsupported in your runtime, or quota lookup failed.
 
 Confirm `~/.modmux/config.json` includes:
 
 ```json
 {
   "copilotSdk": {
-    "backend": "sdk-direct",
-    "autoStart": false,
-    "preferredPort": 4321
+    "backend": "sdk-direct"
   }
 }
 ```
@@ -128,8 +126,8 @@ modmux start
 tail -50 ~/.modmux/modmux.log
 ```
 
-If the backend remains unavailable, inspect `~/.modmux/modmux.log` for SDK
-initialization failures.
+If the backend remains unavailable, inspect `~/.modmux/modmux.log` for quota
+lookup failures.
 
 ## Reset the local setup
 
