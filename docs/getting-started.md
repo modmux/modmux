@@ -130,6 +130,8 @@ To turn the feature off completely, run `modmux set copilot off` or set
 
 ## Next steps
 
+- [Use Modmux as a custom LLM endpoint](./custom-llm.md) for SDK and custom
+  provider setup patterns
 - [Troubleshooting](./troubleshooting.md) if setup fails
 - [API reference](./api/README.md) for endpoint details
 - `modmux models` to see available Copilot-backed models

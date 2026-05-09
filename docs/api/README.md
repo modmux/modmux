@@ -71,5 +71,6 @@ OpenAI-compatible endpoints return:
 
 ## Related docs
 
+- [Custom LLM guide](../custom-llm.md)
 - [Getting started](../getting-started.md)
 - [Troubleshooting](../troubleshooting.md)
