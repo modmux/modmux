@@ -143,6 +143,8 @@ For more detail, see the [specs folder](./specs) and
 
 - [Getting started](./docs/getting-started.md) — shortest path from install to
   first request
+- [Custom LLM guide](./docs/custom-llm.md) — connect SDKs and tools to Modmux's
+  local endpoint
 - [Troubleshooting](./docs/troubleshooting.md) — common fixes and diagnostic
   commands
 - [API reference](./docs/api/README.md) — endpoint reference
