@@ -41,6 +41,15 @@ export interface ModelEndpointSets {
 
 let cachedModelIds: Set<string> | null = null;
 
+function setCachedModelIds(modelIds: Iterable<string>): Set<string> {
+  cachedModelIds = new Set(modelIds);
+  return cachedModelIds;
+}
+
+export function clearModelIdsCache(): void {
+  cachedModelIds = null;
+}
+
 function uniq(values: string[]): string[] {
   return values.filter((value, index, array) => array.indexOf(value) === index);
 }
@@ -158,7 +167,8 @@ async function fetchModelIds(opts?: {
 
 /**
  * Fetch the full ordered list of Copilot model IDs.
- * Reads from the Copilot /models API — does not use the ID-only cache.
+ * Reads from the Copilot /models API and refreshes the shared ID cache when
+ * using the default token flow.
  *
  * @param opts.token - Optional token string. When provided, uses this token directly
  *                    instead of calling getToken(). Useful for tests that mock fetch.
@@ -184,7 +194,11 @@ export async function fetchModelList(opts?: {
   }
 
   const body = await response.json() as CopilotModelsResponse;
-  return body.data.map((m) => m.id);
+  const modelIds = body.data.map((m) => m.id);
+  if (!opts?.token) {
+    setCachedModelIds(modelIds);
+  }
+  return modelIds;
 }
 
 /**
@@ -242,8 +256,7 @@ async function getAvailableModelIds(opts?: {
     return await fetchModelIds({ token: opts.token });
   }
   if (cachedModelIds !== null) return cachedModelIds;
-  cachedModelIds = await fetchModelIds();
-  return cachedModelIds;
+  return setCachedModelIds(await fetchModelIds());
 }
 
 // ---------------------------------------------------------------------------
