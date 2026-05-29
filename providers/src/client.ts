@@ -218,6 +218,14 @@ function isModelAccessDenied(status: number, errorBody: string): boolean {
   ].some((needle) => normalized.includes(needle));
 }
 
+function isModelNotSupported(status: number, errorBody: string): boolean {
+  if (status !== 400) return false;
+
+  const normalized = errorBody.toLowerCase();
+  return normalized.includes("model_not_supported") ||
+    normalized.includes("requested model is not supported");
+}
+
 interface ModelAttemptResult {
   ok: boolean;
   response?: Response;
@@ -226,7 +234,9 @@ interface ModelAttemptResult {
 }
 
 function shouldRetryCandidate(status: number, errorBody: string): boolean {
-  return isModelAccessDenied(status, errorBody) || status === 503;
+  return isModelAccessDenied(status, errorBody) ||
+    isModelNotSupported(status, errorBody) ||
+    status === 503;
 }
 
 async function postWithModelFallback(
@@ -463,7 +473,7 @@ export async function chat(
 class StreamingProcessor {
   private buffer = "";
   private lastFlushTime = Date.now();
-  private flushTimer?: number;
+  private flushTimer?: ReturnType<typeof setTimeout>;
   private decoder = new TextDecoder();
 
   constructor(

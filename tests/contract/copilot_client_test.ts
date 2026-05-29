@@ -110,9 +110,10 @@ function stubFetch(
   };
 }
 
-function getTestOptions(): ChatOptions {
+function getTestOptions(overrides: Partial<ChatOptions> = {}): ChatOptions {
   return {
     getGitHubToken: () => Promise.resolve(FAKE_GITHUB_TOKEN),
+    ...overrides,
   };
 }
 
@@ -504,6 +505,91 @@ Deno.test(
       assertEquals(
         (result.content[0] as TextContentBlock).text,
         "fallback worked",
+      );
+    } finally {
+      globalThis.fetch = original;
+      clearTokenCache();
+    }
+  },
+);
+
+Deno.test(
+  "chat() - retries with fallback Sonnet model on model_not_supported error",
+  async () => {
+    clearTokenCache();
+
+    const attemptedModels: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = ((
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : input.url;
+
+      if (url.includes("copilot_internal")) {
+        return Promise.resolve(makeTokenResponse());
+      }
+
+      if (url.includes("/models")) {
+        return Promise.resolve(
+          makeModelsResponse([
+            "claude-opus-4.8",
+            "claude-opus-4.7",
+            "claude-sonnet-4.6",
+          ]),
+        );
+      }
+
+      const body = JSON.parse(init?.body as string ?? "{}");
+      attemptedModels.push(body.model);
+
+      if (attemptedModels.length < 3) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              error: {
+                message: "The requested model is not supported.",
+                code: "model_not_supported",
+                param: "model",
+                type: "invalid_request_error",
+              },
+            }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            },
+          ),
+        );
+      }
+
+      const resp = makeChatResponse("sonnet fallback worked", "stop");
+      return Promise.resolve(
+        new Response(JSON.stringify(resp), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }) as typeof globalThis.fetch;
+
+    try {
+      const result = await chat(
+        makeProxyRequest({ model: "opus" }),
+        getTestOptions({ token: "tid=test-copilot-token" }),
+      );
+
+      assertEquals(attemptedModels, [
+        "claude-opus-4.8",
+        "claude-opus-4.7",
+        "claude-sonnet-4.6",
+      ]);
+      assertEquals(result.content[0].type, "text");
+      assertEquals(
+        (result.content[0] as TextContentBlock).text,
+        "sonnet fallback worked",
       );
     } finally {
       globalThis.fetch = original;

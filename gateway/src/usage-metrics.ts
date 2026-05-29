@@ -70,7 +70,7 @@ interface InternalState {
 
 let state: InternalState = createInitialState();
 let options: UsageMetricsRuntimeOptions = defaultOptions();
-let snapshotIntervalId: number | null = null;
+let snapshotIntervalId: ReturnType<typeof setInterval> | null = null;
 
 async function fetchGitHubCopilotQuota(): Promise<
   GitHubCopilotUsageData | null

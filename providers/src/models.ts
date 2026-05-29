@@ -41,8 +41,100 @@ export interface ModelEndpointSets {
 
 let cachedModelIds: Set<string> | null = null;
 
+function setCachedModelIds(modelIds: Iterable<string>): Set<string> {
+  cachedModelIds = new Set(modelIds);
+  return cachedModelIds;
+}
+
+export function clearModelIdsCache(): void {
+  cachedModelIds = null;
+}
+
 function uniq(values: string[]): string[] {
   return values.filter((value, index, array) => array.indexOf(value) === index);
+}
+
+function modelIdVariants(modelId: string): string[] {
+  if (modelFamily(modelId) !== "claude") return [modelId];
+
+  const dotted = modelId.replace(
+    /^(claude-(?:opus|sonnet|haiku)-\d)-(\d)(?=-|$)/,
+    "$1.$2",
+  );
+  const dashed = modelId.replace(
+    /^(claude-(?:opus|sonnet|haiku)-\d)\.(\d)(?=-|$)/,
+    "$1-$2",
+  );
+
+  return uniq([modelId, dotted, dashed]);
+}
+
+function resolveAvailableModelId(
+  requestedModel: string,
+  available: Set<string>,
+): string | null {
+  for (const candidate of modelIdVariants(requestedModel)) {
+    if (available.has(candidate)) return candidate;
+  }
+  return null;
+}
+
+function prefixMatchedModelIds(
+  requestedModel: string,
+  available: Set<string>,
+): string[] {
+  const matches: string[] = [];
+  for (const requestedVariant of modelIdVariants(requestedModel)) {
+    for (const availableModel of available) {
+      if (requestedVariant.startsWith(availableModel)) {
+        matches.push(availableModel);
+      }
+    }
+  }
+  return uniq(matches);
+}
+
+function sortModelIdsDescending(modelIds: string[]): string[] {
+  return [...modelIds].sort((a, b) =>
+    b.localeCompare(a, undefined, { numeric: true, sensitivity: "base" })
+  );
+}
+
+function resolveClaudeTierAliasCandidates(
+  requestedModel: string,
+  available: Set<string>,
+): string[] {
+  const normalized = requestedModel.toLowerCase();
+  const requestedTier = normalized === "opus" || normalized === "claude-opus"
+    ? "opus"
+    : normalized === "sonnet" || normalized === "claude-sonnet"
+    ? "sonnet"
+    : normalized === "haiku" || normalized === "claude-haiku"
+    ? "haiku"
+    : null;
+
+  if (requestedTier === null) return [];
+
+  const availableClaudeIds = Array.from(available).filter((id) =>
+    id.startsWith("claude-")
+  );
+  const sameTier = sortModelIdsDescending(
+    availableClaudeIds.filter((id) => id.includes(`-${requestedTier}-`)),
+  );
+  const sonnetFallback = sortModelIdsDescending(
+    availableClaudeIds.filter((id) => id.includes("-sonnet-")),
+  );
+
+  if (sameTier.length > 0) {
+    return requestedTier === "opus"
+      ? uniq([...sameTier, ...sonnetFallback])
+      : sameTier;
+  }
+  if (requestedTier === "opus") {
+    return sonnetFallback;
+  }
+
+  return [];
 }
 
 // ---------------------------------------------------------------------------
@@ -75,7 +167,8 @@ async function fetchModelIds(opts?: {
 
 /**
  * Fetch the full ordered list of Copilot model IDs.
- * Reads from the Copilot /models API — does not use the ID-only cache.
+ * Reads from the Copilot /models API and refreshes the shared ID cache when
+ * using the default token flow.
  *
  * @param opts.token - Optional token string. When provided, uses this token directly
  *                    instead of calling getToken(). Useful for tests that mock fetch.
@@ -101,7 +194,11 @@ export async function fetchModelList(opts?: {
   }
 
   const body = await response.json() as CopilotModelsResponse;
-  return body.data.map((m) => m.id);
+  const modelIds = body.data.map((m) => m.id);
+  if (!opts?.token) {
+    setCachedModelIds(modelIds);
+  }
+  return modelIds;
 }
 
 /**
@@ -159,8 +256,7 @@ async function getAvailableModelIds(opts?: {
     return await fetchModelIds({ token: opts.token });
   }
   if (cachedModelIds !== null) return cachedModelIds;
-  cachedModelIds = await fetchModelIds();
-  return cachedModelIds;
+  return setCachedModelIds(await fetchModelIds());
 }
 
 // ---------------------------------------------------------------------------
@@ -195,15 +291,15 @@ export async function resolveModelCandidates(
   const candidates: string[] = [];
   const family = modelFamily(anthropicModel);
 
-  if (available.has(anthropicModel)) {
-    candidates.push(anthropicModel);
+  const exactMatch = resolveAvailableModelId(anthropicModel, available);
+  if (exactMatch) {
+    candidates.push(exactMatch);
   }
 
-  for (const id of available) {
-    if (anthropicModel.startsWith(id)) {
-      candidates.push(id);
-    }
-  }
+  candidates.push(...prefixMatchedModelIds(anthropicModel, available));
+  candidates.push(
+    ...resolveClaudeTierAliasCandidates(anthropicModel, available),
+  );
 
   const familyMap: Array<[RegExp, string]> = [
     [/^claude-(opus|sonnet|haiku)-4-6/, "claude-$1-4-6"],
@@ -221,8 +317,9 @@ export async function resolveModelCandidates(
     if (!match) continue;
 
     const candidate = anthropicModel.replace(pattern, template);
-    if (available.has(candidate)) {
-      candidates.push(candidate);
+    const availableCandidate = resolveAvailableModelId(candidate, available);
+    if (availableCandidate) {
+      candidates.push(availableCandidate);
     }
   }
 
@@ -233,9 +330,27 @@ export async function resolveModelCandidates(
     : [];
 
   for (const preferred of fallbackPreference) {
-    if (available.has(preferred)) {
-      candidates.push(preferred);
+    const availableCandidate = resolveAvailableModelId(preferred, available);
+    if (availableCandidate) {
+      candidates.push(availableCandidate);
     }
+  }
+
+  if (candidates.length === 0) {
+    const defaultCandidate = resolveAvailableModelId(
+      DEFAULT_COPILOT_MODEL,
+      available,
+    );
+    if (defaultCandidate) {
+      candidates.push(defaultCandidate);
+    }
+  }
+
+  if (candidates.length === 0 && available.size > 0) {
+    const familyMatch = Array.from(available).find((id) =>
+      modelFamily(id) === family
+    );
+    candidates.push(familyMatch ?? Array.from(available)[0]);
   }
 
   if (candidates.length === 0) {
