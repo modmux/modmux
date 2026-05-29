@@ -1026,6 +1026,12 @@ Deno.test(
 // ---------------------------------------------------------------------------
 
 Deno.test("GET /v1/models — returns 200 with object:list", async () => {
+  const restore = stubFetch(
+    new Response("{}", {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
   const s = server();
   const { port } = s.addr as Deno.NetAddr;
   let body: Record<string, unknown>;
@@ -1034,6 +1040,7 @@ Deno.test("GET /v1/models — returns 200 with object:list", async () => {
     assertEquals(res.status, 200);
     body = await res.json() as Record<string, unknown>;
   } finally {
+    restore();
     await s.shutdown();
   }
   assertEquals(body!.object, "list");
@@ -1045,6 +1052,12 @@ Deno.test("GET /v1/models — returns 200 with object:list", async () => {
 });
 
 Deno.test("GET /v1/models — each model has owned_by: github-copilot", async () => {
+  const restore = stubFetch(
+    new Response("{}", {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
   const s = server();
   const { port } = s.addr as Deno.NetAddr;
   let models: Record<string, unknown>[];
@@ -1053,10 +1066,80 @@ Deno.test("GET /v1/models — each model has owned_by: github-copilot", async ()
     const body = await res.json() as Record<string, unknown>;
     models = body.data as Record<string, unknown>[];
   } finally {
+    restore();
     await s.shutdown();
   }
   for (const model of models!) {
     assertEquals(model.owned_by, "github-copilot");
+  }
+});
+
+Deno.test("GET /v1/models — returns only live Copilot ids", async () => {
+  const original = globalThis.fetch;
+  const originalGithubToken = Deno.env.get("MODMUX_GITHUB_TOKEN");
+  clearModelResolverCache();
+  Deno.env.set("MODMUX_GITHUB_TOKEN", TEST_GITHUB_TOKEN);
+
+  globalThis.fetch = ((
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    const url = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.href
+      : input.url;
+
+    if (
+      url.startsWith("http://127.0.0.1:") || url.startsWith("http://localhost:")
+    ) {
+      return original(input, init);
+    }
+
+    if (url.includes("copilot_internal")) {
+      return Promise.resolve(makeTokenResponse());
+    }
+
+    if (url.includes("/models")) {
+      return Promise.resolve(
+        makeModelsResponse([
+          {
+            id: "claude-sonnet-4.6",
+            name: "claude-sonnet-4.6",
+            vendor: "GitHub",
+          },
+          { id: "gpt-5.4", name: "gpt-5.4", vendor: "GitHub" },
+        ]),
+      );
+    }
+
+    return Promise.resolve(
+      new Response("{}", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  }) as typeof globalThis.fetch;
+
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+
+  try {
+    const res = await get(port, "/v1/models");
+    assertEquals(res.status, 200);
+    const body = await res.json() as Record<string, unknown>;
+    const ids = (body.data as Array<{ id: string }>).map((model) => model.id);
+
+    assertEquals(ids, ["claude-sonnet-4.6", "gpt-5.4"]);
+  } finally {
+    globalThis.fetch = original;
+    if (originalGithubToken === undefined) {
+      Deno.env.delete("MODMUX_GITHUB_TOKEN");
+    } else {
+      Deno.env.set("MODMUX_GITHUB_TOKEN", originalGithubToken);
+    }
+    clearModelResolverCache();
+    await s.shutdown();
   }
 });
 
