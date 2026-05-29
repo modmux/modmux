@@ -28,6 +28,10 @@ console.log(_test.isNewerVersion(${JSON.stringify(candidate)}, ${
 `;
 }
 
+function stripAnsi(value: string): string {
+  return value.replace(/\u001b\[[0-9;]*m/g, "");
+}
+
 Deno.test("maybeNotifyUpdate — writes state file on first run", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "modmux_upd_test_" });
   try {
@@ -219,14 +223,14 @@ Deno.test("isNewerVersion compares semantic versions correctly", async () => {
   try {
     const moduleUrl = new URL(CLI_PATH, import.meta.url).href;
     const cases: Array<[string, string, boolean]> = [
-      ["0.6.1", "0.6.1", false],
-      ["0.4.1", "0.6.1", false],
+      ["0.6.0", "0.6.0", false],
+      ["0.4.1", "0.6.0", false],
       ["1.0.0", "0.9.9", true],
-      ["0.5", "0.6.1", false],
+      ["0.5", "0.6.0", false],
       ["0.5.1-beta.2", "0.5.1-beta.1", true],
       ["0.5.1", "0.5.1-beta.2", true],
       ["0.5.1-beta.1", "0.5.1", false],
-      ["invalid", "0.6.1", false],
+      ["invalid", "0.6.0", false],
     ];
 
     for (const [candidate, current, expected] of cases) {
@@ -248,7 +252,7 @@ Deno.test("isNewerVersion compares semantic versions correctly", async () => {
       }).output();
 
       assertEquals(result.code, 0);
-      const stdout = new TextDecoder().decode(result.stdout).trim();
+      const stdout = stripAnsi(new TextDecoder().decode(result.stdout).trim());
       assertEquals(stdout, String(expected));
     }
   } finally {
