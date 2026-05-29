@@ -29,6 +29,7 @@ console.log(_test.isNewerVersion(${JSON.stringify(candidate)}, ${
 }
 
 function stripAnsi(value: string): string {
+  // deno-lint-ignore no-control-regex
   return value.replace(/\u001b\[[0-9;]*m/g, "");
 }
 
