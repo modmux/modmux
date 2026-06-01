@@ -8,8 +8,13 @@
       "command": "npx"
     },
     "github": {
-      "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/"
+      "command": "deno",
+      "args": [
+        "run",
+        "-A",
+        "./scripts/github-mcp.ts"
+      ],
+      "transport": "stdio"
     }
   }
 }
