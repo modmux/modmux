@@ -1,4 +1,4 @@
-import { parse } from "https://deno.land/std@0.208.0/flags/mod.ts";
+import { parseArgs } from "@std/cli/parse-args";
 
 interface ValidationResult {
   version: string;
@@ -179,7 +179,7 @@ async function validateMarkdown(
 }
 
 async function main() {
-  const flags = parse(Deno.args, {
+  const flags = parseArgs(Deno.args, {
     boolean: ["help", "json"],
     string: ["format", "config", "severity"],
     default: {
