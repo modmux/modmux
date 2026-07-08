@@ -51,3 +51,23 @@ export class SubscriptionRequiredError extends AuthError {
     this.name = "SubscriptionRequiredError";
   }
 }
+
+export class TlsCertificateError extends NetworkError {
+  constructor() {
+    super(
+      "TLS certificate error detected (likely a corporate proxy or VPN). " +
+        "Try: DENO_TLS_CA_STORE=system modmux start — " +
+        "see docs/troubleshooting.md for details.",
+    );
+    this.name = "TlsCertificateError";
+  }
+}
+
+const TLS_ERROR_PATTERNS = ["cert", "certificate", "tls", "ssl", "self-signed"];
+
+/** Returns true if `err` is a TLS/certificate-related TypeError. */
+export function isTlsCertError(err: unknown): boolean {
+  if (!(err instanceof TypeError)) return false;
+  const msg = err.message.toLowerCase();
+  return TLS_ERROR_PATTERNS.some((p) => msg.includes(p));
+}

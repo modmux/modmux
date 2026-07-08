@@ -1,7 +1,4 @@
-// ---------------------------------------------------------------------------
-// GitHub OAuth device flow for the Copilot VS Code extension client.
-// This is the only token type the copilot_internal API accepts.
-// ---------------------------------------------------------------------------
+import { isTlsCertError, TlsCertificateError } from "./errors.ts";
 
 const GITHUB_CLIENT_ID = "Iv1.b507a08c87ecfe98";
 const GITHUB_OAUTH_SCOPE = "read:user";
@@ -31,14 +28,26 @@ export interface DeviceFlowResult {
  * Returns the user-facing code and URI, plus internal state for polling.
  */
 export async function startDeviceFlow(): Promise<DeviceFlowState> {
-  const response = await fetch(DEVICE_CODE_URL, {
-    method: "POST",
-    headers: JSON_HEADERS,
-    body: JSON.stringify({
-      client_id: GITHUB_CLIENT_ID,
-      scope: GITHUB_OAUTH_SCOPE,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(DEVICE_CODE_URL, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        scope: GITHUB_OAUTH_SCOPE,
+      }),
+    });
+  } catch (err) {
+    if (isTlsCertError(err)) {
+      console.error(
+        "[modmux] TLS certificate error during device flow. " +
+          "On corporate networks, try: DENO_TLS_CA_STORE=system modmux start",
+      );
+      throw new TlsCertificateError();
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
@@ -78,15 +87,27 @@ export async function pollForToken(
   while (Date.now() < state.expiresAt) {
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
 
-    const response = await fetch(ACCESS_TOKEN_URL, {
-      method: "POST",
-      headers: JSON_HEADERS,
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        device_code: state.deviceCode,
-        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(ACCESS_TOKEN_URL, {
+        method: "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify({
+          client_id: GITHUB_CLIENT_ID,
+          device_code: state.deviceCode,
+          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        }),
+      });
+    } catch (err) {
+      if (isTlsCertError(err)) {
+        console.error(
+          "[modmux] TLS certificate error during token poll. " +
+            "On corporate networks, try: DENO_TLS_CA_STORE=system modmux start",
+        );
+        throw new TlsCertificateError();
+      }
+      throw err;
+    }
 
     if (!response.ok) {
       // Non-2xx is transient; keep polling

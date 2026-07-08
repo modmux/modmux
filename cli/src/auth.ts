@@ -10,6 +10,7 @@ import {
   RateLimitError,
   startDeviceFlow,
   SubscriptionRequiredError,
+  TlsCertificateError,
   TokenExpiredError,
   TokenInvalidError,
 } from "@modmux/gateway";
@@ -112,7 +113,8 @@ export async function authenticate(): Promise<AuthToken> {
       error instanceof DeviceFlowTimeoutError ||
       error instanceof RateLimitError ||
       error instanceof NetworkError ||
-      error instanceof SubscriptionRequiredError
+      error instanceof SubscriptionRequiredError ||
+      error instanceof TlsCertificateError
     ) {
       throw error;
     }

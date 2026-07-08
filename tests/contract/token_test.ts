@@ -3,9 +3,11 @@ import {
   NetworkError,
   RateLimitError,
   SubscriptionRequiredError,
+  TlsCertificateError,
   TokenInvalidError,
 } from "@modmux/gateway";
 import { clearTokenCache, getToken } from "@modmux/providers";
+import { startDeviceFlow } from "@modmux/gateway";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -197,6 +199,53 @@ Deno.test("getToken() - 500 response → throws NetworkError", async () => {
     clearTokenCache();
   }
 });
+
+// ---------------------------------------------------------------------------
+// Test: TLS failure → throws TlsCertificateError
+// ---------------------------------------------------------------------------
+
+Deno.test("getToken() - TLS TypeError → throws TlsCertificateError", async () => {
+  clearTokenCache();
+
+  const original = globalThis.fetch;
+  globalThis.fetch = ((_input: string | URL | Request, _init?: RequestInit) => {
+    return Promise.reject(new TypeError("self-signed certificate"));
+  }) as typeof globalThis.fetch;
+
+  try {
+    await assertRejects(
+      () =>
+        getToken({
+          getGitHubToken: () => Promise.resolve(FAKE_GITHUB_TOKEN),
+        }),
+      TlsCertificateError,
+    );
+  } finally {
+    globalThis.fetch = original;
+    clearTokenCache();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test: device flow TLS failure → throws TlsCertificateError
+// ---------------------------------------------------------------------------
+
+Deno.test(
+  "startDeviceFlow() - TLS TypeError → throws TlsCertificateError",
+  async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch =
+      ((_input: string | URL | Request, _init?: RequestInit) => {
+        return Promise.reject(new TypeError("certificate verify failed"));
+      }) as typeof globalThis.fetch;
+
+    try {
+      await assertRejects(() => startDeviceFlow(), TlsCertificateError);
+    } finally {
+      globalThis.fetch = original;
+    }
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Test: v2 404 → v1 200 fallback succeeds

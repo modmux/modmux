@@ -129,6 +129,33 @@ tail -50 ~/.modmux/modmux.log
 If the backend remains unavailable, inspect `~/.modmux/modmux.log` for quota
 lookup failures.
 
+## Corporate network / TLS certificate errors
+
+On networks with TLS inspection (e.g. Zscaler, corporate VPNs with MITM
+proxies), Modmux may fail with certificate errors when contacting
+`api.github.com` or `api.githubcopilot.com`.
+
+The Modmux daemon is automatically started with `DENO_TLS_CA_STORE=system`,
+which makes it use the OS trust store and accept corporate CA certificates.
+
+If the CLI itself fails before the daemon starts (e.g. during initial
+`auth login`), set the variable manually:
+
+```bash
+DENO_TLS_CA_STORE=system modmux auth login
+DENO_TLS_CA_STORE=system modmux start
+```
+
+For permanent convenience, export it in your shell profile:
+
+```bash
+export DENO_TLS_CA_STORE=system
+```
+
+See
+[Deno's certificate store documentation](https://docs.deno.com/runtime/fundamentals/security/#certificate-stores)
+for further details.
+
 ## Reset the local setup
 
 If the state is unclear, restart from a clean local loop:
