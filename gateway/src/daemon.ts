@@ -103,7 +103,19 @@ export async function startDaemon(): Promise<StartResult> {
 
   // Self-spawn current CLI entrypoint with --daemon
   const self = Deno.execPath();
-  const pid = await spawnDetached(self, daemonSpawnArgs(self));
+  // Inject DENO_TLS_CA_STORE=system so the daemon uses the OS trust store by
+  // default. This makes modmux work transparently on corporate networks with
+  // TLS inspection (e.g. Zscaler) without any user-side env var configuration.
+  const daemonEnv = Deno.env.get("DENO_TLS_CA_STORE")
+    ? undefined
+    : { DENO_TLS_CA_STORE: "system" };
+  if (daemonEnv) {
+    log(
+      "info",
+      "System CA store auto-activated for daemon (DENO_TLS_CA_STORE=system)",
+    );
+  }
+  const pid = await spawnDetached(self, daemonSpawnArgs(self), daemonEnv);
 
   await writePid(pid);
 

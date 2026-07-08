@@ -1,7 +1,9 @@
 import {
+  isTlsCertError,
   NetworkError,
   RateLimitError,
   SubscriptionRequiredError,
+  TlsCertificateError,
   TokenInvalidError,
 } from "../../gateway/src/errors.ts";
 import { createTokenStore } from "../../gateway/src/token.ts";
@@ -47,19 +49,31 @@ async function fetchTokenEndpoint(
     console.error(`[modmux] Token exchange attempt: ${endpoint}`);
   }
 
-  const response = await fetch(endpoint, {
-    method: "GET",
-    headers: {
-      "Authorization": `token ${githubToken}`,
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "editor-version": `vscode/${VSCODE_VERSION}`,
-      "editor-plugin-version": `copilot-chat/${COPILOT_PLUGIN_VERSION}`,
-      "user-agent": `GitHubCopilotChat/${COPILOT_PLUGIN_VERSION}`,
-      "x-github-api-version": COPILOT_API_VERSION,
-      "x-vscode-user-agent-library-version": "electron-fetch",
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "GET",
+      headers: {
+        "Authorization": `token ${githubToken}`,
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "editor-version": `vscode/${VSCODE_VERSION}`,
+        "editor-plugin-version": `copilot-chat/${COPILOT_PLUGIN_VERSION}`,
+        "user-agent": `GitHubCopilotChat/${COPILOT_PLUGIN_VERSION}`,
+        "x-github-api-version": COPILOT_API_VERSION,
+        "x-vscode-user-agent-library-version": "electron-fetch",
+      },
+    });
+  } catch (err) {
+    if (isTlsCertError(err)) {
+      console.error(
+        "[modmux] TLS certificate error during token exchange. " +
+          "On corporate networks, try: DENO_TLS_CA_STORE=system modmux start",
+      );
+      throw new TlsCertificateError();
+    }
+    throw err;
+  }
 
   if (debugEnabled()) {
     console.error(
