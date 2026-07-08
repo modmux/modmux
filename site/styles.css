@@ -47,11 +47,11 @@ body::before {
   pointer-events: none;
   background:
     linear-gradient(
-      90deg,
-      transparent,
-      rgba(99, 243, 255, 0.025) 50%,
-      transparent
-    ),
+    90deg,
+    transparent,
+    rgba(99, 243, 255, 0.025) 50%,
+    transparent
+  ),
     linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.02),
@@ -424,10 +424,10 @@ h3 {
 .featured-install {
   background:
     linear-gradient(
-      180deg,
-      rgba(99, 243, 255, 0.08),
-      rgba(99, 243, 255, 0.02)
-    ),
+    180deg,
+    rgba(99, 243, 255, 0.08),
+    rgba(99, 243, 255, 0.02)
+  ),
     var(--bg-elevated);
 }
 
@@ -511,10 +511,10 @@ h3 {
 .flow-node-primary {
   background:
     linear-gradient(
-      180deg,
-      rgba(99, 243, 255, 0.07),
-      rgba(99, 243, 255, 0.015)
-    ),
+    180deg,
+    rgba(99, 243, 255, 0.07),
+    rgba(99, 243, 255, 0.015)
+  ),
     var(--bg-elevated);
   border-color: var(--line-strong);
 }
