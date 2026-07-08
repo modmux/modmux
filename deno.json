@@ -1,5 +1,5 @@
 {
-  "version": "0.6.1",
+  "version": "0.7.1",
   "license": "MIT",
   "compilerOptions": {
     "lib": ["deno.window"],
@@ -33,9 +33,5 @@
     "quality": "deno lint && deno fmt --check && deno check && deno test --allow-all",
     "compile": "deno run -A scripts/compile.ts"
   },
-  "workspace": [
-    "cli",
-    "gateway",
-    "providers"
-  ]
+  "workspace": ["cli", "gateway", "providers"]
 }
