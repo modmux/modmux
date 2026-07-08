@@ -68,7 +68,7 @@ async function fetchTokenEndpoint(
     if (isTlsCertError(err)) {
       console.error(
         "[modmux] TLS certificate error during token exchange. " +
-          "On corporate networks, try: DENO_TLS_CA_STORE=system modmux start",
+          "Re-run with DENO_TLS_CA_STORE=system (see docs/troubleshooting.md)",
       );
       throw new TlsCertificateError();
     }

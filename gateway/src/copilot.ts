@@ -42,7 +42,7 @@ export async function startDeviceFlow(): Promise<DeviceFlowState> {
     if (isTlsCertError(err)) {
       console.error(
         "[modmux] TLS certificate error during device flow. " +
-          "On corporate networks, try: DENO_TLS_CA_STORE=system modmux start",
+          "Re-run with: DENO_TLS_CA_STORE=system modmux auth login",
       );
       throw new TlsCertificateError();
     }
@@ -102,7 +102,7 @@ export async function pollForToken(
       if (isTlsCertError(err)) {
         console.error(
           "[modmux] TLS certificate error during token poll. " +
-            "On corporate networks, try: DENO_TLS_CA_STORE=system modmux start",
+            "Re-run with: DENO_TLS_CA_STORE=system modmux auth login",
         );
         throw new TlsCertificateError();
       }

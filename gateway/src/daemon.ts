@@ -67,7 +67,7 @@ function daemonSpawnArgs(self: string): string[] {
 }
 
 export function getDaemonEnv(): Record<string, string> | undefined {
-  return Deno.env.get("DENO_TLS_CA_STORE")
+  return Deno.env.get("DENO_TLS_CA_STORE") !== undefined
     ? undefined
     : { DENO_TLS_CA_STORE: "system" };
 }

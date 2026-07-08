@@ -56,7 +56,7 @@ export class TlsCertificateError extends NetworkError {
   constructor() {
     super(
       "TLS certificate error detected (likely a corporate proxy or VPN). " +
-        "Try: DENO_TLS_CA_STORE=system modmux start — " +
+        "Set DENO_TLS_CA_STORE=system and re-run Modmux — " +
         "see docs/troubleshooting.md for details.",
     );
     this.name = "TlsCertificateError";
