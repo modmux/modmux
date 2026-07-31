@@ -32,6 +32,14 @@ Deno.test("loadConfig — returns DEFAULT_CONFIG on first run", async () => {
     assertEquals(config.usageMetrics.persist, false);
     assertEquals(config.usageMetrics.snapshotIntervalMs, 60_000);
     assertEquals(config.usageMetrics.filePath, null);
+    assertEquals(config.autoRouting.enabled, false);
+    assertEquals(config.autoRouting.endpoints.responses, true);
+    assertEquals(config.autoRouting.endpoints.chatCompletions, true);
+    assertEquals(config.autoRouting.endpoints.messages, true);
+    assertEquals(config.autoRouting.fallbackMode, "family_fallback");
+    assertEquals(config.autoRouting.catalogTtlMs, 60_000);
+    assertEquals(config.autoRouting.allowStaleCatalog, true);
+    assertEquals(config.autoRouting.logDecisions, true);
   });
 });
 
@@ -122,6 +130,18 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
       updates: {
         checkEnabled: false,
       },
+      autoRouting: {
+        enabled: true,
+        endpoints: {
+          responses: true,
+          chatCompletions: false,
+          messages: true,
+        },
+        fallbackMode: "strict_error",
+        catalogTtlMs: 90_000,
+        allowStaleCatalog: false,
+        logDecisions: false,
+      },
     };
     await saveConfig(config);
     const loaded = await loadConfig();
@@ -136,6 +156,12 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.usageMetrics.snapshotIntervalMs, 120_000);
     assertEquals(loaded.usageMetrics.filePath, "/tmp/modmux-usage.json");
     assertEquals(loaded.updates.checkEnabled, false);
+    assertEquals(loaded.autoRouting.enabled, true);
+    assertEquals(loaded.autoRouting.endpoints.chatCompletions, false);
+    assertEquals(loaded.autoRouting.fallbackMode, "strict_error");
+    assertEquals(loaded.autoRouting.catalogTtlMs, 90_000);
+    assertEquals(loaded.autoRouting.allowStaleCatalog, false);
+    assertEquals(loaded.autoRouting.logDecisions, false);
   });
 });
 

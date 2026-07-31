@@ -53,6 +53,7 @@ export {
   clearModelResolverCache,
   resolveModelForEndpoint,
 } from "./model-resolver.ts";
+export { clearModelCatalogCache } from "./model-catalog.ts";
 export { AGENT_REGISTRY } from "./registry.ts";
 export { getConfig } from "./server.ts";
 export { startServer } from "./router.ts";

@@ -3,202 +3,103 @@ status: planned
 created: 2026-04-23
 priority: high
 tags:
-  - auto-mode
-  - routing
-  - heuristics
-  - model-selection
-  - local-only
-  - codex
-  - cline
+- auto-mode
+- model-selection
+- acp-boundary
+- claude-code
+- codex
+- openai
+- anthropic
 depends_on:
-  - 027-ollama-fallback
-created_at: 2026-04-23T00:00:00.000000Z
-updated_at: 2026-04-23T00:00:00.000000Z
+- 027-ollama-fallback
+created_at: 2026-04-23T00:00:00Z
+updated_at: 2026-06-03T01:21:09.853194Z
 ---
-
-# Heuristic Auto Model Selection
+# Agent-Aware Auto Model Arbitration (Claude + Codex)
 
 ## Overview
 
-Modmux already resolves requested model names into endpoint-compatible Copilot
-models and can retry within a compatible family. What it does not do today is
-choose a model on the user's behalf based on the shape of the request.
+Modmux should support Copilot-style `model: "auto"` for Claude Code and Codex while preserving endpoint-native tool-calling contracts. The core design is a shared internal model-arbitration layer (ACP-inspired) that selects a concrete live Copilot model, followed by existing OpenAI/Anthropic proxy handlers for request/response translation.
 
-This spec adds a first-class `auto` mode that performs local heuristic
-classification and selects the best Copilot model tier for the request. It is
-the first step toward "Copilot Auto for other agents," but remains fully local,
-deterministic, and explicit.
+This keeps Auto selection centralized and deterministic without rewriting tool orchestration.
 
-Auto mode only applies when the incoming request explicitly selects `auto`. If a
-user or agent selects a concrete model, Modmux must preserve that choice.
+## Requirements
 
-## Design
+- [ ] Add a shared model-catalog layer that reads live Copilot models/capabilities and exposes a synthetic `auto` option.
+- [ ] Implement deterministic Auto arbitration (`auto` -> tier -> concrete model) using request-local signals only.
+- [ ] Preserve explicit model behavior: non-`auto` requests must follow current resolution behavior.
+- [ ] Keep tool-calling contracts endpoint-native:
+  - OpenAI `/v1/responses` and `/v1/chat/completions` keep existing OpenAI tool/event shapes.
+  - Anthropic `/v1/messages` keeps Anthropic tool_use/tool_result shapes.
+- [ ] Add agent-aware surface negotiation using caller hints plus endpoint context, with endpoint semantics as source of truth.
+- [ ] Add `autoRouting` config controls with rollout guardrails (global enable + per-endpoint toggles/kill switch).
+- [ ] Define and enforce catalog staleness behavior (TTL + stale-on-error fallback).
+- [ ] Define exact failure behavior when Auto cannot resolve a model (stable 4xx/5xx mapping and messages).
+- [ ] Add diagnostics/logging that include requested model, selected model, strategy, and decision reason codes.
+- [ ] Update configure defaults so Codex prefers `model = "auto"`; only add Claude default-model config when client field is confirmed stable/supported.
 
-### Scope
+## Non-Goals
 
-- Introduce an `auto` request model path for supported agent-facing endpoints.
-- Build a heuristic classifier that maps request signals to a model tier.
-- Route to a concrete Copilot model based on the selected tier and live
-  availability.
-- Keep behavior local-only with no external classification service.
+- Full ACP protocol integration or replacing existing endpoint handlers.
+- Cross-surface tool translation through ACP.
+- External classifier services or self-tuning heuristics.
+- Broad client-specific routing based primarily on user-agent strings.
 
-### Non-Goals
+## Technical Notes
 
-- Ollama-based classification.
-- Self-tuning heuristic weights.
-- Overriding explicit user model choices.
-- Cross-provider routing beyond the Copilot catalog.
+### Architecture boundary
 
-### User Story 1 - Auto Picks a Reasonable Model (Priority: P1)
+Use an ACP-like internal boundary for model arbitration only:
 
-As a Codex or Cline user, I can select `auto` and let Modmux choose an
-appropriate Copilot model instead of manually choosing one for every task.
+`selectModel(context) -> { modelId, strategy, reasons[] }`
 
-Acceptance scenarios:
+Then execute through existing endpoint-specific handlers:
 
-1. Given a request whose model is `auto`, when Modmux classifies the request,
-   then it routes to a concrete Copilot model before calling the upstream.
-2. Given a request whose model is not `auto`, when Modmux handles the request,
-   then existing behavior is unchanged.
-3. Given the preferred concrete model for the selected tier is unavailable, when
-   Modmux resolves candidates, then it uses the next compatible live model in
-   the same tier/family before degrading further.
+- OpenAI paths: `openai-handler-utils.ts`, `responses-handler.ts`, `chat-handler.ts`
+- Anthropic path: `messages-handler.ts`
 
-### User Story 2 - Auto Stays Predictable (Priority: P1)
+### Agent-aware surface matrix (phase 1)
 
-As a Modmux user, I can understand why Auto chose a model.
+- Claude Code: Anthropic `/v1/messages` primary, OpenAI endpoints optional passthrough if requested.
+- Codex: OpenAI `/v1/responses` and `/v1/models` primary.
+- Unknown callers: endpoint-driven behavior only; do not reject based on unknown user-agent.
 
-Acceptance scenarios:
+### Safety defaults
 
-1. Given Auto mode routed a request, when I inspect logs or status diagnostics,
-   then I can see the chosen tier, selected model, and the main heuristic
-   signals.
-2. Given Auto mode is disabled in config, when a client sends `auto`, then the
-   request is rejected clearly or mapped by an explicit compatibility rule,
-   rather than silently behaving differently across runs.
+- Auto disabled by default unless explicitly enabled.
+- Deterministic fallback order by endpoint capability + family/tier.
+- If no compatible model is available, return explicit error (no silent remap to unrelated families).
 
-### Supported Agents and Endpoints
+## Acceptance Criteria
 
-The initial product target is Codex and Cline first.
-
-- Codex should be able to send `model = "auto"` through the OpenAI-compatible
-  path.
-- Cline support depends on whether the client can preserve the configured model
-  value at request time rather than forcing a fixed hardcoded model. If not,
-  this phase should keep Cline as a follow-up rather than inventing brittle
-  hacks.
-- Claude Code support is explicitly deferred because its current config path is
-  session-oriented and not yet a clean fit for request-level model switching.
-
-### Classification Contract
-
-The heuristic engine should produce a stable internal shape so later phases can
-swap in Ollama-based classification without changing the router contract.
-
-```ts
-export interface AutoClassification {
-  complexity: "trivial" | "simple" | "moderate" | "complex";
-  reasoningDepth: "none" | "low" | "medium" | "high";
-  recommendedTier: "haiku" | "sonnet" | "opus";
-  confidence: number;
-  signals: string[];
-}
-```
-
-### Heuristic Signals
-
-Initial heuristic inputs should come only from request-local and session-local
-data Modmux already sees or can derive cheaply:
-
-- prompt length / token count (see Tier Mapping for concrete ranges)
-- request endpoint (`/responses` may imply more agentic work than a simple chat)
-- presence and count of tools
-- count of input messages
-- presence of keywords such as `refactor`, `design`, `migrate`, `plan`, `fix`,
-  `typo`, `test`
-- recent retry count for the same session/request path if available
-
-Signals should be deterministic and explainable. Avoid repo scanning or large
-background analysis in this phase.
-
-### Tier Mapping
-
-Heuristics should target a tier, not a hardcoded single model:
-
-- `haiku`: low-latency, low-complexity tasks (≤100 tokens, ≤2 messages,
-  typo/simple-fix keywords)
-- `sonnet`: default balanced tier (100–1000 tokens, ≤5 messages, moderate
-  keywords or tools count ≤2)
-- `opus`: high-complexity or high-reasoning tasks (>1000 tokens, >5 messages,
-  refactor/design/migrate keywords, tools count >2)
-
-When the preferred concrete model for a selected tier is unavailable, degrade
-up-tier (haiku→sonnet→opus) rather than down-tier. If all models unavailable,
-return a clear error rather than guessing.
-
-Concrete model selection should still use live Copilot model metadata and the
-existing model resolver patterns where possible.
-
-### Configuration
-
-Extend config with an `autoRouting` section:
-
-```ts
-export interface AutoRoutingConfig {
-  enabled: boolean;
-  preference: "balanced" | "speed" | "quality";
-  logDecisions: boolean;
-}
-```
-
-Default behavior:
-
-- `enabled: false`
-- `preference: "balanced"`
-- `logDecisions: true`
-
-When `enabled` is `false`, requests specifying `auto` should fail with error:
-`400 Bad Request: "auto" model selection is not enabled. Set MODMUX_AUTO_ROUTING_ENABLED=true to activate.`
-
-This provides clear guidance for debugging and configuration.
+- [ ] `GET /v1/models` includes live Copilot models and a synthetic `auto` entry.
+- [ ] `model: "auto"` works on `/v1/responses`, `/v1/chat/completions`, and `/v1/messages` per endpoint support rules.
+- [ ] Explicit model requests are unchanged versus baseline behavior.
+- [ ] Under `model: "auto"`, tool payloads/stream events remain endpoint-native (OpenAI vs Anthropic unchanged).
+- [ ] Auto decision logs include deterministic reason codes and selected candidates.
+- [ ] Kill switch disables Auto behavior without code rollback.
+- [ ] Stale catalog behavior is stable during transient `/models` failures.
 
 ## Plan
 
-- [ ] Extend request handling to recognize `model: "auto"` on supported
-      endpoints.
-- [ ] Add config and validation for Auto routing.
-- [ ] Implement a deterministic heuristic classifier module with a stable output
-      contract.
-- [ ] Map heuristic tiers to concrete Copilot candidate sets.
-- [ ] Integrate Auto routing into the existing model resolution path without
-      changing non-Auto behavior.
-- [ ] Add observability for Auto decisions in logs and status diagnostics.
-- [ ] Add tests for supported and unsupported agent paths, explicit-model
-      preservation, and tier degradation behavior.
-- [ ] Document how users enable Auto and which agents support it.
+- [ ] Build shared model catalog and synthetic `auto` exposure.
+- [ ] Implement Auto arbitration module and strategy/reason outputs.
+- [ ] Wire arbitration into OpenAI and Anthropic request paths.
+- [ ] Add config schema and rollout/staleness/failure policies.
+- [ ] Update Codex/Claude configuration writers for Auto defaults (with Claude gating).
+- [ ] Add tests and docs.
 
 ## Test
 
-- [ ] Unit tests for heuristic classification and tier mapping.
-- [ ] Contract tests for `model: "auto"` on supported OpenAI-compatible
-      endpoints.
-- [ ] Regression tests proving explicit model choices bypass Auto logic.
-- [ ] Tests for disabled-Auto behavior and unsupported client paths.
-- [ ] Manual verification with Codex using `auto`.
+- [ ] Unit tests: arbitration heuristics, fallback ordering, failure/staleness policies.
+- [ ] Unit tests: ACP-boundary behavior (model selection only, no tool-shape mutation).
+- [ ] Contract tests: `model: "auto"` on `/v1/responses`, `/v1/chat/completions`, `/v1/messages`.
+- [ ] Contract tests: `GET /v1/models` includes synthetic `auto` plus live models.
+- [ ] Integration tests: `configureAgent(codex)` defaults to `model = "auto"`.
+- [ ] Integration tests: Claude config writer preserves existing settings and only applies supported Auto default fields.
 - [ ] `deno task quality`
 
-## Notes
+## Dependencies
 
-- This phase should reuse the existing `model-resolver.ts` and live `/models`
-  metadata wherever possible instead of introducing a second routing system.
-- Keep the product promise narrow: "Auto for clients that can send `auto` at
-  request time." Do not imply full Claude Code support until that path is
-  designed explicitly.
-- The output contract is intentionally aligned with a future Ollama classifier
-  phase.
-- **Spec 27 Coordination**: If all preferred Copilot models are unavailable
-  (rare), consider whether fallback to Ollama (spec 27) should apply. This is
-  deferred to a follow-up phase to keep scope clean. For now, return error.
-- **Spec 30 Coordination**: Cost awareness (spec 30) must track the Auto tier
-  selected (`modelTier: "haiku"|"sonnet"|"opus"`). Ensure CostSnapshot includes
-  this field for Auto-routed requests.
+- Depends on: `027-ollama-fallback` (existing)
+- Coordinates with: `030-cost-aware-status` for tier-aware reporting fields.

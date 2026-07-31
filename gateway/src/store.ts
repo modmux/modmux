@@ -2,6 +2,7 @@ import { join } from "@std/path";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 export type ModelMappingPolicy = "compatible" | "strict";
+export type AutoRoutingFallbackMode = "strict_error" | "family_fallback";
 
 export interface ConfigEntry {
   agentName: string;
@@ -39,6 +40,30 @@ export interface UpdatesConfig {
   checkEnabled: boolean;
 }
 
+export interface AutoRoutingEndpointsConfig {
+  /** Enable auto routing for OpenAI Responses API. */
+  responses: boolean;
+  /** Enable auto routing for OpenAI Chat Completions API. */
+  chatCompletions: boolean;
+  /** Enable auto routing for Anthropic Messages API. */
+  messages: boolean;
+}
+
+export interface AutoRoutingConfig {
+  /** Enable model:auto arbitration. Default: false. */
+  enabled: boolean;
+  /** Per-endpoint auto enablement guardrails. */
+  endpoints: AutoRoutingEndpointsConfig;
+  /** How to behave when preferred tier is unavailable. */
+  fallbackMode: AutoRoutingFallbackMode;
+  /** Live catalog cache TTL in milliseconds. */
+  catalogTtlMs: number;
+  /** Allow using stale catalog when live fetch fails. */
+  allowStaleCatalog: boolean;
+  /** Emit debug logs for auto decisions. */
+  logDecisions: boolean;
+}
+
 export interface ModmuxConfig {
   /** TCP port the proxy listens on. Default: 11435. */
   port: number;
@@ -61,6 +86,8 @@ export interface ModmuxConfig {
   usageMetrics: UsageMetricsConfig;
   /** Update check and upgrade configuration. */
   updates: UpdatesConfig;
+  /** Auto model arbitration configuration. */
+  autoRouting: AutoRoutingConfig;
 }
 
 interface LegacyModmuxConfig extends Partial<ModmuxConfig> {
@@ -89,6 +116,18 @@ export const DEFAULT_CONFIG: ModmuxConfig = {
   },
   updates: {
     checkEnabled: true,
+  },
+  autoRouting: {
+    enabled: false,
+    endpoints: {
+      responses: true,
+      chatCompletions: true,
+      messages: true,
+    },
+    fallbackMode: "family_fallback",
+    catalogTtlMs: 60_000,
+    allowStaleCatalog: true,
+    logDecisions: true,
   },
 };
 
@@ -136,6 +175,28 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
   const logLevelRaw = envValue("MODMUX_LOG_LEVEL");
   const policyRaw = envValue("MODMUX_MODEL_MAPPING_POLICY");
   const updateCheckEnabledRaw = envValue("MODMUX_UPDATE_CHECK_ENABLED");
+  const autoRoutingEnabledRaw = envValue("MODMUX_AUTO_ROUTING_ENABLED");
+  const autoRoutingFallbackModeRaw = envValue(
+    "MODMUX_AUTO_ROUTING_FALLBACK_MODE",
+  );
+  const autoRoutingCatalogTtlRaw = envValue(
+    "MODMUX_AUTO_ROUTING_CATALOG_TTL_MS",
+  );
+  const autoRoutingAllowStaleRaw = envValue(
+    "MODMUX_AUTO_ROUTING_ALLOW_STALE_CATALOG",
+  );
+  const autoRoutingLogDecisionsRaw = envValue(
+    "MODMUX_AUTO_ROUTING_LOG_DECISIONS",
+  );
+  const autoRoutingResponsesRaw = envValue(
+    "MODMUX_AUTO_ROUTING_ENABLE_RESPONSES",
+  );
+  const autoRoutingChatRaw = envValue(
+    "MODMUX_AUTO_ROUTING_ENABLE_CHAT_COMPLETIONS",
+  );
+  const autoRoutingMessagesRaw = envValue(
+    "MODMUX_AUTO_ROUTING_ENABLE_MESSAGES",
+  );
 
   const next: ModmuxConfig = { ...config };
 
@@ -168,6 +229,109 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
     }
     next.updates.checkEnabled = updateCheckEnabledRaw === "true";
   }
+
+  if (
+    autoRoutingEnabledRaw !== undefined ||
+    autoRoutingFallbackModeRaw !== undefined ||
+    autoRoutingCatalogTtlRaw !== undefined ||
+    autoRoutingAllowStaleRaw !== undefined ||
+    autoRoutingLogDecisionsRaw !== undefined ||
+    autoRoutingResponsesRaw !== undefined ||
+    autoRoutingChatRaw !== undefined ||
+    autoRoutingMessagesRaw !== undefined
+  ) {
+    next.autoRouting = {
+      ...config.autoRouting,
+      endpoints: { ...config.autoRouting.endpoints },
+    };
+  }
+
+  if (autoRoutingEnabledRaw !== undefined) {
+    if (autoRoutingEnabledRaw !== "true" && autoRoutingEnabledRaw !== "false") {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_ENABLED value: ${autoRoutingEnabledRaw}`,
+      );
+    }
+    next.autoRouting.enabled = autoRoutingEnabledRaw === "true";
+  }
+
+  if (autoRoutingFallbackModeRaw !== undefined) {
+    if (
+      autoRoutingFallbackModeRaw !== "strict_error" &&
+      autoRoutingFallbackModeRaw !== "family_fallback"
+    ) {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_FALLBACK_MODE value: ${autoRoutingFallbackModeRaw}`,
+      );
+    }
+    next.autoRouting.fallbackMode = autoRoutingFallbackModeRaw;
+  }
+
+  if (autoRoutingCatalogTtlRaw !== undefined) {
+    const parsed = parseInt(autoRoutingCatalogTtlRaw, 10);
+    if (Number.isNaN(parsed)) {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_CATALOG_TTL_MS value: ${autoRoutingCatalogTtlRaw}`,
+      );
+    }
+    next.autoRouting.catalogTtlMs = parsed;
+  }
+
+  if (autoRoutingAllowStaleRaw !== undefined) {
+    if (
+      autoRoutingAllowStaleRaw !== "true" &&
+      autoRoutingAllowStaleRaw !== "false"
+    ) {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_ALLOW_STALE_CATALOG value: ${autoRoutingAllowStaleRaw}`,
+      );
+    }
+    next.autoRouting.allowStaleCatalog = autoRoutingAllowStaleRaw === "true";
+  }
+
+  if (autoRoutingLogDecisionsRaw !== undefined) {
+    if (
+      autoRoutingLogDecisionsRaw !== "true" &&
+      autoRoutingLogDecisionsRaw !== "false"
+    ) {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_LOG_DECISIONS value: ${autoRoutingLogDecisionsRaw}`,
+      );
+    }
+    next.autoRouting.logDecisions = autoRoutingLogDecisionsRaw === "true";
+  }
+
+  if (autoRoutingResponsesRaw !== undefined) {
+    if (
+      autoRoutingResponsesRaw !== "true" && autoRoutingResponsesRaw !== "false"
+    ) {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_ENABLE_RESPONSES value: ${autoRoutingResponsesRaw}`,
+      );
+    }
+    next.autoRouting.endpoints.responses = autoRoutingResponsesRaw === "true";
+  }
+
+  if (autoRoutingChatRaw !== undefined) {
+    if (autoRoutingChatRaw !== "true" && autoRoutingChatRaw !== "false") {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_ENABLE_CHAT_COMPLETIONS value: ${autoRoutingChatRaw}`,
+      );
+    }
+    next.autoRouting.endpoints.chatCompletions = autoRoutingChatRaw === "true";
+  }
+
+  if (autoRoutingMessagesRaw !== undefined) {
+    if (
+      autoRoutingMessagesRaw !== "true" && autoRoutingMessagesRaw !== "false"
+    ) {
+      throw new Error(
+        `Invalid MODMUX_AUTO_ROUTING_ENABLE_MESSAGES value: ${autoRoutingMessagesRaw}`,
+      );
+    }
+    next.autoRouting.endpoints.messages = autoRoutingMessagesRaw === "true";
+  }
+
   return next;
 }
 
@@ -243,6 +407,24 @@ function validate(config: ModmuxConfig): void {
       throw new Error("Invalid usageMetrics.filePath: cannot be empty string");
     }
   }
+
+  const validFallbackModes: AutoRoutingFallbackMode[] = [
+    "strict_error",
+    "family_fallback",
+  ];
+  if (!validFallbackModes.includes(config.autoRouting.fallbackMode)) {
+    throw new Error(
+      `Invalid autoRouting.fallbackMode: ${config.autoRouting.fallbackMode}`,
+    );
+  }
+  if (
+    config.autoRouting.catalogTtlMs < 1_000 ||
+    config.autoRouting.catalogTtlMs > 600_000
+  ) {
+    throw new Error(
+      `Invalid autoRouting.catalogTtlMs: ${config.autoRouting.catalogTtlMs}. Must be 1000-600000ms.`,
+    );
+  }
 }
 
 export async function loadConfig(): Promise<ModmuxConfig> {
@@ -266,6 +448,14 @@ export async function loadConfig(): Promise<ModmuxConfig> {
       updates: {
         checkEnabled: parsed.updates?.checkEnabled ??
           DEFAULT_CONFIG.updates.checkEnabled,
+      },
+      autoRouting: {
+        ...DEFAULT_CONFIG.autoRouting,
+        ...(parsed.autoRouting || {}),
+        endpoints: {
+          ...DEFAULT_CONFIG.autoRouting.endpoints,
+          ...(parsed.autoRouting?.endpoints || {}),
+        },
       },
     });
     validate(config);

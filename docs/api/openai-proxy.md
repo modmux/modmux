@@ -279,10 +279,15 @@ GET /v1/models
 The response includes:
 
 - **Live models** from GitHub Copilot
+- **Synthetic `auto`** for server-side model arbitration
 - **Model aliases** from the default mapping
 - **Resolved model names**
 
 All models are marked as owned by "github-copilot".
+
+When `model: "auto"` is sent to `/v1/chat/completions` or `/v1/responses`,
+Modmux performs deterministic model arbitration and forwards the request with a
+concrete compatible model.
 
 ## Model Support
 

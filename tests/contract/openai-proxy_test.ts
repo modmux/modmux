@@ -5,7 +5,11 @@
  * GET  /health (already covered in server_test.ts, included here for completeness)
  */
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { clearModelResolverCache, handleRequest } from "@modmux/gateway";
+import {
+  clearModelCatalogCache,
+  clearModelResolverCache,
+  handleRequest,
+} from "@modmux/gateway";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -51,6 +55,7 @@ function stubFetch(chatResponse: Response): () => void {
   const original = globalThis.fetch;
   const originalGithubToken = Deno.env.get("MODMUX_GITHUB_TOKEN");
   clearModelResolverCache();
+  clearModelCatalogCache();
   Deno.env.set("MODMUX_GITHUB_TOKEN", TEST_GITHUB_TOKEN);
   globalThis.fetch = ((
     input: string | URL | Request,
@@ -385,8 +390,26 @@ Deno.test("OpenAI /v1/chat/completions — empty messages array returns 400", as
       model: "gpt-4o",
       messages: [],
     });
+
     assertEquals(res.status, 400);
     await res.body?.cancel();
+  } finally {
+    await s.shutdown();
+  }
+});
+
+Deno.test("OpenAI /v1/chat/completions — model:auto disabled returns 400", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await post(port, "/v1/chat/completions", {
+      model: "auto",
+      messages: [{ role: "user", content: "hello" }],
+      max_tokens: 8,
+    });
+    assertEquals(res.status, 400);
+    const body = await res.json() as { error?: { message?: string } };
+    assertStringIncludes(body.error?.message ?? "", "not enabled");
   } finally {
     await s.shutdown();
   }
@@ -480,12 +503,29 @@ Deno.test("OpenAI /v1/responses — missing model returns 400", async () => {
     const res = await post(port, "/v1/responses", {
       input: "ping",
     });
+
     assertEquals(res.status, 400);
     const body = await res.json() as Record<string, unknown>;
     assertEquals(
       (body.error as Record<string, unknown>).type,
       "invalid_request_error",
     );
+  } finally {
+    await s.shutdown();
+  }
+});
+
+Deno.test("OpenAI /v1/responses — model:auto disabled returns 400", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await post(port, "/v1/responses", {
+      model: "auto",
+      input: "hello",
+    });
+    assertEquals(res.status, 400);
+    const body = await res.json() as { error?: { message?: string } };
+    assertStringIncludes(body.error?.message ?? "", "not enabled");
   } finally {
     await s.shutdown();
   }
@@ -1078,6 +1118,7 @@ Deno.test("GET /v1/models — returns only live Copilot ids", async () => {
   const original = globalThis.fetch;
   const originalGithubToken = Deno.env.get("MODMUX_GITHUB_TOKEN");
   clearModelResolverCache();
+  clearModelCatalogCache();
   Deno.env.set("MODMUX_GITHUB_TOKEN", TEST_GITHUB_TOKEN);
 
   globalThis.fetch = ((
@@ -1130,7 +1171,7 @@ Deno.test("GET /v1/models — returns only live Copilot ids", async () => {
     const body = await res.json() as Record<string, unknown>;
     const ids = (body.data as Array<{ id: string }>).map((model) => model.id);
 
-    assertEquals(ids, ["claude-sonnet-4.6", "gpt-5.4"]);
+    assertEquals(ids, ["claude-sonnet-4.6", "gpt-5.4", "auto"]);
   } finally {
     globalThis.fetch = original;
     if (originalGithubToken === undefined) {
@@ -1139,6 +1180,7 @@ Deno.test("GET /v1/models — returns only live Copilot ids", async () => {
       Deno.env.set("MODMUX_GITHUB_TOKEN", originalGithubToken);
     }
     clearModelResolverCache();
+    clearModelCatalogCache();
     await s.shutdown();
   }
 });

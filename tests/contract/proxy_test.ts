@@ -63,6 +63,7 @@ Deno.test(
         res.status === 200 || res.status === 503,
         `Expected 200 or 503, got ${res.status}`,
       );
+
       assertEquals(res.headers.get("Content-Type"), "application/json");
       if (res.status === 200) {
         const body = await res.json();
@@ -80,6 +81,20 @@ Deno.test(
     }
   },
 );
+
+Deno.test("POST /v1/messages - model:auto disabled returns 400", async () => {
+  const req = postJSON("/v1/messages", {
+    model: "auto",
+    messages: [{ role: "user", content: "Hello" }],
+    max_tokens: 10,
+  });
+  const res = await handleRequest(req);
+  assertEquals(res.status, 400);
+  const body = await res.json();
+  assertEquals(body.type, "error");
+  assertEquals(body.error.type, "invalid_request_error");
+  assert(typeof body.error.message === "string");
+});
 
 // /v1/messages — streaming: always returns SSE headers (errors sent in stream body)
 

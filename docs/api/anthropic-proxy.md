@@ -309,7 +309,11 @@ data: {"type": "message_stop"}
 
 ## Model Support
 
-The endpoint supports GitHub Copilot models through automatic model resolution:
+The endpoint supports GitHub Copilot models through automatic model resolution.
+It also supports `model: "auto"` for server-side model arbitration when Auto
+routing is enabled in Modmux config.
+
+Example resolution behavior:
 
 | Requested Model              | Resolved To   |
 | ---------------------------- | ------------- |

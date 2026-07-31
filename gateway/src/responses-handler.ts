@@ -7,6 +7,7 @@ import {
 } from "./openai-handler-utils.ts";
 import { openAIErrorResponse } from "./response-utils.ts";
 import { log, summarizeLogText } from "./log.ts";
+import { detectAgentHint } from "./agent-hint.ts";
 import type {
   OpenAIResponsesInputMessage,
   OpenAIResponsesRequest,
@@ -198,6 +199,10 @@ export async function handleResponses(req: Request): Promise<Response> {
     responsesReq.model,
     "responses",
     "/v1/responses",
+    {
+      requestBody: proxiedBody,
+      agentHint: detectAgentHint(req.headers.get("user-agent")),
+    },
   );
   if (resolutionOrResponse instanceof Response) {
     await log("debug", "responses: model resolution rejected", {

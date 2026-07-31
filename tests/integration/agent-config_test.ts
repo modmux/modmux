@@ -69,7 +69,7 @@ Deno.test("configureAgent(codex) — creates config file when none exists", asyn
     assertStringIncludes(content, "base_url");
     assertStringIncludes(content, "http://127.0.0.1:11434");
     assertStringIncludes(content, "modmux");
-    assertStringIncludes(content, 'model = "gpt-5.4"');
+    assertStringIncludes(content, 'model = "auto"');
     assertEquals(content.includes('wire_api = "responses"'), false);
     assertEquals(content.includes("auth_method"), false);
     assertEquals(content.includes("api_key"), false);
@@ -262,7 +262,7 @@ Deno.test("verifyAgentConfig accepts legacy wire_api = responses", async () => {
     await Deno.writeTextFile(
       entry.configPath,
       [
-        'model = "gpt-5.4"',
+        'model = "auto"',
         'model_provider = "modmux"',
         "",
         "[model_providers.modmux]",

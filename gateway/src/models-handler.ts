@@ -1,11 +1,16 @@
-import { fetchModelList } from "../../providers/src/models.ts";
+import { getModelCatalog } from "./model-catalog.ts";
 import { jsonResponse } from "./response-utils.ts";
 import type { OpenAIModel, OpenAIModelList } from "./types.ts";
+import { DEFAULT_CONFIG, loadConfig } from "./store.ts";
 
 export async function handleModels(): Promise<Response> {
   const created = Math.floor(Date.now() / 1000);
-  const liveModels = await fetchModelList().catch(() => []);
-  const advertisedModelIds = [...new Set(liveModels)];
+  const config = await loadConfig().catch(() => DEFAULT_CONFIG);
+  const catalog = await getModelCatalog(config.autoRouting);
+  const advertisedModelIds = [...new Set(catalog.modelIds)];
+  if (!advertisedModelIds.includes("auto")) {
+    advertisedModelIds.push("auto");
+  }
 
   const models: OpenAIModel[] = advertisedModelIds
     .map((id) => ({

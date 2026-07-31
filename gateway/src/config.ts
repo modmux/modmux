@@ -194,8 +194,8 @@ async function writeCodex(
     (existing.model_providers as Record<string, unknown>) ?? {};
   const updated = {
     ...existing,
-    // Use a Codex-native model to avoid local metadata fallback warnings.
-    model: "gpt-5.4",
+    // Auto arbitration is handled server-side by Modmux.
+    model: "auto",
     model_provider: "modmux",
     model_providers: {
       ...existingProviders,

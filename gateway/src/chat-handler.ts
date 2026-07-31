@@ -20,6 +20,7 @@ import {
 } from "./response-utils.ts";
 import type { OpenAIChatRequest, ProxyRequest } from "./types.ts";
 import { loadConfig } from "./store.ts";
+import { detectAgentHint } from "./agent-hint.ts";
 
 export async function handleChatCompletions(req: Request): Promise<Response> {
   const bodyOrResponse = await parseOpenAIRequestBody(req);
@@ -43,6 +44,10 @@ export async function handleChatCompletions(req: Request): Promise<Response> {
     openAIReq.model,
     "chat_completions",
     "/v1/chat/completions",
+    {
+      requestBody: body,
+      agentHint: detectAgentHint(req.headers.get("user-agent")),
+    },
   );
   if (resolvedModelOrResponse instanceof Response) {
     return resolvedModelOrResponse;
