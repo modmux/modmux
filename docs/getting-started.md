@@ -46,6 +46,10 @@ modmux start
 On first run, Modmux starts the GitHub device flow. Complete the login in your
 browser, then return to the terminal.
 
+If you already use GitHub CLI authentication (`gh auth login`), Modmux can also
+use that GitHub token via `GH_TOKEN`, `GITHUB_TOKEN`, or `gh auth token` when
+present.
+
 Use this to confirm the service is running:
 
 ```bash

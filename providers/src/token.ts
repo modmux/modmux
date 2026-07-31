@@ -137,6 +137,53 @@ export async function exchangeToken(
 // Public API
 // ---------------------------------------------------------------------------
 
+async function getGitHubTokenFromGhCli(): Promise<string | undefined> {
+  try {
+    const command = new Deno.Command("gh", {
+      args: ["auth", "token"],
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const { success, stdout } = await command.output();
+    if (!success) {
+      return undefined;
+    }
+
+    const token = new TextDecoder().decode(stdout).trim();
+    if (!token) {
+      return undefined;
+    }
+
+    return token;
+  } catch {
+    return undefined;
+  }
+}
+
+async function collectGitHubTokenCandidates(opts?: {
+  getGitHubToken?: () => Promise<string>;
+}): Promise<string[]> {
+  if (opts?.getGitHubToken) {
+    const explicitToken = await opts.getGitHubToken();
+    return explicitToken ? [explicitToken] : [];
+  }
+
+  const candidates = new Set<string>();
+  for (const envName of ["MODMUX_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"]) {
+    const value = Deno.env.get(envName);
+    if (value) {
+      candidates.add(value);
+    }
+  }
+
+  const ghCliToken = await getGitHubTokenFromGhCli();
+  if (ghCliToken) {
+    candidates.add(ghCliToken);
+  }
+
+  return Array.from(candidates);
+}
+
 /**
  * Returns a fresh Copilot API token, using the in-memory cache when possible.
  * Loads the GitHub OAuth token from the disk-based TokenStore by default.
@@ -152,25 +199,59 @@ export async function getToken(opts?: {
     return cachedToken;
   }
 
-  let githubToken: string | undefined;
+  const githubTokenCandidates = await collectGitHubTokenCandidates(opts);
+
+  const errors: Error[] = [];
+  for (const githubToken of githubTokenCandidates) {
+    try {
+      cachedToken = await exchangeToken(githubToken);
+      return cachedToken;
+    } catch (error) {
+      if (
+        error instanceof TokenInvalidError ||
+        error instanceof SubscriptionRequiredError
+      ) {
+        errors.push(error);
+        continue;
+      }
+      throw error;
+    }
+  }
 
   if (opts?.getGitHubToken) {
-    githubToken = await opts.getGitHubToken();
-  } else {
-    githubToken = Deno.env.get("MODMUX_GITHUB_TOKEN") ?? undefined;
-  }
-
-  if (!githubToken) {
-    const tokenStore = createTokenStore();
-    const authToken = await tokenStore.load();
-    githubToken = authToken?.accessToken;
-  }
-
-  if (!githubToken) {
+    if (errors.length > 0) {
+      throw errors[errors.length - 1];
+    }
     throw new TokenInvalidError();
   }
 
-  cachedToken = await exchangeToken(githubToken);
+  if (githubTokenCandidates.length === 0) {
+    const tokenStore = createTokenStore();
+    const authToken = await tokenStore.load();
+    const storedToken = authToken?.accessToken;
+    if (!storedToken) {
+      throw new TokenInvalidError();
+    }
+
+    cachedToken = await exchangeToken(storedToken);
+    return cachedToken;
+  }
+
+  if (errors.length > 0) {
+    const lastError = errors[errors.length - 1];
+    if (lastError instanceof TokenInvalidError) {
+      throw lastError;
+    }
+  }
+
+  const tokenStore = createTokenStore();
+  const authToken = await tokenStore.load();
+  const storedToken = authToken?.accessToken;
+  if (!storedToken) {
+    throw new TokenInvalidError();
+  }
+
+  cachedToken = await exchangeToken(storedToken);
   return cachedToken;
 }
 

@@ -59,6 +59,55 @@ Deno.test("getToken() - with getGitHubToken option → uses provided token", asy
   }
 });
 
+Deno.test("getToken() - uses GH_TOKEN env when present", async () => {
+  clearTokenCache();
+
+  const originalFetch = globalThis.fetch;
+  const originalModmuxToken = Deno.env.get("MODMUX_GITHUB_TOKEN");
+  const originalGhToken = Deno.env.get("GH_TOKEN");
+  const originalGithubToken = Deno.env.get("GITHUB_TOKEN");
+
+  Deno.env.delete("MODMUX_GITHUB_TOKEN");
+  Deno.env.delete("GH_TOKEN");
+  Deno.env.delete("GITHUB_TOKEN");
+  Deno.env.set("GH_TOKEN", FAKE_GITHUB_TOKEN);
+
+  const seenAuthHeaders: string[] = [];
+  globalThis.fetch = ((
+    _input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    const headers = new Headers(init?.headers);
+    seenAuthHeaders.push(headers.get("Authorization") ?? "");
+
+    return Promise.resolve(makeTokenResponse());
+  }) as typeof globalThis.fetch;
+
+  try {
+    await getToken();
+    assertEquals(seenAuthHeaders.length, 1);
+    assertEquals(seenAuthHeaders[0], `token ${FAKE_GITHUB_TOKEN}`);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalModmuxToken === undefined) {
+      Deno.env.delete("MODMUX_GITHUB_TOKEN");
+    } else {
+      Deno.env.set("MODMUX_GITHUB_TOKEN", originalModmuxToken);
+    }
+    if (originalGhToken === undefined) {
+      Deno.env.delete("GH_TOKEN");
+    } else {
+      Deno.env.set("GH_TOKEN", originalGhToken);
+    }
+    if (originalGithubToken === undefined) {
+      Deno.env.delete("GITHUB_TOKEN");
+    } else {
+      Deno.env.set("GITHUB_TOKEN", originalGithubToken);
+    }
+    clearTokenCache();
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Test: getToken() with valid cache → returns cached, zero fetch calls
 // ---------------------------------------------------------------------------
