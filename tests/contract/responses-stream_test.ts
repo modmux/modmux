@@ -281,42 +281,62 @@ Deno.test("Responses preserves separate messages with identical text and repairs
   );
 });
 
-Deno.test("Responses streams before EOF and propagates cancellation upstream", async () => {
-  const wire = sse({
-    type: "response.output_item.added",
-    output_index: 0,
-    item: { id: "live", type: "message" },
-  });
-  const cancelled = Promise.withResolvers<unknown>();
-  const upstream = new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(new TextEncoder().encode(wire));
-    },
-    cancel(reason) {
-      cancelled.resolve(reason);
-    },
-  });
-  await withUpstream(
-    new Response(upstream, {
-      headers: {
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "Content-Length": "999",
-        "Content-Encoding": "gzip",
-        "X-Request-Id": "keep-me",
-      },
-    }),
-    async (response) => {
-      assertEquals(response.headers.get("Content-Length"), null);
-      assertEquals(response.headers.get("Content-Encoding"), null);
-      assertEquals(response.headers.get("X-Request-Id"), "keep-me");
-      const reader = response.body!.getReader();
-      const first = await reader.read();
-      assertEquals(new TextDecoder().decode(first.value), wire);
-      await reader.cancel("client disconnected");
-      assertEquals(await cancelled.promise, "client disconnected");
+for (const newline of ["\n", "\r"]) {
+  Deno.test(
+    `Responses streams ${JSON.stringify(newline)} frames before EOF and propagates cancellation upstream`,
+    async () => {
+      const wire = sse({
+        type: "response.output_item.added",
+        output_index: 0,
+        item: { id: "live", type: "message" },
+      }).replaceAll("\n", newline);
+      const cancelled = Promise.withResolvers<unknown>();
+      const upstream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(wire));
+        },
+        cancel(reason) {
+          cancelled.resolve(reason);
+        },
+      });
+      await withUpstream(
+        new Response(upstream, {
+          headers: {
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Content-Length": "999",
+            "Content-Encoding": "gzip",
+            "X-Request-Id": "keep-me",
+          },
+        }),
+        async (response) => {
+          assertEquals(response.headers.get("Content-Length"), null);
+          assertEquals(response.headers.get("Content-Encoding"), null);
+          assertEquals(response.headers.get("X-Request-Id"), "keep-me");
+          const reader = response.body!.getReader();
+          let timeoutId: number | undefined;
+          try {
+            const first = await Promise.race([
+              reader.read(),
+              new Promise<never>((_, reject) => {
+                timeoutId = setTimeout(
+                  () =>
+                    reject(new Error("Frame was not streamed before EOF")),
+                  1000,
+                );
+              }),
+            ]);
+            assertEquals(new TextDecoder().decode(first.value), wire);
+            await reader.cancel("client disconnected");
+            assertEquals(await cancelled.promise, "client disconnected");
+          } finally {
+            if (timeoutId !== undefined) clearTimeout(timeoutId);
+            await reader.cancel();
+          }
+        },
+      );
     },
   );
-});
+}
 
 Deno.test("Responses preserves malformed data and error events", async () => {
   const wire =

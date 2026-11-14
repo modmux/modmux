@@ -80,12 +80,21 @@ export function normalizeResponsesStream(
 
   let pending = "";
   let frame = "";
+  let trailingCRWasBlank = false;
+  let afterCR = false;
   function drain(
     controller: TransformStreamDefaultController<string>,
     eof = false,
   ) {
-    // Wait for a possible LF after a trailing CR, even across byte chunks.
-    const newline = /\r\n|\n|\r(?!$)/;
+    if (afterCR && pending.length > 0) {
+      if (pending.startsWith("\n")) {
+        if (!trailingCRWasBlank) frame += "\n";
+        pending = pending.slice(1);
+      }
+      afterCR = false;
+    }
+
+    const newline = /\r\n|\r|\n/;
     let match: RegExpExecArray | null;
     while ((match = newline.exec(pending)) !== null) {
       const line = pending.slice(0, match.index);
@@ -94,6 +103,10 @@ export function normalizeResponsesStream(
       if (line.length === 0) {
         controller.enqueue(normalizeFrame(frame));
         frame = "";
+      }
+      if (match[0] === "\r" && pending.length === 0) {
+        afterCR = true;
+        trailingCRWasBlank = line.length === 0;
       }
     }
     if (eof && (frame || pending)) {
