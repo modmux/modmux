@@ -283,7 +283,9 @@ Deno.test("Responses preserves separate messages with identical text and repairs
 
 for (const newline of ["\n", "\r"]) {
   Deno.test(
-    `Responses streams ${JSON.stringify(newline)} frames before EOF and propagates cancellation upstream`,
+    `Responses streams ${
+      JSON.stringify(newline)
+    } frames before EOF and propagates cancellation upstream`,
     async () => {
       const wire = sse({
         type: "response.output_item.added",
@@ -313,14 +315,13 @@ for (const newline of ["\n", "\r"]) {
           assertEquals(response.headers.get("Content-Encoding"), null);
           assertEquals(response.headers.get("X-Request-Id"), "keep-me");
           const reader = response.body!.getReader();
-          let timeoutId: number | undefined;
+          let timeoutId: ReturnType<typeof setTimeout> | undefined;
           try {
             const first = await Promise.race([
               reader.read(),
               new Promise<never>((_, reject) => {
                 timeoutId = setTimeout(
-                  () =>
-                    reject(new Error("Frame was not streamed before EOF")),
+                  () => reject(new Error("Frame was not streamed before EOF")),
                   1000,
                 );
               }),
