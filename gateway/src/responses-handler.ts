@@ -8,6 +8,7 @@ import {
 import { openAIErrorResponse } from "./response-utils.ts";
 import { log, summarizeLogText } from "./log.ts";
 import { detectAgentHint } from "./agent-hint.ts";
+import { normalizeResponsesStream } from "./responses-stream.ts";
 import type {
   OpenAIResponsesInputMessage,
   OpenAIResponsesRequest,
@@ -150,7 +151,7 @@ function stripUnsupportedTools(
  *
  * Resolves the model name, validates the input, then forwards the request
  * body directly to https://api.githubcopilot.com/v1/responses and streams
- * the response back unchanged. No translation through Anthropic format.
+ * the response back with stable streaming item IDs. No Anthropic translation.
  */
 export async function handleResponses(req: Request): Promise<Response> {
   const bodyOrResponse = await parseOpenAIRequestBody(req);
@@ -241,8 +242,20 @@ export async function handleResponses(req: Request): Promise<Response> {
       return await normalizeUpstreamError(upstream);
     }
 
-    // Pass Copilot's response through directly — headers, body, status.
-    // For streaming this is text/event-stream; for non-streaming application/json.
+    if (
+      upstream.body && upstream.headers.get("Content-Type")?.split(";")[0]
+          .trim().toLowerCase() === "text/event-stream"
+    ) {
+      const headers = new Headers(upstream.headers);
+      // The decoded, normalized stream has a different wire representation.
+      headers.delete("Content-Length");
+      headers.delete("Content-Encoding");
+      return new Response(normalizeResponsesStream(upstream.body), {
+        status: upstream.status,
+        headers,
+      });
+    }
+
     return new Response(upstream.body, {
       status: upstream.status,
       headers: upstream.headers,

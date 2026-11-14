@@ -129,6 +129,11 @@ GET /v1/usage
 OpenAI Responses API compatibility for Codex and similar agents. Provides a
 different response format than standard chat completions.
 
+Streaming responses retain one item ID per `output_index`, including the final
+response snapshot. This corrects Copilot ID changes that can make Codex render
+the final message twice. Text, tool call IDs, usage, and completion events are
+preserved.
+
 ### Endpoint
 
 ```http
